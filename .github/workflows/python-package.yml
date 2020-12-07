@@ -56,7 +56,11 @@ jobs:
         ssh -vvv -i ~/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $(whoami)@localhost
     - name: Install dependencies
       run: |
-        sudo apt update && sudo apt install python3-setuptools python3-nose
+        sudo apt update && sudo apt install ecflow-server ecflow-client python3-ecflow python3-setuptools python3-nose
+
+        # Start the server manually
+        ecflow_start
+        ecflow_client --port $(( `id -u` + 1500 )) --ping
 
         python -m pip install --upgrade pip
         pip install flake8 pytest
