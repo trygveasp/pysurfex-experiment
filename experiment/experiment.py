@@ -751,7 +751,7 @@ def init_run(exp, stream=None):
         if rev != wd:
             # print(host_name0)
             # print(lib0)
-            cmd = rsync + " " + rev + "/ " + host_name0 + lib0 + "/pysurfex --exclude=.git"
+            cmd = rsync + " " + rev + "/ " + host_name0 + lib0 + "/pysurfex --exclude=.git --exclude=.idea --exclude=__pycache__ --exclude='*.pyc'"
             print(cmd)
             ret = subprocess.call(cmd, shell=True)
             if ret != 0:
@@ -764,7 +764,7 @@ def init_run(exp, stream=None):
     # Sync WD to LIB
     # Always sync WD unless it is not same as SFX_EXP_LIB
     if wd != lib0:
-        cmd = rsync + " " + wd + "/ " + host_name0 + lib0 + " --exclude=.git"
+        cmd = rsync + " " + wd + "/ " + host_name0 + lib0 + " --exclude=.git --exclude=.idea --exclude=__pycache__ --exclude='*.pyc'"
         print(cmd)
         ret = subprocess.call(cmd, shell=True)
         if ret != 0:
@@ -796,7 +796,7 @@ def init_run(exp, stream=None):
             subprocess.call(cmd, shell=True)
             if ret != 0:
                 raise Exception
-            cmd = rsync + " " + host_name0 + lib0 + "/ " + host_namen + libn + " --exclude=.git"
+            cmd = rsync + " " + host_name0 + lib0 + "/ " + host_namen + libn + " --exclude=.git --exclude=.idea --exclude=__pycache__ --exclude='*.pyc'"
             print(cmd)
             subprocess.call(cmd, shell=True)
             if ret != 0:
