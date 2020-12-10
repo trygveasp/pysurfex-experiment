@@ -109,6 +109,7 @@ class TaskTest(unittest.TestCase):
                                   args=self.args).run(wrapper=self.wrapper)
         os.chdir(root)
 
+    '''
     def test_quality_control_sd(self):
         exp_name = "quality_control_sd_task"
         root = os.getcwd()
@@ -125,3 +126,4 @@ class TaskTest(unittest.TestCase):
         experiment.QualityControl(task, exp, host=self.host, mbr=self.mbr, stream=self.stream,
                                   args=self.args).run(wrapper=self.wrapper)
         os.chdir(root)
+    '''
