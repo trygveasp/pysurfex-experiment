@@ -432,21 +432,100 @@ class QualityControl(AbstractTask):
 
         an_time = self.dtg
         # archive_root = self.get_setting("archive_root")
-        input_file = self.exp.wd + "/toml/qc_config.json"
-        if os.path.exists(input_file):
-            settings_var = json.load(open(input_file, "r"))
-            settings = settings_var[self.var_name]
-            sfx_lib = self.system_file_paths.get_system_path("sfx_exp_lib")
-            settings.update({"domain": {"domain_file": sfx_lib + "/domain.json"}})
-            fg_file = self.system_file_paths.get_system_file("archive_dir", "raw.nc", basedtg=self.dtg)
-            settings.update({
-                "firstguess": {
-                    "fg_file": fg_file,
-                    "fg_var": self.translation[self.var_name]
+        settings_var = {
+          "t2m": {
+            "sets": {
+              "netatmo": {
+                "varname": "Temperature",
+                "filetype": "netatmo",
+                "tests": {
+                  "nometa": {
+                    "do_test": True
+                  },
+                  "domain": {
+                    "do_test": True
+                  },
+                  "blacklist": {
+                    "do_test": True
+                  },
+                  "redundancy": {
+                    "do_test": True
+                  },
+                  "plausibility": {
+                    "do_test": True,
+                    "maxval": 340,
+                    "minval": 200
+                  }
                 }
-            })
-        else:
-            raise FileNotFoundError("Could not find input file " + input_file)
+              }
+            }
+          },
+          "rh2m": {
+            "sets": {
+              "netatmo": {
+                "varname": "Humidity",
+                "filetype": "netatmo",
+                "tests": {
+                  "nometa": {
+                    "do_test": True
+                  },
+                  "domain": {
+                    "do_test": True
+                  },
+                  "blacklist": {
+                    "do_test": True
+                  },
+                  "redundancy": {
+                    "do_test": True
+                  },
+                  "plausibility": {
+                    "do_test": True,
+                    "minval": 0,
+                    "maxval": 100
+                  }
+                }
+              }
+            }
+          },
+          "sd": {
+            "sets": {
+              "bufr": {
+                "filetype": "bufr",
+                "varname": "totalSnowDepth",
+                "tests": {
+                  "nometa": {
+                    "do_test": True
+                  },
+                  "domain": {
+                    "do_test": True
+                  },
+                  "blacklist": {
+                    "do_test": True
+                  },
+                  "redundancy": {
+                    "do_test": True
+                  },
+                  "plausibility": {
+                    "do_test": True,
+                    "minval": 0,
+                    "maxval": 10000
+                  }
+                }
+              }
+            }
+          }
+        }
+
+        settings = settings_var[self.var_name]
+        sfx_lib = self.system_file_paths.get_system_path("sfx_exp_lib")
+        settings.update({"domain": {"domain_file": sfx_lib + "/domain.json"}})
+        fg_file = self.system_file_paths.get_system_file("archive_dir", "raw.nc", basedtg=self.dtg)
+        settings.update({
+            "firstguess": {
+                "fg_file": fg_file,
+                "fg_var": self.translation[self.var_name]
+            }
+        })
 
         print(self.obsdir)
         output = self.obsdir + "/qc_" + self.translation[self.var_name] + ".json"
@@ -546,7 +625,7 @@ class Forcing(AbstractTask):
             kwargs.update({"user_config": user_config})
 
         kwargs.update({"geo_out": self.geo})
-        global_config = self.exp.wd + "/pysurfex/surfex/cfg/config.yml"
+        global_config = self.exp.wd + "/surfex/cfg/config.yml"
         global_config = yaml.load(open(global_config, "r"))
         kwargs.update({"config": global_config})
 
@@ -813,7 +892,7 @@ class FirstGuess4OI(AbstractTask):
                 converter = self.config.get_setting(identifier + "CONVERTER")
 
             print(inputfile, fileformat, converter)
-            config_file = self.exp.wd + "/pysurfex/surfex/cfg/first_guess.yml"
+            config_file = self.exp.wd + "/surfex/cfg/first_guess.yml"
             config = yaml.load(open(config_file, "r"))
             defs = config[fileformat]
             defs.update({"filepattern": inputfile})
@@ -952,7 +1031,7 @@ class UnitTest(AbstractTask):
 
     def execute(self, **kwargs):
         os.makedirs("/tmp/host0/job/test_start_and_run/", exist_ok=True)
-        fh = open("/tmp/host1/scratch/hm_home/test_start_and_run/unittest_ok", "w")
+        fh = open("/tmp/host1/scratch/sfx_home/test_start_and_run/unittest_ok", "w")
         fh.write("ok")
         fh.close()
 
@@ -963,9 +1042,9 @@ class SleepingBeauty(AbstractTask):
 
     def execute(self, **kwargs):
         print("Sleeping beauty...")
-        print("Create /tmp/host1/scratch/hm_home/test_start_and_run/SleepingBeauty")
+        print("Create /tmp/host1/scratch/sfx_home/test_start_and_run/SleepingBeauty")
         os.makedirs("/tmp/host0/job/test_start_and_run/", exist_ok=True)
-        fh = open("/tmp/host1/scratch/hm_home/test_start_and_run/SleepingBeauty", "w")
+        fh = open("/tmp/host1/scratch/sfx_home/test_start_and_run/SleepingBeauty", "w")
         fh.write("SleepingBeauty")
         fh.close()
         for i in range(0, 20):
@@ -979,9 +1058,9 @@ class SleepingBeauty2(AbstractTask):
 
     def execute(self, **kwargs):
         print("Will the real Sleeping Beauty, please wake up! please wake up!")
-        print("Create /tmp/host1/scratch/hm_home/test_start_and_run/SleepingBeauty2")
+        print("Create /tmp/host1/scratch/sfx_home/test_start_and_run/SleepingBeauty2")
         os.makedirs("/tmp/host0/job/test_start_and_run/", exist_ok=True)
-        fh = open("/tmp/host1/scratch/hm_home/test_start_and_run/SleepingBeauty2", "w")
+        fh = open("/tmp/host1/scratch/sfx_home/test_start_and_run/SleepingBeauty2", "w")
         fh.write("SleepingBeauty")
         fh.close()
 
@@ -992,8 +1071,8 @@ class WakeUpCall(AbstractTask):
 
     def execute(self, **kwargs):
         print("This job is default suspended and manually submitted!")
-        print("Create /tmp/host1/scratch/hm_home/test_start_and_run/test_submit")
+        print("Create /tmp/host1/scratch/sfx_home/test_start_and_run/test_submit")
         os.makedirs("/tmp/host0/job/test_start_and_run/", exist_ok=True)
-        fh = open("/tmp/host1/scratch/hm_home/test_start_and_run/test_submit", "w")
+        fh = open("/tmp/host1/scratch/sfx_home/test_start_and_run/test_submit", "w")
         fh.write("Job was submitted")
         fh.close()

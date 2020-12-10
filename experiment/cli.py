@@ -25,6 +25,7 @@ def parse_submit_cmd_exp(argv):
     parser.add_argument('-ensmbr', dest="ensmbr", nargs="?", type=int, help="Ensemble member", required=False,
                         default=None)
     parser.add_argument('--db', dest="dbfile", type=str, nargs="?", help="Database", required=False, default=None)
+    parser.add_argument('--debug', dest="debug", action="store_true", help="Debug information")
     parser.add_argument('--version', action='version', version=experiment.__version__)
 
     if len(argv) == 0:
@@ -40,6 +41,10 @@ def parse_submit_cmd_exp(argv):
 
 def submit_cmd_exp(**kwargs):
 
+    debug = False
+    if "debug" in kwargs:
+        debug = kwargs["debug"]
+
     exp = kwargs["exp"]
     lib = kwargs["lib"]
     dtg = kwargs["dtg"]
@@ -50,6 +55,13 @@ def submit_cmd_exp(**kwargs):
         dtgbeg = kwargs["dtgbeg"]
         if isinstance(dtgbeg, str):
             dtgbeg = datetime.strptime(dtgbeg, "%Y%m%d%H")
+
+    libs = ["surfex", "scheduler", "experiment"]
+    for ll in libs:
+        if os.path.exists(lib + "/" + ll):
+            sys.path.insert(0, lib + "/" + ll)
+            if debug:
+                print("Set first in system path: ", lib + "/" + ll)
 
     progress = {
         "DTG": dtg,
@@ -91,6 +103,7 @@ def parse_kill_cmd_exp(argv):
     parser.add_argument("-ecf_pass", dest='ecf_pass', type=str, help="ECF_PASS", required=True)
     parser.add_argument('-ecf_rid', dest='ecf_rid', type=str, help="ECF_RID", required=False, nargs="?", default=None)
     parser.add_argument('-submission_id', type=str, help="SUBMISSION_ID")
+    parser.add_argument('--debug', dest="debug", action="store_true", help="Debug information")
     parser.add_argument('--version', action='version', version=experiment.__version__)
 
     if len(argv) == 0:
@@ -106,10 +119,21 @@ def parse_kill_cmd_exp(argv):
 
 def kill_cmd_exp(**kwargs):
 
+    debug = False
+    if "debug" in kwargs:
+        debug = kwargs["debug"]
+
     exp = kwargs["exp"]
     del kwargs["exp"]
     lib = kwargs["lib"]
     del kwargs["lib"]
+
+    libs = ["surfex", "scheduler", "experiment"]
+    for ll in libs:
+        if os.path.exists(lib + "/" + ll):
+            sys.path.insert(0, lib + "/" + ll)
+            if debug:
+                print("Set first in system path: ", lib + "/" + ll)
 
     exp = experiment.ExpFromFiles(exp, lib)
     kwargs.update({"env_submit": exp.env_submit})
@@ -132,6 +156,7 @@ def parse_status_cmd_exp(argv):
     parser.add_argument('-ecf_pass', type=str, help="ECF_PASS", required=True)
     parser.add_argument('-ecf_rid', type=str, help="ECF_RID", required=False, nargs="?", default=None)
     parser.add_argument('-submission_id', type=str, help="SUBMISSION_ID")
+    parser.add_argument('--debug', dest="debug", action="store_true", help="Debug information")
     parser.add_argument('--version', action='version', version=experiment.__version__)
 
     if len(argv) == 0:
@@ -147,10 +172,21 @@ def parse_status_cmd_exp(argv):
 
 def status_cmd_exp(**kwargs):
 
+    debug = False
+    if "debug" in kwargs:
+        debug = kwargs["debug"]
+
     exp = kwargs["exp"]
     del kwargs["exp"]
     lib = kwargs["lib"]
     del kwargs["lib"]
+
+    libs = ["surfex", "scheduler", "experiment"]
+    for ll in libs:
+        if os.path.exists(lib + "/" + ll):
+            sys.path.insert(0, lib + "/" + ll)
+            if debug:
+                print("Set first in system path: ", lib + "/" + ll)
 
     exp = experiment.ExpFromFiles(exp, lib)
     kwargs.update({"env_submit": exp.env_submit})
@@ -167,7 +203,7 @@ def parse_surfex_script(argv):
     parser = ArgumentParser("Surfex offline run script")
     parser.add_argument('action', type=str, help="Action", choices=["setup", "start", "prod", "continue", "testbed",
                                                                     "install", "climate", "co"])
-    parser.add_argument('-exp', help="Experiment name", type=str, default=None)
+    parser.add_argument('-exp_name', dest="exp", help="Experiment name", type=str, default=None)
     parser.add_argument('--wd', help="Experiment working directory", type=str, default=None)
 
     parser.add_argument('-dtg', help="DateTimeGroup (YYYYMMDDHH)", type=str, required=False, default=None)
@@ -179,16 +215,21 @@ def parse_surfex_script(argv):
     parser.add_argument("--file", type=str, default=None, required=False, help="File to checkout")
 
     # Setup variables
-    parser.add_argument('-rev', dest="rev", help="Surfex source revison", type=str, required=False,
+    parser.add_argument('-rev', dest="rev", help="Surfex experiement source revison", type=str, required=False,
                         default=None)
-    parser.add_argument('-conf', dest="conf", help="Surfex configuration", type=str, required=False,
+    parser.add_argument('-surfex', dest="pysurfex", help="Pysurfex library", type=str, required=False,
                         default=None)
+    parser.add_argument('-scheduler', dest="pysurfex_scheduler", help="Pysurfex-scheduler library", type=str,
+                        required=False, default=None)
+    parser.add_argument('-experiment', dest="pysurfex_experiment", help="Pysurfex-experiment library", type=str,
+                        required=False, default=None)
     parser.add_argument('-host', dest="host", help="Host label for setup files", type=str, required=False,
                         default=None)
     parser.add_argument('--domain_name', help="Domain name", type=str, required=False, default=None)
     parser.add_argument('--domain_file', help="Domain file", type=str, required=False, default=None)
     parser.add_argument('--config', help="Config", type=str, required=False, default=None)
     parser.add_argument('--config_file', help="Config file", type=str, required=False, default=None)
+    parser.add_argument('--debug', dest="debug", action="store_true", help="Debug information")
     parser.add_argument('--version', action='version', version=experiment.__version__)
 
     if len(argv) == 0:
@@ -204,6 +245,10 @@ def parse_surfex_script(argv):
 
 def surfex_script(**kwargs):
 
+    debug = False
+    if "debug" in kwargs:
+        debug = kwargs["debug"]
+
     action = kwargs["action"]
     exp = None
     if "exp" in kwargs:
@@ -216,9 +261,15 @@ def surfex_script(**kwargs):
     rev = None
     if "rev" in kwargs:
         rev = kwargs["rev"]
-    conf = None
-    if "conf" in kwargs:
-        conf = kwargs["conf"]
+    pysurfex = None
+    if "pysurfex" in kwargs:
+        pysurfex = kwargs["pysurfex"]
+    pysurfex_experiment = None
+    if "pysurfex_experiment" in kwargs:
+        pysurfex_experiment = kwargs["pysurfex_experiment"]
+    pysurfex_scheduler = None
+    if "pysurfex_scheduler" in kwargs:
+        pysurfex_scheduler = kwargs["pysurfex_scheduler"]
     host = kwargs["host"]
     config = None
     if "config" in kwargs:
@@ -256,10 +307,12 @@ def surfex_script(**kwargs):
         exp = wd.split("/")[-1]
         print("EXP = " + exp)
 
-    print(wd + "/pysurfex")
-    if os.path.exists(wd + "/pysurfex"):
-        sys.path.insert(0, wd + "/pysurfex")
-        print("Set first in system path: ", wd + "/pysurfex")
+    libs = ["surfex", "scheduler", "experiment"]
+    for lib in libs:
+        if os.path.exists(wd + "/" + lib):
+            sys.path.insert(0, wd + "/" + lib)
+            if debug:
+                print("Set first in system path: ", wd + "/" + lib)
 
     if action == "setup":
         # Copy files to WD from REV
@@ -267,13 +320,20 @@ def surfex_script(**kwargs):
             raise Exception("You must set REV")
         if host is None:
             raise Exception("You must set host")
-        if conf is None:
-            conf = rev
+        if pysurfex is None:
+            print("Using " + rev + " as pysurfex")
+            pysurfex = rev
+        if pysurfex_scheduler is None:
+            print("Using " + rev + " as pysurfex_scheduler")
+            pysurfex_scheduler = rev
+        if pysurfex_experiment is None:
+            print("Using " + rev + " as pysurfex_experiment")
+            pysurfex_experiment = rev
 
         experiment_is_locked = False
-        sfx_exp = experiment.Exp(exp, wd, rev, conf, experiment_is_locked, configuration=config,
-                                 configuration_file=config_file)
-        sfx_exp.setup_files(host)
+        sfx_exp = experiment.Exp(exp, wd, rev, pysurfex, pysurfex_scheduler, pysurfex_experiment, experiment_is_locked,
+                                 setup=True, host=host, configuration=config, configuration_file=config_file,
+                                 debug=debug)
 
         exp_domain_file = sfx_exp.get_file_name(wd, "domain", full_path=True)
         # print(domain_file, exp_domain_file)

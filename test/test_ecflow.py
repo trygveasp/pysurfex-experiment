@@ -1,5 +1,6 @@
 import surfex
 import experiment
+import scheduler
 import unittest
 import os
 import time
@@ -13,9 +14,11 @@ class EcflowTest(unittest.TestCase):
         argv = [
             "setup",
             "--wd", wd,
-            "-rev", surfex.__path__[0],
-            "-conf", os.getcwd(),
+            "-surfex", surfex.__path__[0],
+            "-scheduler", scheduler.__path__[0],
+            "-rev", os.getcwd(),
             "-host", "unittest",
+            "--debug",
             "--domain_file", "test/settings/conf_proj_test.json"
         ]
         kwargs = experiment.parse_surfex_script(argv)
@@ -50,7 +53,7 @@ class EcflowTest(unittest.TestCase):
         experiment.surfex_script(**kwargs)
 
         # Test if init run has synced
-        test_file = "/tmp/host1/scratch/hm_home/" + exp + "/unittest_ok"
+        test_file = "/tmp/host1/scratch/sfx_home/" + exp + "/unittest_ok"
         found = False
         for t in range(0, 15):
             print(t)
@@ -61,7 +64,7 @@ class EcflowTest(unittest.TestCase):
         if not found:
             raise FileNotFoundError(test_file + " not found!")
 
-        test_file = "/tmp/host1/scratch/hm_home/" + exp + "/SleepingBeauty"
+        test_file = "/tmp/host1/scratch/sfx_home/" + exp + "/SleepingBeauty"
         found = False
         for t in range(0, 15):
             print(t)
@@ -113,7 +116,7 @@ class EcflowTest(unittest.TestCase):
 
         argv = [
             "-exp", exp,
-            "-lib", "/tmp/host1/scratch/hm_home/" + exp + "/lib",
+            "-lib", "/tmp/host1/scratch/sfx_home/" + exp + "/lib",
             "-ecf_name", ecf_name,
             "-ecf_pass", ecf_pass,
             "-ecf_tryno", ecf_tryno,
@@ -124,10 +127,11 @@ class EcflowTest(unittest.TestCase):
         kwargs = experiment.parse_status_cmd_exp(argv)
         experiment.status_cmd_exp(**kwargs)
 
+        print("kill", argv)
         kwargs = experiment.parse_kill_cmd_exp(argv)
         experiment.kill_cmd_exp(**kwargs)
 
-        test_file = "/tmp/host1/scratch/hm_home/" + exp + "/SleepingBeauty2"
+        test_file = "/tmp/host1/scratch/sfx_home/" + exp + "/SleepingBeauty2"
         found = False
         for t in range(0, 15):
             print(t)

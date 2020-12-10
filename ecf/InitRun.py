@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 import scheduler
 import experiment
+import os
+import sys
 
 lib = "%LIB%"
 exp = "%EXP%"
 stream = "%STREAM%"
 if stream == "":
     stream = None
+
+libs = ["surfex", "scheduler", "experiment"]
+for ll in libs:
+    if os.path.exists(lib + "/" + ll):
+        sys.path.insert(0, lib + "/" + ll)
 
 # InitRun always runs from HOST0
 exp = experiment.ExpFromFiles(exp, lib)

@@ -1,4 +1,3 @@
-import sys
 import os
 from datetime import datetime, timedelta
 import scheduler
@@ -27,48 +26,31 @@ class SurfexSuite(scheduler.SuiteDefinition):
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
         # server_log = exp.get_file_name(lib, "server_log", full_path=True)
 
-        pythonpath = "export PYTHONPATH="
-        pythonpath = pythonpath + "%LIB%/pysurfex/:"
-        pythonpath = pythonpath + "" + exp.wd + "/pysurfex/:"
-        pythonpath = pythonpath + "" + exp.conf
-        if "PYTHONPATH" in os.environ:
-            pythonpath = pythonpath + ":" + os.path.expandvars(os.environ["PYTHONPATH"])
-        pythonpath = pythonpath + ";"
-
-        path = "export PATH="
-        path = path + "%LIB%/pysurfex/bin:"
-        path = path + "" + exp.wd + "/pysurfex/bin:"
-        path = path + "" + exp.conf + "/bin"
-        path = path + ":$PATH;"
-
-        ecf_job_cmd = pythonpath + " " + path + " " + \
-                                   "ECF_submit_exp " \
-                                   "-ensmbr %ENSMBR% " \
-                                   "-dtg %DTG% " + \
-                                   "-exp %EXP% " \
-                                   "-lib %LIB% " \
-                                   "-ecf_name %ECF_NAME% " \
-                                   "-ecf_tryno %ECF_TRYNO% " \
-                                   "-ecf_pass %ECF_PASS% " \
-                                   "-ecf_rid %ECF_RID%"
-        ecf_kill_cmd = pythonpath + " " + path + " " + \
-                                    "ECF_kill_exp " \
-                                    "-exp %EXP% " \
-                                    "-lib %LIB% " \
-                                    "-ecf_name %ECF_NAME%" \
-                                    "-ecf_tryno %ECF_TRYNO% " \
-                                    "-ecf_pass %ECF_PASS% " \
-                                    "-ecf_rid %ECF_RID% " \
-                                    "-submission_id %SUBMISSION_ID%"
-        ecf_status_cmd = pythonpath + " " + path + " " + \
-                                      "ECF_status_exp " \
-                                      "-exp %EXP% " \
-                                      "-lib %LIB% " \
-                                      "-ecf_name %ECF_NAME% " \
-                                      "-ecf_tryno %ECF_TRYNO% "\
-                                      "-ecf_pass %ECF_PASS% " \
-                                      "-ecf_rid %ECF_RID% " \
-                                      "-submission_id %SUBMISSION_ID%"
+        ecf_job_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_submit_exp " \
+                      "-ensmbr %ENSMBR% " \
+                      "-dtg %DTG% " + \
+                      "-exp %EXP% " \
+                      "-lib %LIB% " \
+                      "-ecf_name %ECF_NAME% " \
+                      "-ecf_tryno %ECF_TRYNO% " \
+                      "-ecf_pass %ECF_PASS% " \
+                      "-ecf_rid %ECF_RID%"
+        ecf_kill_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_kill_exp " \
+                       "-exp %EXP% " \
+                       "-lib %LIB% " \
+                       "-ecf_name %ECF_NAME% " \
+                       "-ecf_tryno %ECF_TRYNO% " \
+                       "-ecf_pass %ECF_PASS% " \
+                       "-ecf_rid %ECF_RID% " \
+                       "-submission_id %SUBMISSION_ID%"
+        ecf_status_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_status_exp " \
+                         "-exp %EXP% " \
+                         "-lib %LIB% " \
+                         "-ecf_name %ECF_NAME% " \
+                         "-ecf_tryno %ECF_TRYNO% "\
+                         "-ecf_pass %ECF_PASS% " \
+                         "-ecf_rid %ECF_RID% " \
+                         "-submission_id %SUBMISSION_ID%"
 
         scheduler.SuiteDefinition.__init__(self, suite_name, def_file, joboutdir, ecf_files, env_submit,
                                            server_config, server_log,
@@ -76,8 +58,7 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                            ecf_jobout=ecf_jobout,
                                            ecf_job_cmd=ecf_job_cmd,
                                            ecf_status_cmd=ecf_status_cmd,
-                                           ecf_kill_cmd=ecf_kill_cmd,
-                                           pythonpath=pythonpath, path=path)
+                                           ecf_kill_cmd=ecf_kill_cmd)
 
         self.suite.ecf_node.add_variable("LIB", lib)
         self.suite.ecf_node.add_variable("EXP", exp.name)
@@ -356,48 +337,31 @@ class UnitTestSuite(scheduler.SuiteDefinition):
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
         # server_log = exp.get_file_name(lib, "server_log", full_path=True)
 
-        pythonpath = "export PYTHONPATH="
-        pythonpath = pythonpath + "%LIB%/pysurfex/:"
-        pythonpath = pythonpath + "" + exp.wd + "/pysurfex/:"
-        pythonpath = pythonpath + "" + exp.conf
-        if "PYTHONPATH" in os.environ:
-            pythonpath = pythonpath + ":" + os.path.expandvars(os.environ["PYTHONPATH"])
-        pythonpath = pythonpath + ";"
-
-        path = "export PATH="
-        path = path + "%LIB%/pysurfex/bin:"
-        path = path + "" + exp.wd + "/pysurfex/bin:"
-        path = path + "" + exp.conf + "/bin"
-        path = path + ":$PATH;"
-
-        ecf_job_cmd = pythonpath + " " + path + " " + \
-                                   "ECF_submit_exp " \
-                                   "-ensmbr %ENSMBR% " \
-                                   "-dtg %DTG% " + \
-                                   "-exp %EXP% " \
-                                   "-lib %LIB% " \
-                                   "-ecf_name %ECF_NAME% " \
-                                   "-ecf_tryno %ECF_TRYNO% " \
-                                   "-ecf_pass %ECF_PASS% " \
-                                   "-ecf_rid %ECF_RID%"
-        ecf_kill_cmd = pythonpath + " " + path + " " + \
-                                    "ECF_kill_exp " \
-                                    "-exp %EXP% " \
-                                    "-lib %LIB% " \
-                                    "-ecf_name %ECF_NAME%" \
-                                    "-ecf_tryno %ECF_TRYNO% " \
-                                    "-ecf_pass %ECF_PASS% " \
-                                    "-ecf_rid %ECF_RID% " \
-                                    "-submission_id %SUBMISSION_ID%"
-        ecf_status_cmd = pythonpath + " " + path + " " + \
-                                      "ECF_status_exp " \
-                                      "-exp %EXP% " \
-                                      "-lib %LIB% " \
-                                      "-ecf_name %ECF_NAME% " \
-                                      "-ecf_tryno %ECF_TRYNO% "\
-                                      "-ecf_pass %ECF_PASS% " \
-                                      "-ecf_rid %ECF_RID% " \
-                                      "-submission_id %SUBMISSION_ID%"
+        ecf_job_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_submit_exp " \
+                      "-ensmbr %ENSMBR% " \
+                      "-dtg %DTG% " + \
+                      "-exp %EXP% " \
+                      "-lib %LIB% " \
+                      "-ecf_name %ECF_NAME% " \
+                      "-ecf_tryno %ECF_TRYNO% " \
+                      "-ecf_pass %ECF_PASS% " \
+                      "-ecf_rid %ECF_RID%"
+        ecf_kill_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_kill_exp " \
+                       "-exp %EXP% " \
+                       "-lib %LIB% " \
+                       "-ecf_name %ECF_NAME% " \
+                       "-ecf_tryno %ECF_TRYNO% " \
+                       "-ecf_pass %ECF_PASS% " \
+                       "-ecf_rid %ECF_RID% " \
+                       "-submission_id %SUBMISSION_ID%"
+        ecf_status_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_status_exp " \
+                         "-exp %EXP% " \
+                         "-lib %LIB% " \
+                         "-ecf_name %ECF_NAME% " \
+                         "-ecf_tryno %ECF_TRYNO% "\
+                         "-ecf_pass %ECF_PASS% " \
+                         "-ecf_rid %ECF_RID% " \
+                         "-submission_id %SUBMISSION_ID%"
 
         scheduler.SuiteDefinition.__init__(self, suite_name, def_file, joboutdir, ecf_files, env_submit,
                                            server_config, server_log,
@@ -405,8 +369,7 @@ class UnitTestSuite(scheduler.SuiteDefinition):
                                            ecf_jobout=ecf_jobout,
                                            ecf_job_cmd=ecf_job_cmd,
                                            ecf_status_cmd=ecf_status_cmd,
-                                           ecf_kill_cmd=ecf_kill_cmd,
-                                           pythonpath=pythonpath, path=path)
+                                           ecf_kill_cmd=ecf_kill_cmd)
 
         self.suite.ecf_node.add_variable("LIB", lib)
         self.suite.ecf_node.add_variable("EXP", exp.name)

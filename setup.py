@@ -87,6 +87,7 @@ setup(
         "pysurfex",
         "pysurfex-scheduler",
         "toml",
+        "tomlkit",
         "datetime",
         "json; python_version < '3'"
     ],

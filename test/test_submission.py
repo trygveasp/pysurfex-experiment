@@ -14,9 +14,11 @@ class TestSubmit(unittest.TestCase):
         argv = [
             "setup",
             "--wd", wd,
-            "-rev", surfex.__path__[0],
-            "-conf", os.getcwd(),
+            "-surfex", surfex.__path__[0],
+            "-scheduler", scheduler.__path__[0],
+            "-rev", os.getcwd(),
             "-host", "unittest",
+            "--debug",
             "--domain_file", "test/settings/conf_proj_test.json"
         ]
         kwargs = experiment.parse_surfex_script(argv)

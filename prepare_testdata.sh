@@ -32,9 +32,9 @@ mkdir -p /tmp/host1/testdata/input_paths/oro_dir
 touch /tmp/host1/testdata/input_paths/oro_dir/gmted2010.dir
 touch /tmp/host1/testdata/input_paths/oro_dir/gmted2010.hdr
 
-rm -f /tmp/host1/scratch/hm_home/test_start_and_run/unittest_ok
-mkdir -p /tmp/host1/scratch/hm_home/prep_task/climate
-touch /tmp/host1/scratch/hm_home/prep_task/climate/PGD.nc
-mkdir -p /tmp/host1/scratch/hm_home/quality_control_sd_task/archive/2020/11/13/06/
-cp testdata/unittest_FirstGuess4gridpp_grib2.nc /tmp/host1/scratch/hm_home/quality_control_sd_task/archive/2020/11/13/06/raw.nc
+rm -f /tmp/host1/scratch/sfx_home/test_start_and_run/unittest_ok
+mkdir -p /tmp/host1/scratch/sfx_home/prep_task/climate
+touch /tmp/host1/scratch/sfx_home/prep_task/climate/PGD.nc
+mkdir -p /tmp/host1/scratch/sfx_home/quality_control_sd_task/archive/2020/11/13/06/
+cp testdata/unittest_FirstGuess4gridpp_grib2.nc /tmp/host1/scratch/sfx_home/quality_control_sd_task/archive/2020/11/13/06/raw.nc
 

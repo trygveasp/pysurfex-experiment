@@ -10,5 +10,5 @@
   "ecoclimap_bin_dir": "/tmp/host1/testdata/input_paths/ecoclimap_bin_dir",
   "oro_dir": "/tmp/host1/testdata/input_paths/oro_dir",
   "obs_dir": "/tmp/host1/testdata/",
-  "bin_dir": "@SFX_EXP_LIB@/pysurfex/test/bin"
+  "bin_dir": "@SFX_EXP_LIB@/experiment/test/bin"
 }

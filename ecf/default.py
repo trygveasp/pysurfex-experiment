@@ -1,5 +1,7 @@
 import scheduler
 import experiment
+import os
+import sys
 
 host = "@HOST_TO_BE_SUBSTITUTED@"
 wrapper = "@WRAPPER_TO_BE_SUBSTITUTED@"
@@ -14,6 +16,11 @@ if stream == "":
     stream = None
 if mbr == "" or int(mbr) < 0:
     mbr = None
+
+libs = ["surfex", "scheduler", "experiment"]
+for ll in libs:
+    if os.path.exists(lib + "/" + ll):
+        sys.path.insert(0, lib + "/" + ll)
 
 progress = {"DTG": dtg, "DTGBEG": dtgbeg}
 progress_pp = {"DTGPP": dtg}
@@ -34,9 +41,9 @@ if args == "":
 task = scheduler.EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid, submission_id)
 
 # Dummy commands to try out your self
-print("%LIB%/pysurfex/bin/ECF_status %EXP% %LIB% %ECF_NAME% %ECF_TRYNO% %ECF_PASS% " +
+print("%LIB%/bin/ECF_status_exp %EXP% %LIB% %ECF_NAME% %ECF_TRYNO% %ECF_PASS% " +
       "-ecf_rid %ECF_RID% -submission_id %SUBMISSION_ID%")
-print("%LIB%/pysurfex/bin/ECF_kill %EXP% %LIB% %ECF_NAME% %ECF_TRYNO% %ECF_PASS% " +
+print("%LIB%/bin/ECF_kill_exp %EXP% %LIB% %ECF_NAME% %ECF_TRYNO% %ECF_PASS% " +
       "-ecf_rid %ECF_RID% -submission_id %SUBMISSION_ID%")
 
 # This will also handle call to sys.exit(), i.e. Client.__exit__ will still be called.

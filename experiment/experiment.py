@@ -6,9 +6,8 @@ from datetime import datetime, timedelta
 import sys
 import shutil
 import tomlkit
+import toml
 import json
-# import math
-from distutils.dir_util import copy_tree
 sys.path.insert(0, "/usr/lib/python3/dist-packages/")
 
 
@@ -88,68 +87,31 @@ class SystemFromFile(System):
 
 
 class Exp(object):
-    def __init__(self, name, wdir, rev, conf, experiment_is_locked, system_file_paths=None, system=None, server=None,
-                 configuration=None, configuration_file=None, geo=None, env_submit=None,  write_config_files=False,
-                 progress=None):
+    def __init__(self, name, wdir, rev, pysurfex, pysurfex_scheduler, pysurfex_experiment, experiment_is_locked,
+                 system_file_paths=None, system=None, server=None, geo=None, env_submit=None, progress=None,
+                 setup=False, host=None, configuration=None, configuration_file=None, debug=False):
 
         self.name = name
         self.wd = wdir
         self.rev = rev
-        self.conf = conf
+        self.pysurfex = pysurfex
+        self.pysurfex_scheduler = pysurfex_scheduler
+        self.pysurfex_experiment = pysurfex_experiment
         self.experiment_is_locked = experiment_is_locked
         self.system = system
         self.server = server
         self.env_submit = env_submit
         self.system_file_paths = system_file_paths
         self.progress = progress
+        self.debug = debug
 
-        # Check existence of needed config files
-        config = Exp.get_config(self.wd, self.conf)
-        c_files = config["config_files"]
-        config_files = {}
-        for f in c_files:
-            lfile = self.wd + "/config/" + f
-            rfile = self.conf + "/experiment/config/" + f
-
-            if os.path.exists(lfile):
-                # print("lfile", lfile)
-                toml_dict = surfex.toml_load(lfile)
-            else:
-                if os.path.exists(rfile):
-                    # print("rfile", rfile)
-                    toml_dict = surfex.toml_load(rfile)
-                else:
-                    raise Exception("No config file found for " + f)
-
-            config_files.update({
-                f: {
-                    "toml": toml_dict,
-                    "blocks": config[f]["blocks"]
-                }
-            })
-        self.config_files = config_files
-
-        do_merge = False
-        conf = None
-        if configuration is not None:
-            print("Using configuration ", configuration)
-            conf = self.wd + "/config/configurations/" + configuration.lower() + ".toml"
-            if not os.path.exists(conf):
-                conf = self.conf + "/experiment/config/configurations/" + configuration.lower() + ".toml"
-            print("Configuration file ", configuration_file)
-        elif configuration_file is not None:
-            print("Using configuration from file ", configuration_file)
-            conf = configuration_file
-
-        if conf is not None:
-            write_config_files = True
-            do_merge = True
-            if not os.path.exists(conf):
-                raise Exception("Can not find configuration " + configuration + " in: " + conf)
-            configuration = surfex.toml_load(conf)
-
-        if do_merge:
-            self.merge_to_toml_config_files(configuration=configuration, write_config_files=write_config_files)
+        if setup:
+            if host is None:
+                raise Exception("Setup need host name set!")
+            self.config_files = None
+            self.setup_files(host, configuration=configuration, configuration_file=configuration_file)
+        else:
+            self.config_files = self.get_config_files()
 
         # Merge config
         all_merged_settings = surfex.merge_toml_env_from_config_dicts(self.config_files)
@@ -167,24 +129,32 @@ class Exp(object):
             if os.path.exists(self.rev + "/" + file):
                 dirname = os.path.dirname(self.wd + "/" + file)
                 os.makedirs(dirname, exist_ok=True)
-                shutil.copy2(self.rev + "/experiment/" + file, self.wd + "/" + file)
+                shutil.copy2(self.rev + "/" + file, self.wd + "/" + file)
                 print("Checked out file: " + file)
             else:
                 print("File was not found: " + self.rev + "/" + file)
 
-    def setup_files(self, host):
+    def setup_files(self, host, configuration=None, configuration_file=None):
 
         rev_file = Exp.get_file_name(self.wd, "rev", full_path=True)
-        conf_file = Exp.get_file_name(self.wd, "conf", full_path=True)
+        pysurfex_file = Exp.get_file_name(self.wd, "pysurfex", full_path=True)
+        pysurfex_scheduler_file = Exp.get_file_name(self.wd, "pysurfex_scheduler", full_path=True)
+        pysurfex_experiment_file = Exp.get_file_name(self.wd, "pysurfex_experiment", full_path=True)
         open(rev_file, "w").write(self.rev + "\n")
-        open(conf_file, "w").write(self.conf + "\n")
-        print("rev", self.rev, rev_file, "conf", self.conf, conf_file)
+        open(pysurfex_file, "w").write(self.pysurfex + "\n")
+        open(pysurfex_scheduler_file, "w").write(self.pysurfex_scheduler + "\n")
+        open(pysurfex_experiment_file, "w").write(self.pysurfex_experiment + "\n")
+        print("rev: " + self.rev + " stored in:" + rev_file)
+        print("pysurfex: " + self.pysurfex + " stored in:" + pysurfex_file)
+        print("pysurfex_scheduler: " + self.pysurfex_scheduler + " stored in:" + pysurfex_scheduler_file)
+        print("pysurfex_experiment: " + self.pysurfex_experiment + " stored in:" + pysurfex_experiment_file)
 
         env_system = Exp.get_file_name(self.wd, "system", full_path=False)
         env = Exp.get_file_name(self.wd, "env", full_path=False)
         env_submit = Exp.get_file_name(self.wd, "submit", full_path=False)
         env_server = Exp.get_file_name(self.wd, "server", full_path=False)
         input_paths = Exp.get_file_name(self.wd, "input_paths", full_path=False)
+
         # Create needed system files
         system_files = {
             env_system: "",
@@ -201,103 +171,203 @@ class Exp(object):
             input_paths: "config/input_paths/" + host + ".json",
         })
 
+        fetched = []
+        revs = [self.rev, self.pysurfex_experiment]
         for key in system_files:
+            for rev in revs:
+                lfile = self.wd + "/" + system_files[key]
+                rfile = rev + "/" + system_files[key]
+                dirname = os.path.dirname(lfile)
+                print(rfile, lfile)
+                print(dirname)
+                os.makedirs(dirname, exist_ok=True)
+                if os.path.exists(lfile):
+                    if lfile not in fetched:
+                        print("System file " + lfile + " already exists, is not fetched again from " + rev)
+                else:
+                    if os.path.exists(rfile) and lfile != rfile:
+                        print("Copy " + rfile + " to " + lfile)
+                        shutil.copy2(rfile, lfile)
+                        fetched.append(lfile)
 
             target = self.wd + "/" + key
             lfile = self.wd + "/" + system_files[key]
-            rfile = self.conf + "/experiment/" + system_files[key]
-            dirname = os.path.dirname(lfile)
-            os.makedirs(dirname, exist_ok=True)
-            if os.path.exists(lfile):
-                print("System file " + lfile + " already exists, is not fetched again")
+            if os.path.islink(target):
+                if target not in fetched:
+                    print("System target file " + target + " already exists")
             else:
-                shutil.copy2(rfile, lfile)
-            if os.path.exists(target):
-                print("System target file " + lfile + " already exists, is not fetched again")
-            else:
-                os.symlink(system_files[key], target)
+                os.symlink(lfile, target)
+                fetched.append(target)
 
         self.env_submit = json.load(open(self.wd + "/Env_submit", "r"))
 
-        plib = self.wd + "/pysurfex"
+        # Set up pysurfex_experiment
+        print("Set up experiment from ", revs)
         config_dirs = ["experiment", "bin"]
-        for cdir in config_dirs:
-            if not os.path.exists(plib + "/" + cdir):
-                print("Copy " + cdir + " from " + self.conf)
-                shutil.copytree(self.conf + "/" + cdir, plib + "/" + cdir,
-                                ignore=shutil.ignore_patterns("config", "ecf", "nam", "toml"))
-            else:
-                print(cdir + " already exists in " + self.wd + "/pysurfex")
-
-        plib = self.wd + "/pysurfex"
-        config_dirs = ["surfex"]
-        for cdir in config_dirs:
-            if not os.path.exists(plib + "/" + cdir):
-                print("Copy " + cdir + " from " + self.rev)
-                shutil.copytree(self.rev, plib + "/" + cdir)
-            else:
-                print(cdir + " already exists in " + self.wd + "/pysurfex")
+        for rev in revs:
+            for cdir in config_dirs:
+                os.makedirs(self.wd + "/" + cdir, exist_ok=True)
+                files = [f for f in os.listdir(rev + "/" + cdir)
+                         if os.path.isfile(os.path.join(rev + "/" + cdir, f))]
+                for f in files:
+                    lfile = self.wd + "/" + cdir + "/" + f
+                    rfile = rev + "/" + cdir + "/" + f
+                    dirname = os.path.dirname(lfile)
+                    os.makedirs(dirname, exist_ok=True)
+                    if not os.path.exists(lfile):
+                        if os.path.exists(rfile) and lfile != rfile:
+                            # print("Copy " + rfile + " to " + lfile)
+                            shutil.copy2(rfile, lfile)
+                            fetched.append(lfile)
+                    else:
+                        if lfile not in fetched:
+                            print(lfile + " already exists, is not fetched again from " + rev)
 
         # Check existence of needed config files
-        local_config = self.wd + "/config/config.toml"
-        rev_config = self.conf + "/experiment/config/config.toml"
-        config = surfex.toml_load(rev_config)
-        c_files = config["config_files"]
-        if os.path.exists(local_config):
-            config = surfex.toml_load(local_config)
-            c_files = config["config_files"]
+        config_file = self.wd + "/config/config.toml"
+        os.makedirs(self.wd + "/config/", exist_ok=True)
+        for rev in revs:
+            lfile = config_file
+            rfile = rev + "/config/config.toml"
+            if not os.path.exists(lfile):
+                if os.path.exists(rfile) and lfile != rfile:
+                    print("Copy " + rfile + " to " + lfile)
+                    shutil.copy2(rfile, lfile)
+                    fetched.append(lfile)
+            else:
+                if lfile not in fetched:
+                    print(lfile + " already exists, is not fetched again from " + rev)
 
-        config_files = []
+        c_files = toml.load(open(config_file, "r"))["config_files"]
+        for rev in [self.pysurfex] + revs:
+            cfg = "/config/"
+            if rev == self.pysurfex:
+                cfg = "/cfg/"
+            config_files = []
+            os.makedirs(self.wd + "/config/", exist_ok=True)
+            for f in c_files:
+                lfile = self.wd + "/config/" + f
+                config_files.append(lfile)
+                os.makedirs(self.wd + "/config", exist_ok=True)
+                rfile = rev + cfg + f
+                if not os.path.exists(lfile):
+                    if self.debug:
+                        print(rfile, lfile)
+                    if os.path.exists(rfile) and lfile != rfile:
+                        print("Copy " + rfile + " -> " + lfile)
+                        shutil.copy2(rfile, lfile)
+                        fetched.append(lfile)
+                else:
+                    if lfile not in fetched:
+                        print("Config file " + lfile + " already exists, is not fetched again from " + rev)
+
         for f in c_files:
             lfile = self.wd + "/config/" + f
-            config_files.append(lfile)
-            os.makedirs(self.wd + "/config", exist_ok=True)
-            rfile = self.conf + "/experiment/config/" + f
             if not os.path.exists(lfile):
-                # print(rfile, lfile)
-                shutil.copy2(rfile, lfile)
-            else:
-                print("Config file " + lfile + " already exists, is not fetched again")
+                raise Exception("Config file not found ", lfile)
 
+        conf = None
+        if configuration is not None:
+            print("Using configuration ", configuration)
+            conf = self.wd + "/config/configurations/" + configuration.lower() + ".toml"
+            if not os.path.exists(conf):
+                conf = self.pysurfex_experiment + "/config/configurations/" + configuration.lower() + ".toml"
+            print("Configuration file ", configuration_file)
+        elif configuration_file is not None:
+            print("Using configuration from file ", configuration_file)
+            conf = configuration_file
+
+        self.config_files = self.get_config_files()
+        if conf is not None:
+            if not os.path.exists(conf):
+                raise Exception("Can not find configuration " + configuration + " in: " + conf)
+            configuration = surfex.toml_load(conf)
+            self.merge_to_toml_config_files(configuration=configuration, write_config_files=True)
+
+        print("Set up domains from ", revs)
         dirs = ["config/domains"]
         # Copy dirs
         for dir_path in dirs:
             os.makedirs(self.wd + "/" + dir_path, exist_ok=True)
-            files = [f for f in os.listdir(self.conf + "/experiment/" + dir_path)
-                     if os.path.isfile(os.path.join(self.conf + "/experiment/" + dir_path, f))]
-            for f in files:
-                print("f", f)
-                fname = self.wd + "/" + dir_path + "/" + f
-                rfname = self.conf + "/experiment/" + dir_path + "/" + f
-                if not os.path.exists(fname):
-                    print("Copy " + rfname + " -> " + fname)
-                    shutil.copy2(rfname, fname)
+            for rev in revs:
+                files = [f for f in os.listdir(rev + "/" + dir_path)
+                         if os.path.isfile(os.path.join(rev + "/" + dir_path, f))]
 
-        # ECF_submit exceptions
-        f = "config/submit/submission.json"
-        fname = self.wd + "/" + f
-        rfname = self.conf + "/experiment/" + f
-        if not os.path.exists(fname):
-            print("Copy " + rfname + " -> " + fname)
-            shutil.copy2(rfname, fname)
+                for f in files:
+                    lfile = self.wd + "/" + dir_path + "/" + f
+                    rfile = rev + "/" + dir_path + "/" + f
+                    if not os.path.exists(lfile):
+                        if self.debug:
+                            print(rfile, lfile)
+                        if os.path.exists(rfile) and lfile != rfile:
+                            if self.debug:
+                                print("Copy " + rfile + " -> " + lfile)
+                            shutil.copy2(rfile, lfile)
+                            fetched.append(lfile)
+                    else:
+                        if lfile not in fetched:
+                            print(lfile + " already exists, is not fetched again from " + rev)
 
+        print("Set up submission exceptions from ", revs)
+        for rev in revs:
+            # ECF_submit exceptions
+            f = "config/submit/submission.json"
+            lfile = self.wd + "/" + f
+            rfile = rev + "/" + f
+            if not os.path.exists(lfile):
+                if os.path.exists(rfile) and lfile != rfile:
+                    if self.debug:
+                        print("Copy " + rfile + " -> " + lfile)
+                    shutil.copy2(rfile, lfile)
+                    fetched.append(lfile)
+            else:
+                if lfile not in fetched:
+                    print(lfile + " already exists, is not fetched again from " + rev)
+
+        print("Set up ecflow default containers from ", revs)
         # Init run
         files = ["ecf/InitRun.py", "ecf/default.py"]
         os.makedirs(self.wd + "/ecf", exist_ok=True)
-        for f in files:
-            fname = self.wd + "/" + f
-            rfname = self.conf + "/experiment/" + f
-            if not os.path.exists(fname):
-                print("Copy " + rfname + " -> " + fname)
-                shutil.copy2(rfname, fname)
+        for rev in revs:
+            for f in files:
+                lfile = self.wd + "/" + f
+                rfile = rev + "/" + f
+                if not os.path.exists(lfile):
+                    if self.debug:
+                        print(rfile, lfile)
+                    if os.path.exists(rfile) and lfile != rfile:
+                        if self.debug:
+                            print("Copy " + rfile + " -> " + lfile)
+                        shutil.copy2(rfile, lfile)
+                        fetched.append(lfile)
+                else:
+                    if lfile not in fetched:
+                        print(lfile + " already exists, is not fetched again from " + rev)
 
-        exp_dirs = ["nam", "toml"]
-        for exp_dir in exp_dirs:
-            rdir = self.conf + "/experiment/" + exp_dir
-            ldir = self.wd + "/" + exp_dir
-            print("Copy " + rdir + " -> " + ldir)
-            # shutil.copytree(rdir, ldir)
-            copy_tree(rdir, ldir)
+        print("Copy namelists from ", revs)
+        exp_dirs = ["nam"]
+        for rev in revs:
+            for exp_dir in exp_dirs:
+                os.makedirs(self.wd + "/" + exp_dir, exist_ok=True)
+                rdir = rev + "/" + exp_dir
+                ldir = self.wd + "/" + exp_dir
+                files = [f for f in os.listdir(rev + "/" + exp_dir)
+                         if os.path.isfile(os.path.join(rev + "/" + exp_dir, f))]
+                for f in files:
+                    lfile = ldir + "/" + f
+                    rfile = rdir + "/" + f
+                    dirname = os.path.dirname(lfile)
+                    os.makedirs(dirname, exist_ok=True)
+                    if not os.path.exists(lfile):
+                        if os.path.exists(rfile) and lfile != rfile:
+                            if self.debug:
+                                print("Copy " + rfile + " -> " + lfile)
+                            # shutil.copytree(rdir, ldir)
+                            shutil.copy2(rfile, lfile)
+                            fetched.append(lfile)
+                    else:
+                        if lfile not in fetched:
+                            print(lfile + " already exists, is not fetched again from " + rev)
 
     def merge_testbed_submit(self, testbed_submit, decomposition="2D"):
         if os.path.exists(testbed_submit):
@@ -357,7 +427,7 @@ class Exp(object):
 
     @staticmethod
     def get_file_name(wd, ftype, full_path=False, stream=None):
-        if ftype == "rev" or ftype == "conf":
+        if ftype == "rev" or ftype == "pysurfex" or ftype == "pysurfex_experiment" or ftype == "pysurfex_scheduler":
             f = ftype
         elif ftype == "submit":
             f = "Env_submit"
@@ -387,16 +457,19 @@ class Exp(object):
             return f
 
     @staticmethod
-    def get_config(wdir, conf):
+    def get_config(wdir, pysurfex_experiment, must_exists=True):
         # Check existence of needed config files
         local_config = wdir + "/config/config.toml"
-        rev_config = conf + "/experiment/config/config.toml"
+        exp_config = pysurfex_experiment + "/config/config.toml"
         if os.path.exists(local_config):
-            c_files = surfex.toml_load(local_config)
-        elif os.path.exists(rev_config):
-            c_files = surfex.toml_load(rev_config)
+            c_files = toml.load(open(local_config, "r"))
+        elif os.path.exists(exp_config):
+            c_files = toml.load(open(exp_config, "r"))
         else:
-            raise Exception("No config found in " + wdir + " or " + conf)
+            if must_exists:
+                raise Exception("No config found in " + local_config + " or " + exp_config)
+            else:
+                c_files = None
         return c_files
 
     @staticmethod
@@ -410,12 +483,37 @@ class Exp(object):
             experiment_is_locked_file = wdir + "/" + experiment_is_locked_file
         return experiment_is_locked_file
 
+    def get_config_files(self):
+
+        # Check existence of needed config files
+        config_file = self.wd + "/config/config.toml"
+        config = toml.load(open(config_file, "r"))
+        c_files = config["config_files"]
+        config_files = {}
+        for f in c_files:
+            lfile = self.wd + "/config/" + f
+            if os.path.exists(lfile):
+                # print("lfile", lfile)
+                toml_dict = surfex.toml_load(lfile)
+            else:
+                raise Exception("No config file found for " + lfile)
+
+            config_files.update({
+                f: {
+                    "toml": toml_dict,
+                    "blocks": config[f]["blocks"]
+                }
+            })
+        return config_files
+
 
 class ExpFromFiles(Exp):
-    def __init__(self, name, wdir, stream=None, host="0", progress=None):
+    def __init__(self, name, wdir, stream=None, host="0", progress=None, debug=False):
 
         rev_file = Exp.get_file_name(wdir, "rev", full_path=True)
-        conf_file = Exp.get_file_name(wdir, "conf", full_path=True)
+        pysurfex_file = Exp.get_file_name(wdir, "pysurfex", full_path=True)
+        scheduler_file = Exp.get_file_name(wdir, "pysurfex_scheduler", full_path=True)
+        experiment_file = Exp.get_file_name(wdir, "pysurfex_experiment", full_path=True)
         env_submit_file = Exp.get_file_name(wdir, "submit", full_path=True)
 
         # print(rev_file)
@@ -424,10 +522,20 @@ class ExpFromFiles(Exp):
         else:
             raise FileNotFoundError(rev_file)
 
-        if os.path.exists(conf_file):
-            conf = open(conf_file, "r").read().rstrip()
+        if os.path.exists(pysurfex_file):
+            pysurfex = open(pysurfex_file, "r").read().rstrip()
         else:
-            raise FileNotFoundError(rev_file)
+            raise FileNotFoundError(pysurfex_file)
+
+        if os.path.exists(scheduler_file):
+            pysurfex_scheduler = open(scheduler_file, "r").read().rstrip()
+        else:
+            raise FileNotFoundError(pysurfex_file)
+
+        if os.path.exists(experiment_file):
+            pysurfex_experiment = open(experiment_file, "r").read().rstrip()
+        else:
+            raise FileNotFoundError(experiment_file)
 
         # Check existence of needed system files
         system_files = {
@@ -442,7 +550,7 @@ class ExpFromFiles(Exp):
             if not os.path.exists(target):
                 raise Exception("System target file is missing " + target)
 
-        c_files = Exp.get_config(wdir, conf)["config_files"]
+        c_files = Exp.get_config(wdir, pysurfex_experiment)["config_files"]
         config_files = []
         for f in c_files:
             lfile = wdir + "/config/" + f
@@ -481,7 +589,8 @@ class ExpFromFiles(Exp):
             progress = ProgressFromFile(self.get_file_name(wdir, "progress", full_path=True),
                                         self.get_file_name(wdir, "progressPP", full_path=True))
 
-        Exp.__init__(self, name, wdir, rev, conf, experiment_is_locked, system_file_paths=system_file_paths,
+        Exp.__init__(self, name, wdir, rev, pysurfex, pysurfex_scheduler, pysurfex_experiment, experiment_is_locked,
+                     system_file_paths=system_file_paths, debug=debug,
                      system=system, server=server, env_submit=env_submit, geo=geo, progress=progress)
 
     def set_experiment_is_locked(self, stream=None):
@@ -722,40 +831,47 @@ def init_run(exp, stream=None):
     if host_name0 != "":
         host_name0 = os.environ["USER"] + "@" + host_name0 + ":"
 
-    # Sync CONF to LIB0
+    # Sync pysurfex to LIB0
     if not exp.experiment_is_locked:
-        os.makedirs(lib0 + "/pysurfex", exist_ok=True)
-        dirs = ["experiment", "bin", "test"]
+        dirs = ["surfex", "bin"]
         for d in dirs:
-            cmd = rsync + " " + exp.conf + "/" + d + "/ " + host_name0 + lib0 + "/pysurfex/" + d + \
-                  " --exclude=.git --exclude=nam --exclude=toml --exclude=config --exclude=ecf " + \
-                  "--exclude=__pycache__ --exclude='*.pyc'"
-            print(cmd)
-            ret = subprocess.call(cmd, shell=True)
-            if ret != 0:
-                raise Exception
+            os.makedirs(lib0 + "/" + d, exist_ok=True)
 
-        dirs = ["nam", "toml", "config", "ecf"]
-        for d in dirs:
-            cmd = rsync + " " + exp.conf + "/experiment/" + d + "/ " + host_name0 + lib0 + "/" + d + \
-                  " --exclude=.git --exclude=__pycache__ --exclude='*.pyc'"
+            cmd = rsync + " " + exp.pysurfex + "/ " + host_name0 + lib0 + "/" + d + \
+                          " --exclude=.git --exclude=nam --exclude=toml --exclude=config --exclude=ecf " + \
+                          "--exclude=__pycache__ --exclude='*.pyc'"
             print(cmd)
             ret = subprocess.call(cmd, shell=True)
             if ret != 0:
-                raise Exception
+                raise Exception(cmd + " failed!")
     else:
-        print("Not resyncing CONF as experiment is locked")
+        print("Not resyncing " + exp.pysurfex + " as experiment is locked")
+
+    # Sync pysurfex_experiment to LIB0
+    if not exp.experiment_is_locked:
+        dirs = ["experiment", "nam", "toml", "config", "ecf"]
+        for d in dirs:
+            os.makedirs(lib0 + "/" + d, exist_ok=True)
+            cmd = rsync + " " + exp.pysurfex_experiment + "/ " + host_name0 + lib0 + "/" + d + \
+                          " --exclude=.git --exclude=__pycache__ --exclude='*.pyc'"
+            print(cmd)
+            ret = subprocess.call(cmd, shell=True)
+            if ret != 0:
+                raise Exception(cmd + " failed!")
+    else:
+        print("Not resyncing " + exp.pysurfex_experiment + " as experiment is locked")
 
     # Sync REV to LIB0
     if not exp.experiment_is_locked:
         if rev != wd:
             # print(host_name0)
             # print(lib0)
-            cmd = rsync + " " + rev + "/ " + host_name0 + lib0 + "/pysurfex --exclude=.git --exclude=.idea --exclude=__pycache__ --exclude='*.pyc'"
+            cmd = rsync + " " + rev + "/ " + host_name0 + lib0 + \
+                  " --exclude=.git --exclude=.idea --exclude=__pycache__ --exclude='*.pyc'"
             print(cmd)
             ret = subprocess.call(cmd, shell=True)
             if ret != 0:
-                raise Exception
+                raise Exception(cmd + " failed!")
         else:
             print("REV == WD. No syncing needed")
     else:
@@ -764,7 +880,8 @@ def init_run(exp, stream=None):
     # Sync WD to LIB
     # Always sync WD unless it is not same as SFX_EXP_LIB
     if wd != lib0:
-        cmd = rsync + " " + wd + "/ " + host_name0 + lib0 + " --exclude=.git --exclude=.idea --exclude=__pycache__ --exclude='*.pyc'"
+        cmd = rsync + " " + wd + "/ " + host_name0 + lib0 + \
+              " --exclude=.git --exclude=.idea --exclude=__pycache__ --exclude='*.pyc'"
         print(cmd)
         ret = subprocess.call(cmd, shell=True)
         if ret != 0:

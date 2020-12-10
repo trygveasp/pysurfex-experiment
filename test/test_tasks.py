@@ -27,14 +27,16 @@ class TaskTest(unittest.TestCase):
         self.args = None
 
     @staticmethod
-    def _create_exp(wd):
+    def _create_exp(wd, rev):
         os.makedirs(wd, exist_ok=True)
         argv = [
             "setup",
             "--wd", wd,
-            "-rev", surfex.__path__[0],
-            "-conf", os.getcwd(),
+            "-surfex", surfex.__path__[0],
+            "-scheduler", scheduler.__path__[0],
+            "-rev", rev,
             "-host", "unittest",
+            "--debug",
             "--domain_file", "test/settings/conf_proj_test.json"
         ]
         kwargs = experiment.parse_surfex_script(argv)
@@ -44,10 +46,10 @@ class TaskTest(unittest.TestCase):
         exp_name = "pgd"
         root = os.getcwd()
         wd = "/tmp/host0/hm_wd/" + exp_name
-        self._create_exp(wd)
-        exp = experiment.ExpFromFiles(exp_name, wd)
+        self._create_exp(wd, root)
+        exp = experiment.ExpFromFiles(exp_name, wd, debug=True)
         experiment.init_run(exp, self.stream)
-        wd = "/tmp/host1/scratch/hm_home/" + exp_name + "/lib"
+        wd = "/tmp/host1/scratch/sfx_home/" + exp_name + "/lib"
 
         exp = experiment.ExpFromFiles(exp_name, wd, host=self.host, stream=self.stream, progress=self.progress)
 
@@ -61,10 +63,10 @@ class TaskTest(unittest.TestCase):
         exp_name = "prep_task"
         root = os.getcwd()
         wd = "/tmp/host0/hm_wd/" + exp_name
-        self._create_exp(wd)
-        exp = experiment.ExpFromFiles(exp_name, wd,)
+        self._create_exp(wd, root)
+        exp = experiment.ExpFromFiles(exp_name, wd)
         experiment.init_run(exp, self.stream)
-        wd = "/tmp/host1/scratch/hm_home/" + exp_name + "/lib"
+        wd = "/tmp/host1/scratch/sfx_home/" + exp_name + "/lib"
 
         exp = experiment.ExpFromFiles(exp_name, wd, host=self.host, stream=self.stream, progress=self.progress)
         ecf_name = "/" + exp_name + "/task"
@@ -77,10 +79,10 @@ class TaskTest(unittest.TestCase):
         exp_name = "quality_control_t2m_task"
         root = os.getcwd()
         wd = "/tmp/host0/hm_wd/" + exp_name
-        self._create_exp(wd)
-        exp = experiment.ExpFromFiles(exp_name, wd,)
+        self._create_exp(wd, root)
+        exp = experiment.ExpFromFiles(exp_name, wd)
         experiment.init_run(exp, self.stream)
-        wd = "/tmp/host1/scratch/hm_home/" + exp_name + "/lib"
+        wd = "/tmp/host1/scratch/sfx_home/" + exp_name + "/lib"
 
         exp = experiment.ExpFromFiles(exp_name, wd, host=self.host, stream=self.stream, progress=self.progress)
         ecf_name = "/" + exp_name + "/task"
@@ -94,10 +96,10 @@ class TaskTest(unittest.TestCase):
         exp_name = "quality_control_rh2m_task"
         root = os.getcwd()
         wd = "/tmp/host0/hm_wd/" + exp_name
-        self._create_exp(wd)
+        self._create_exp(wd, root)
         exp = experiment.ExpFromFiles(exp_name, wd,)
         experiment.init_run(exp, self.stream)
-        wd = "/tmp/host1/scratch/hm_home/" + exp_name + "/lib"
+        wd = "/tmp/host1/scratch/sfx_home/" + exp_name + "/lib"
 
         exp = experiment.ExpFromFiles(exp_name, wd, host=self.host, stream=self.stream, progress=self.progress)
         ecf_name = "/" + exp_name + "/task"
@@ -111,10 +113,10 @@ class TaskTest(unittest.TestCase):
         exp_name = "quality_control_sd_task"
         root = os.getcwd()
         wd = "/tmp/host0/hm_wd/" + exp_name
-        self._create_exp(wd)
+        self._create_exp(wd, root)
         exp = experiment.ExpFromFiles(exp_name, wd,)
         experiment.init_run(exp, self.stream)
-        wd = "/tmp/host1/scratch/hm_home/" + exp_name + "/lib"
+        wd = "/tmp/host1/scratch/sfx_home/" + exp_name + "/lib"
 
         exp = experiment.ExpFromFiles(exp_name, wd, host=self.host, stream=self.stream, progress=self.progress)
         ecf_name = "/" + exp_name + "/task"
