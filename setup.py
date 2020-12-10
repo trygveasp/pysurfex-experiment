@@ -86,6 +86,7 @@ setup(
     install_requires=[
         "pysurfex",
         "pysurfex-scheduler",
+        "eccodes",
         "toml",
         "tomlkit",
         "datetime",
