@@ -1,23 +1,21 @@
-import os
 from datetime import datetime, timedelta
 import scheduler
 
 
 class SurfexSuite(scheduler.SuiteDefinition):
 
-    def __init__(self, suite_name, exp, joboutdir, env_submit, server_config, server_log, dtgs, def_file, dtgbeg=None):
+    def __init__(self, suite_name, exp, joboutdir, env_submit, server_config, server_log, dtgs, def_file, dtgbeg=None,
+                 debug=False):
 
         if dtgbeg is None:
             dtgbeg_str = dtgs[0].strftime("%Y%m%d%H")
         else:
             dtgbeg_str = dtgbeg.strftime("%Y%m%d%H")
 
-        # Scheduler settings
-        # ecf_loghost = exp.server.get_var("ECF_LOGHOST")
-        # ecf_logport = exp.server.get_var("ECF_LOGPORT")
-
-        # TODO use SFX_DATA
-        lib = exp.wd + ""
+        lib = exp.system.get_var("SFX_EXP_LIB", "0")
+        pythonpath = exp.system.get_var("SCHEDULER_PYTHONPATH", "0")
+        exp_dir = exp.wd + ""
+        pythonpath = exp_dir + ":" + pythonpath
 
         ecf_include = lib + "/ecf"
         ecf_files = lib + "/ecf"
@@ -26,26 +24,24 @@ class SurfexSuite(scheduler.SuiteDefinition):
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
         # server_log = exp.get_file_name(lib, "server_log", full_path=True)
 
-        ecf_job_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_submit_exp " \
+        print(pythonpath)
+        ecf_job_cmd = "PYTHONPATH=" + pythonpath + " && " + exp_dir + "/bin/ECF_submit_exp " \
                       "-ensmbr %ENSMBR% " \
                       "-dtg %DTG% " + \
-                      "-exp %EXP% " \
-                      "-lib %LIB% " \
+                      "-exp " + exp_dir + "/scheduler.json " \
                       "-ecf_name %ECF_NAME% " \
                       "-ecf_tryno %ECF_TRYNO% " \
                       "-ecf_pass %ECF_PASS% " \
                       "-ecf_rid %ECF_RID%"
-        ecf_kill_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_kill_exp " \
-                       "-exp %EXP% " \
-                       "-lib %LIB% " \
+        ecf_kill_cmd = "PYTHONPATH=" + pythonpath + " && " + exp_dir + "/bin/ECF_kill_exp " \
+                       "-exp " + exp_dir + "/scheduler.json " \
                        "-ecf_name %ECF_NAME% " \
                        "-ecf_tryno %ECF_TRYNO% " \
                        "-ecf_pass %ECF_PASS% " \
                        "-ecf_rid %ECF_RID% " \
                        "-submission_id %SUBMISSION_ID%"
-        ecf_status_cmd = "PYTHONPATH=%LIB% && %LIB%/bin/ECF_status_exp " \
-                         "-exp %EXP% " \
-                         "-lib %LIB% " \
+        ecf_status_cmd = "PYTHONPATH=" + pythonpath + " && " + exp_dir + "/bin/ECF_status_exp " \
+                         "-exp " + exp_dir + "/scheduler.json " \
                          "-ecf_name %ECF_NAME% " \
                          "-ecf_tryno %ECF_TRYNO% "\
                          "-ecf_pass %ECF_PASS% " \
@@ -60,7 +56,9 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                            ecf_status_cmd=ecf_status_cmd,
                                            ecf_kill_cmd=ecf_kill_cmd)
 
+        self.suite.ecf_node.add_variable("EXP_DIR", exp_dir)
         self.suite.ecf_node.add_variable("LIB", lib)
+        self.suite.ecf_node.add_variable("SERVER_LOGFILE", exp.server.logfile)
         self.suite.ecf_node.add_variable("EXP", exp.name)
         self.suite.ecf_node.add_variable("DTG", dtgbeg_str)
         self.suite.ecf_node.add_variable("DTGBEG", dtgbeg_str)
@@ -71,14 +69,41 @@ class SurfexSuite(scheduler.SuiteDefinition):
         # self.suite = EcflowSuite(self.suite_name, def_file=def_file, variables=variables)
 
         init_run = scheduler.EcflowSuiteTask("InitRun", self.suite)
+        init_run.ecf_node.add_variable("LIB", exp_dir)
+        init_run_ecf_job_cmd = "PYTHONPATH=" + pythonpath + " && " + exp_dir + "/bin/ECF_submit_exp " \
+                               "-ensmbr %ENSMBR% " \
+                               "-dtg %DTG% " + \
+                               "-exp %LIB%/scheduler.json " \
+                               "-ecf_name %ECF_NAME% " \
+                               "-ecf_tryno %ECF_TRYNO% " \
+                               "-ecf_pass %ECF_PASS% " \
+                               "-ecf_rid %ECF_RID%"
+        init_run_ecf_kill_cmd = "PYTHONPATH=" + pythonpath + " && " + exp_dir + "/bin/ECF_kill_exp " \
+                                "-exp %EXP%/scheduler.json " \
+                                "-ecf_name %ECF_NAME% " \
+                                "-ecf_tryno %ECF_TRYNO% " \
+                                "-ecf_pass %ECF_PASS% " \
+                                "-ecf_rid %ECF_RID% " \
+                                "-submission_id %SUBMISSION_ID%"
+        init_run_ecf_status_cmd = "PYTHONPATH=" + pythonpath + " && " + exp_dir + "/bin/ECF_status_exp " \
+                                  "-exp %EXP%/scheduler.json " \
+                                  "-ecf_name %ECF_NAME% " \
+                                  "-ecf_tryno %ECF_TRYNO% "\
+                                  "-ecf_pass %ECF_PASS% " \
+                                  "-ecf_rid %ECF_RID% " \
+                                  "-submission_id %SUBMISSION_ID%"
+        init_run.ecf_node.add_variable("ECF_JOB_CMD", init_run_ecf_job_cmd)
+        init_run.ecf_node.add_variable("ECF_KILL_CMD", init_run_ecf_kill_cmd)
+        init_run.ecf_node.add_variable("ECF_STATUS_CMD", init_run_ecf_status_cmd)
         init_run_complete = scheduler.EcflowSuiteTrigger(init_run)
 
         if exp.config.get_setting("COMPILE#BUILD"):
             comp_trigger = scheduler.EcflowSuiteTriggers(init_run_complete)
             comp = scheduler.EcflowSuiteFamily("Compilation", self.suite, triggers=comp_trigger)
-
-            scheduler.EcflowSuiteTask("MakeOfflineBinaries", comp, ecf_files=ecf_files)
-
+            configure = scheduler.EcflowSuiteTask("ConfigureOfflineBinaries", comp, ecf_files=ecf_files)
+            configure_complete = scheduler.EcflowSuiteTrigger(configure, mode="complete")
+            scheduler.EcflowSuiteTask("MakeOfflineBinaries", comp, ecf_files=ecf_files,
+                                      triggers=scheduler.EcflowSuiteTriggers([configure_complete]))
             comp_complete = scheduler.EcflowSuiteTrigger(comp, mode="complete")
         else:
             comp_complete = None
@@ -143,6 +168,7 @@ class SurfexSuite(scheduler.SuiteDefinition):
                 # Might need an extra trigger for input
 
             else:
+
                 schemes = exp.config.get_setting("SURFEX#ASSIM#SCHEMES")
                 do_soda = False
                 for scheme in schemes:
@@ -150,26 +176,19 @@ class SurfexSuite(scheduler.SuiteDefinition):
                         do_soda = True
 
                 do_snow_ass = False
+                obs_types = exp.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
                 nnco = exp.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
                 for ivar in range(0, len(nnco)):
-                    if nnco[ivar] == 0:
-                        if ivar == 0:
-                            pass
-                        elif ivar == 1:
-                            pass
-                        elif ivar == 4:
-                            do_snow_ass = True
-
-                if do_snow_ass:
-                    do_snow_ass = False
-                    snow_ass = exp.config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
-                    if len(snow_ass) > 0:
-                        hh = int(dtg.strftime("%H"))
-                        for sn in snow_ass:
-                            if hh == int(sn):
-                                print("Do snow assimilation for ", dtg)
-                                do_soda = True
-                                do_snow_ass = True
+                    if len(obs_types) > ivar and obs_types[ivar] == "SWE":
+                        snow_ass = exp.config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
+                        if len(snow_ass) > 0:
+                            hh = int(dtg.strftime("%H"))
+                            for sn in snow_ass:
+                                if hh == int(sn):
+                                    if debug:
+                                        print("Do snow assimilation for ", dtg)
+                                    do_soda = True
+                                    do_snow_ass = True
 
                 triggers = scheduler.EcflowSuiteTriggers(prep_complete)
                 if not do_soda:
@@ -192,11 +211,13 @@ class SurfexSuite(scheduler.SuiteDefinition):
                             triggers = scheduler.EcflowSuiteTriggers(
                                 scheduler.EcflowSuiteTrigger(cycle_input_dtg_node[fg_dtg]))
                         for ivar in range(0, len(nncv)):
-                            print(nncv[ivar])
+                            if debug:
+                                print(__file__, ivar, nncv[ivar])
                             if ivar == 0:
                                 name = "REF"
                                 args = "pert=" + str(ivar) + " name=" + name
-                                print(args)
+                                if debug:
+                                    print(__file__, args)
                                 variables = scheduler.EcflowSuiteVariable("ARGS", args)
 
                                 pert = scheduler.EcflowSuiteFamily(name, perturbations, variables=variables)
@@ -205,7 +226,8 @@ class SurfexSuite(scheduler.SuiteDefinition):
                             if nncv[ivar] == 1:
                                 name = names[ivar]
                                 args = "pert=" + str(ivar + 1) + " name=" + name
-                                print(args)
+                                if debug:
+                                    print(__file__, args)
                                 variables = scheduler.EcflowSuiteVariable("ARGS", args)
                                 pert = scheduler.EcflowSuiteFamily(name, perturbations, variables=variables)
                                 scheduler.EcflowSuiteTask("PerturbedRun", pert, ecf_files=ecf_files,
@@ -225,14 +247,15 @@ class SurfexSuite(scheduler.SuiteDefinition):
                             prepare_sst = scheduler.EcflowSuiteTask("PrepareSST", initialization, ecf_files=ecf_files)
 
                     an_variables = {"t2m": False, "rh2m": False, "sd": False}
+                    obs_types = exp.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
                     nnco = exp.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
-                    for ivar in range(0, len(nnco)):
-                        if nnco[ivar] == 1:
-                            if ivar == 0:
+                    for t in range(0, len(obs_types)):
+                        if nnco[t] == 1:
+                            if obs_types[t] == "T2M":
                                 an_variables.update({"t2m": True})
-                            elif ivar == 1:
+                            elif obs_types[t] == "RH2M":
                                 an_variables.update({"rh2m": True})
-                            elif ivar == 4:
+                            elif obs_types[t] == "SWE":
                                 if do_snow_ass:
                                     an_variables.update({"sd": True})
 
@@ -308,7 +331,9 @@ class SurfexSuite(scheduler.SuiteDefinition):
                 qc2obsmon = scheduler.EcflowSuiteTask("Qc2obsmon", pp, ecf_files=ecf_files)
                 log_pp_trigger = scheduler.EcflowSuiteTriggers(scheduler.EcflowSuiteTrigger(qc2obsmon))
 
-            scheduler.EcflowSuiteTask("LogProgressPP", pp, triggers=log_pp_trigger, ecf_files=ecf_files)
+            scheduler.EcflowSuiteTask("LogProgressPP", pp, triggers=log_pp_trigger,
+                                      ecf_files=ecf_files)
+
             prev_dtg = dtg
 
         hours_behind = 24
@@ -325,7 +350,7 @@ class SurfexSuite(scheduler.SuiteDefinition):
 
 
 class UnitTestSuite(scheduler.SuiteDefinition):
-    def __init__(self, suite_name, exp, def_file, joboutdir, ecf_files, env_submit, server_config, server_log):
+    def __init__(self, suite_name, exp, def_file, joboutdir, env_submit, server_config, server_log):
 
         # TODO use SFX_DATA
         lib = exp.wd + ""
@@ -394,19 +419,18 @@ class UnitTestSuite(scheduler.SuiteDefinition):
                                   def_status="suspended")
 
 
-def get_defs(exp, suite_type, def_file):
+def get_defs(exp, system, server, progress, suite_type, def_file, debug=False):
     suite_name = exp.name
-    joboutdir = exp.system.get_var("JOBOUTDIR", "0")
-    env_submit = exp.get_file_name(exp.wd, "submit", full_path=True)
-    server_config = exp.get_file_name(exp.wd, "server", full_path=True)
-    server_log = exp.server.logfile
-    lib = exp.wd + ""
-    ecf_files = lib + "/ecf"
+    joboutdir = system.get_var("JOBOUTDIR", "0")
+    env_submit = exp.wd + "Env_submit"
+    server_config = exp.wd + "/Env_server"
+    server_log = server.logfile
     hh_list = exp.config.get_total_unique_hh_list()
-    dtgstart = exp.progress.dtg
-    dtgbeg = exp.progress.dtgbeg
-    dtgend = exp.progress.dtgend
-    print(dtgstart, dtgbeg, dtgend)
+    dtgstart = progress.dtg
+    dtgbeg = progress.dtgbeg
+    dtgend = progress.dtgend
+    if debug:
+        print(__file__, dtgstart, dtgbeg, dtgend)
     if dtgbeg is None:
         dtgbeg = dtgstart
     dtgs = []
@@ -417,7 +441,8 @@ def get_defs(exp, suite_type, def_file):
         fcint = None
         if len(hh_list) > 1:
             for h in range(0, len(hh_list)):
-                print(h, hh_list[h], hh)
+                if debug:
+                    print(__file__, h, hh_list[h], hh)
                 if int(hh_list[h]) == int(hh):
                     if h == len(hh_list) - 1:
                         fcint = ((int(hh_list[len(hh_list) - 1]) % 24) - int(hh_list[0])) % 24
@@ -433,7 +458,7 @@ def get_defs(exp, suite_type, def_file):
                            dtgbeg=dtgbeg)
         # return None
     elif suite_type == "unittest":
-        defs = UnitTestSuite(suite_name, exp, def_file, joboutdir, ecf_files, env_submit, server_config, server_log)
+        defs = UnitTestSuite(suite_name, exp, def_file, joboutdir, env_submit, server_config, server_log)
         return defs
     else:
         raise Exception()

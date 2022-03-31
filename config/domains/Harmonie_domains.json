@@ -1047,22 +1047,15 @@
       }
     }
   },
-  "TRYGVE_TEST": {
+  "DRAMMEN": {
     "GSIZE": 2500.0,
-    "LAT0": 59.5,
-    "LATC": 59.5 ,
+    "LAT0": 60.0,
+    "LATC": 60.0 ,
     "LON0": 10.0,
     "LONC": 10.0,
-    "NLAT": 50,
+    "NLAT": 60,
     "NLON": 50,
-    "TSTEP": 75,
-    "JB": {
-      "HIRLAM_60": {
-        "LINEAR": {
-          "f_JBCV": "stabfiltn_TEST_11.cv",
-          "f_JBBAL": "stabfiltn_TEST_11.bal"
-        }
-      }
-    }
+    "TSTEP": 600,
+    "EZONE": 0
   }
 }

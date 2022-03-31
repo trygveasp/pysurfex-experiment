@@ -1,3 +1,10 @@
+scheduler
+surfex
+json
+argparse
+toml
+tomlkit
+
 # requirements.txt
 #
 # installs dependencies from ./setup.py, and the package itself,

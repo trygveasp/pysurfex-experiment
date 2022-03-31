@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 import sys
-import experiment
+import experiment_scheduler
 
-kwargs = experiment.parse_kill_cmd_exp(sys.argv[1:])
-experiment.kill_cmd_exp(**kwargs)
+kwargs = experiment_scheduler.parse_kill_cmd_exp(sys.argv[1:])
+experiment_scheduler.kill_cmd_exp(**kwargs)

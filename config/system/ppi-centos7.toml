@@ -4,21 +4,23 @@
 COMPCENTRE="LOCAL"
 
 # Define hosts
-HOSTS = ["ppi-centos7"]
+HOSTS = ["ppi-bionic", "ppi-centos7"]
 
 # Location of working data, fast and large system
 # Experiment identifier and directories
 # EXP is defined when an experiment is started by "Harmonie start ..."
-SFX_EXP_DATA = "/lustre/storeB/users/$USER/sfx_data/$EXP"        # HM_DATA on main HIRLAM host
+SFX_EXP_DATA = "/lustre/storeB/users/@USER@/sfx_data/@EXP@"
 # directory for scripts, compiled objects, executables
-SFX_EXP_LIB = "/lustre/storeB/users/$USER/sfx_data/$EXP/lib"
-HOST_NAME = ""
-#ECF_HOST = "pc4384"
-#ECF_LOGHOST = "pc4384"
-JOBOUTDIR = "/lustre/storeB/users/$USER/sfx_data/$EXP/job"
+SFX_EXP_LIB = "/lustre/storeB/users/@USER@/sfx_data/@EXP@/lib@STREAM@"
+JOBOUTDIR = "/lustre/storeB/users/@USER@/sfx_data/@EXP@/job"
+LOGIN_HOST = "ppi-blogin-a1.met.no"
 HM_CS = "gfortran"
 PARCH = ""
 MKDIR = "mkdir -p"
-RSYNC = "rsync  -rltgoDvh"
-SURFEX_CONFIG = "my_surfex_config"
+RSYNC = "rsync  -rltoDvh"
+SCHEDULER_PYTHONPATH = "/modules/bionic/user-apps/suv/pysurfex-scheduler/0.0.1-dev/:/modules/bionic/user-apps/ecflow/5.5.2-ssl/lib/python3.6/site-packages"
 
+[HOST_SYSTEM.HOST1]
+SCHEDULER_PYTHONPATH = "/modules/centos7/user-apps/suv/pysurfex-scheduler/0.0.1-dev/:/modules/centos7/user-apps/ecflow/5.3.0/lib/python3.7/site-packages"
+LOGIN_HOST = "ppi-clogin-a1.met.no"
+SYNC_DATA = false
