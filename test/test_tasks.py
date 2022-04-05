@@ -39,7 +39,7 @@ class TestEcflowContainer(unittest.TestCase):
             "/tmp/host1/testdata/input_paths/oro_dir/gmted2010.hdr",
             "/tmp/host1/scratch/sfx_home/EcflowContainers/climate/PGD.nc"
         ]
-        copy_dirs = {"testdata": "/tmp/host1/"}
+        copy_dirs = {"testdata": "/tmp/host1/testdata"}
 
         for d in rm_dirs:
             if os.path.exists(d):
