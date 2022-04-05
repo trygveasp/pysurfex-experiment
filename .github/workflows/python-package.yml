@@ -85,8 +85,6 @@ jobs:
         python -c "import eccodes"
         wget --no-check-certificate --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1FSNRQE998-ulBq8GZ0zZ40cP-TLrQulV' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1FSNRQE998-ulBq8GZ0zZ40cP-TLrQulV" -O testdata.zip && rm -rf /tmp/cookies.txt
         unzip -o testdata.zip
-        echo "Testdata"
-        ./prepare_testdata.sh
         ls -l /usr/lib/python3/dist-packages/ecflow
         ls -l /usr/bin/start_ecflow.sh || echo "/usr/bin/start_ecflow.sh not found"
         ls -l /usr/sbin/ecflow_start || echo "/usr/sbin/ecflow_start not found"

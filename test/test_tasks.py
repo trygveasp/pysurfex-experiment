@@ -42,7 +42,8 @@ class TestEcflowContainer(unittest.TestCase):
         copy_dirs = {"testdata": "/tmp/host1/"}
 
         for d in rm_dirs:
-            shutil.rmtree(d)
+            if os.path.exists(d):
+                shutil.rmtree(d)
 
         for d in mk_dirs:
             os.makedirs(d, exist_ok=True)
