@@ -39,7 +39,7 @@ class TestEcflowContainer(unittest.TestCase):
             "/tmp/host1/testdata/input_paths/oro_dir/gmted2010.hdr",
             "/tmp/host1/scratch/sfx_home/EcflowContainers/climate/PGD.nc"
         ]
-        copy_dirs = {"testdata": "/tmp/host1/testdata"}
+        copy_dirs = {"testdata": "/tmp/host1/"}
 
         for d in rm_dirs:
             if os.path.exists(d):
@@ -48,16 +48,16 @@ class TestEcflowContainer(unittest.TestCase):
         for d in mk_dirs:
             os.makedirs(d, exist_ok=True)
 
-        for f in touch_files:
-            d = os.path.abspath(os.path.dirname(f))
-            os.makedirs(d, exist_ok=True)
-            os.system("touch " + f)
-
         for target in copy_dirs:
             destination = copy_dirs[target] + "/"
             if os.path.exists(target):
                 # os.makedirs(destination, exist_ok=True)
                 shutil.copytree(target, destination)
+
+        for f in touch_files:
+            d = os.path.abspath(os.path.dirname(f))
+            os.makedirs(d, exist_ok=True)
+            os.system("touch " + f)
 
     def test_default(self):
 
