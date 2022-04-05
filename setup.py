@@ -128,9 +128,6 @@ setup(
     #    ],
     # },
     scripts=[
-        "bin/ECF_submit_exp",
-        "bin/ECF_status_exp",
-        "bin/ECF_kill_exp",
-        "bin/PySurfex"
+        "bin/PySurfexExpSetup"
     ],
 )
