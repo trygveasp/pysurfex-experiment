@@ -56,7 +56,7 @@ class TestEcflowContainer(unittest.TestCase):
         for target in copy_dirs:
             destination = copy_dirs[target] + "/"
             if os.path.exists(target):
-                os.makedirs(destination, exist_ok=True)
+                # os.makedirs(destination, exist_ok=True)
                 shutil.copytree(target, destination)
 
     def test_default(self):
