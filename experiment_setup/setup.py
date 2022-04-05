@@ -8,6 +8,7 @@ import shutil
 import collections
 import copy
 
+# TODO make this a file general for all cli
 __version__ = "0.0.1-dev"
 
 
@@ -553,8 +554,6 @@ def parse_surfex_script_setup(argv):
                         default=None)
     parser.add_argument('-surfex', dest="pysurfex", help="Pysurfex library", type=str, required=False,
                         default=None)
-    parser.add_argument('-scheduler', dest="pysurfex_scheduler", help="Pysurfex-scheduler library", type=str,
-                        required=False, default=None)
     parser.add_argument('-experiment', dest="pysurfex_experiment", help="Pysurfex-experiment library", type=str,
                         required=False, default=None)
     parser.add_argument('-offline', dest="offline_source", help="Offline source code", type=str,
@@ -623,15 +622,25 @@ def surfex_script_setup(**kwargs):
 
     # Copy files to WD from REV
     if rev is None:
-        raise Exception("You must set REV")
+        if pysurfex_experiment is None:
+            raise Exception("You must set REV or pysurfex_experiment")
+        else:
+            print("Using " + pysurfex_experiment + " as rev")
+            rev = pysurfex_experiment
     if host is None:
         raise Exception("You must set host")
     if pysurfex is None:
-        print("Using " + rev + " as pysurfex")
-        pysurfex = rev
+        if rev is not None:
+            print("Using " + rev + " as pysurfex")
+            pysurfex = rev
+        else:
+            raise Exception("pysurfex must be set when rev is not set")
     if pysurfex_experiment is None:
-        print("Using " + rev + " as pysurfex_experiment")
-        pysurfex_experiment = rev
+        if rev is not None:
+            print("Using " + rev + " as pysurfex_experiment")
+            pysurfex_experiment = rev
+        else:
+            raise Exception("pysurfex_experiment must be set when rev is not set")
     if offline_source is None:
         print("No offline soure code set. Assume existing binaries")
 

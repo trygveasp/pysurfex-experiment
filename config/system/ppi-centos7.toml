@@ -19,6 +19,7 @@ PARCH = ""
 MKDIR = "mkdir -p"
 RSYNC = "rsync  -rltoDvh"
 SCHEDULER_PYTHONPATH = "/modules/bionic/user-apps/suv/pysurfex-scheduler/0.0.1-dev/:/modules/bionic/user-apps/ecflow/5.5.2-ssl/lib/python3.6/site-packages"
+SURFEX_CONFIG = "ppi_centos7"
 
 [HOST_SYSTEM.HOST1]
 SCHEDULER_PYTHONPATH = "/modules/centos7/user-apps/suv/pysurfex-scheduler/0.0.1-dev/:/modules/centos7/user-apps/ecflow/5.3.0/lib/python3.7/site-packages"

@@ -26,12 +26,8 @@
       "WALLTIME": "#$ -l h_rt=00:15:00",
       "VMEM": "#$ -l h_vmem=12G"
     },
-    "ConfigureOfflineBinaries": {
-      "CONDA": "os.system('source /modules/centos7/conda/Feb2021/etc/profile.d/conda.sh; conda activate production-04-2021; /modules/centos7/user-apps/suv/pysurfex/0.0.1-dev/bin/dump_environ')"
-    },
     "MakeOfflineBinaries": {
-      "CONDA": "os.system('source /modules/centos7/conda/Feb2021/etc/profile.d/conda.sh; conda activate production-04-2021; /modules/centos7/user-apps/suv/pysurfex/0.0.1-dev/bin/dump_environ')",
-      "VMEM": "#$ -l h_vmem=12G"
+           "VMEM": "#$ -l h_vmem=12G"
     },
     "Pgd": {
       "WALLTIME": "#$ -l h_rt=01:30:00"
