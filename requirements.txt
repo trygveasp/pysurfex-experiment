@@ -1,5 +1,3 @@
-scheduler
-surfex
 json
 argparse
 toml
