@@ -86,6 +86,7 @@ jobs:
         python -c "import ecflow; print(ecflow.__file__)"
         ls -l /usr/lib/python3/dist-packages/
         ls -l /opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages
+        python -c "import enum; print(enum.__file__)"
         python -c "import surfex; print(surfex.__file__)"
         export PATH=$PWD/test/bin:/usr/bin/:$PATH; export CLIENTID=${{secrets.CLIENTID}};  nosetests test/test_tasks.py
     - name: Coveralls
