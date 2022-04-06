@@ -98,6 +98,7 @@ jobs:
     - name: Create documentation
       if: ${{ matrix.python-version == 3.6 }}
       run: |
+        export PYTHONPATH="${GITHUB_WORKSPACE}:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
         cd docs
         make html
     - name: Commit documentation changes
