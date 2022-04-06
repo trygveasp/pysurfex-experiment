@@ -79,8 +79,8 @@ jobs:
         ls -l /usr/lib/python3/dist-packages/ecflow
         ls -l /usr/bin/start_ecflow.sh || echo "/usr/bin/start_ecflow.sh not found"
         ls -l /usr/sbin/ecflow_start || echo "/usr/sbin/ecflow_start not found"
-        ls -l $GITHUB_WORKSPACE/pysurfex-experiment
-        export PYTHONPATH="${GITHUB_WORKSPACE}/pysurfex-experiment:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
+        ls -l ${GITHUB_WORKSPACE}
+        export PYTHONPATH="${GITHUB_WORKSPACE}:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
         python -c "import ecflow; print(ecflow.__file__)"
         ls -l /usr/lib/python3/dist-packages/
         ls -l /opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages
@@ -90,7 +90,7 @@ jobs:
     - name: Coveralls
       if: ${{ matrix.python-version == 3.6 }}
       run: |
-        export PYTHONPATH="${GITHUB_WORKSPACE}/pysurfex-experiment:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
+        export PYTHONPATH="${GITHUB_WORKSPACE}:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
         python -c "import ecflow; print(ecflow.__file__)"
         export CLIENTID=${{secrets.CLIENTID}}; ./create_coverage.sh
         export COVERALLS_REPO_TOKEN=${{secrets.COVERALLS_REPO_TOKEN}}; coveralls
