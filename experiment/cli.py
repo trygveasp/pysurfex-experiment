@@ -185,10 +185,6 @@ def surfex_script(**kwargs):
 
         # Create the scheduler
         env_server = sfx_exp.wd + "/Env_server"
-        scheduler_pythonpath = system.get_var("SCHEDULER_PYTHONPATH", "0")
-        if scheduler_pythonpath != "":
-            for sp in scheduler_pythonpath.split(":"):
-                sys.path.insert(0, sp)
         my_scheduler = scheduler.EcflowServerFromFile(env_server, logfile)
 
         if debug:
