@@ -70,12 +70,6 @@ jobs:
         pip install flake8 pytest
         pip install sphinx
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    #- name: Lint with flake8
-    #  run: |
-    #    # stop the build if there are Python syntax errors or undefined names
-    #    flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-    #    # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-    #   flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Install package
       run: |
         pip install -e .[test]
@@ -88,14 +82,14 @@ jobs:
         ls -l /usr/lib/python3/dist-packages/ecflow
         ls -l /usr/bin/start_ecflow.sh || echo "/usr/bin/start_ecflow.sh not found"
         ls -l /usr/sbin/ecflow_start || echo "/usr/sbin/ecflow_start not found"
-        #export PYTHONPATH="/usr/lib/python3/dist-packages/:$PYTHONPATH"
-        #python -c "import ecflow; print(ecflow.__file__)"
+        export PYTHONPATH="/usr/lib/python3/dist-packages/:$PYTHONPATH"
+        python -c "import ecflow; print(ecflow.__file__)"
         export PATH=$PWD/test/bin:/usr/bin/:$PATH; export CLIENTID=${{secrets.CLIENTID}};  nosetests3 test/test_tasks.py
     - name: Coveralls
       if: ${{ matrix.python-version == 3.6 }}
       run: |
-        #export PYTHONPATH="/usr/lib/python3/dist-packages/:$PYTHONPATH"
-        #python -c "import ecflow; print(ecflow.__file__)"
+        export PYTHONPATH="/usr/lib/python3/dist-packages/:$PYTHONPATH"
+        python -c "import ecflow; print(ecflow.__file__)"
         CLIENTID=${{ secrets.CLIENTID }} ./create_coverage.sh
         COVERALLS_REPO_TOKEN=${{ secrets.COVERALLS_REPO_TOKEN }} coveralls
     - name: Create documentation

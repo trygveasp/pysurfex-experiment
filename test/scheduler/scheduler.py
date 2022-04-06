@@ -56,3 +56,16 @@ class EcflowServerFromFile(object):
         print("Dummy EcflowServerFromFile")
         print(ecflow_server_file, logfile)
         self.settings = {}
+
+
+class EcflowServer(object):
+    def __init__(self, ecf_host, ecf_port, logfile):
+
+        self.ecf_host = ecf_host
+        self.ecf_port = ecf_port
+        self.logfile = logfile
+        self.ecf_client = EcflowClient(self.ecf_host, self.ecf_port)
+
+    @staticmethod
+    def start_server():
+        print("Start EcFlow server")

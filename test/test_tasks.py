@@ -1,8 +1,11 @@
-
 import os
 import sys
 import surfex
 import unittest
+dir_path = os.path.abspath(os.path.dirname(__file__))
+scheduler_path = dir_path
+sys.path.insert(0, scheduler_path)
+import scheduler
 import experiment
 import experiment_setup
 import experiment_tasks
@@ -61,17 +64,14 @@ class TestEcflowContainer(unittest.TestCase):
 
     def test_default(self):
 
+        print("surfex module: ", surfex.__file__)
+        print("scheduler module: ", scheduler.__file__)
+        print("experiment module: ", experiment.__file__)
         exp_name = "EcflowContainers"
 
         wd = "/tmp/host0/hm_wd/" + exp_name
         rev = experiment.__path__[0] + "/.."
         pysurfex_path = surfex.__path__[0] + "/.."
-
-        dir_path = os.path.abspath(os.path.dirname(__file__))
-        scheduler_path = dir_path
-        sys.path.insert(0, scheduler_path)
-
-        import scheduler
 
         os.makedirs(wd, exist_ok=True)
         argv = [
@@ -89,6 +89,8 @@ class TestEcflowContainer(unittest.TestCase):
         sfx_exp.write_scheduler_info(wd + "/scheduler.json")
 
         input_files = json.load(open(wd + "/exp_system.json", "r"))
+        lib_dir = input_files["1"]["sfx_exp_lib"]
+        sys.path.insert(0, lib_dir)
         input_files["0"].update({"bin_dir": dir_path + "/bin"})
         input_files["1"].update({"bin_dir": dir_path + "/bin"})
         json.dump(input_files, open(wd + "/exp_system.json", "w"))
@@ -122,13 +124,13 @@ class TestEcflowContainer(unittest.TestCase):
         mod = types.ModuleType(loader.name)
         loader.exec_module(mod)
 
-        lib = sfx_exp.system.get_var("SFX_EXP_LIB", "1")
+        # lib = sfx_exp.system.get_var("SFX_EXP_LIB", "1")
         orig_file = dir_path + "/../ecf/default.py"
         test_file = wd + "/ecf/default.py"
         fin = open(orig_file, "r")
         fout = open(test_file, "w")
         for line in fin:
-            line = line.replace("%LIB%", lib)
+            line = line.replace("%LIB%", lib_dir)
             line = line.replace("%EXP_DIR%", wd)
             line = line.replace("%EXP_NAME%", exp_name)
             line = line.replace("%SUBMISSION_ID%", "")
@@ -169,7 +171,7 @@ class TestEcflowContainer(unittest.TestCase):
 
         host = "1"
         # The task knows which host it runs on and which member it is
-        task_config = json.load(open(lib + "/exp_configuration.json", "r"))
+        task_config = json.load(open(lib_dir + "/exp_configuration.json", "r"))
         progress = {
             "DTG": "2022033003",
             "DTGBEG": "2022033000",
@@ -191,10 +193,10 @@ class TestEcflowContainer(unittest.TestCase):
         stream = None
         args = None
         wrapper = ""
-        system_variables = json.load(open(lib + "/exp_system_vars.json", "r"))[host]
-        system_file_paths = json.load(open(lib + "/exp_system.json", "r"))[host]
-        task_class(task, task_config, system_variables, system_file_paths, progress, mbr=mbr, stream=stream, args=args, debug=True).run(
-            wrapper=wrapper)
+        system_variables = json.load(open(lib_dir + "/exp_system_vars.json", "r"))[host]
+        system_file_paths = json.load(open(lib_dir + "/exp_system.json", "r"))[host]
+        task_class(task, task_config, system_variables, system_file_paths, progress, mbr=mbr, stream=stream, args=args,
+                   debug=True).run(wrapper=wrapper)
 
 
 class TestEcflowContainer2(unittest.TestCase):
