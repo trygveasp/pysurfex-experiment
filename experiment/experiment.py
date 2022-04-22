@@ -11,6 +11,20 @@ class Exp(object):
     def __init__(self, exp_dependencies, merged_config, member_merged_config, submit_exceptions=None,
                  system_file_paths=None, system=None, server=None, env_submit=None, progress=None,
                  debug=False):
+        """Instaniate an object of the main experiment class
+
+        Args:
+            exp_dependencies (dict):  Eperiment dependencies
+            merged_config (dict): Experiment configuration
+            member_merged_config (dict): Member (EPS) specific configuration settings
+            submit_exceptions (dict):
+            system_file_paths (experiment.SystemFilePaths):
+            system (experiment.System:
+            server (scheduler.Server):
+            env_submit (dict):
+            progress (dict):
+            debug (bool): Write extra debug information
+        """
 
         rev = exp_dependencies["revision"]
         pysurfex_experiment = exp_dependencies["pysurfex_experiment"]
@@ -33,16 +47,14 @@ class Exp(object):
         self.progress = progress
         self.debug = debug
 
-        # self.config_files = self.get_config_files()
-        # Merge config
-        # all_merged_settings = experiment_setup.merge_toml_env_from_config_dicts(self.config_files)
-        # merged_config, member_merged_config = experiment_setup.process_merged_settings(all_merged_settings)
-
         self.config_dict = merged_config
         self.member_config = member_merged_config
-        self.config = experiment.Configuration(merged_config, member_merged_config)
+        self.config = experiment.ExpConfiguration(merged_config, member_merged_config)
 
     def checkout(self, file):
+        """
+
+        """
         if file is None:
             raise Exception("File must be set")
         if os.path.exists(file):
@@ -91,10 +103,7 @@ class ExpFromFiles(Exp):
             print(__file__, "ExpFromFiles")
 
         exp_dependencies = json.load(open(exp_dependencies_file, "r"))
-        # rev = exp_dependencies["revision"]
         pysurfex_experiment = exp_dependencies["pysurfex_experiment"]
-        # offline_source = exp_dependencies["offline_source"]
-        # pysurfex = exp_dependencies["pysurfex"]
         wdir = exp_dependencies["exp_dir"]
         self.wd = wdir
         exp_name = exp_dependencies["exp_name"]
@@ -160,6 +169,11 @@ class ExpFromFiles(Exp):
         self.dump_exp_configuration(self.wd + "/exp_configuration.json")
 
     def get_config_files(self):
+        """Get the needed set of configurations files
+
+        Returns:
+
+        """
 
         # Check existence of needed config files
         config_file = self.wd + "/config/config.toml"

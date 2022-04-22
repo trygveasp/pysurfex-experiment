@@ -193,6 +193,6 @@ def surfex_script(**kwargs):
         # Create and start the suite
         def_file = data0 + "/" + suite + ".def"
 
-        defs = experiment.get_defs(sfx_exp, system, my_scheduler, progress, suite, def_file)
-        defs.save_as_defs()
-        my_scheduler.start_suite(defs, begin=begin)
+        defs = experiment.get_defs(sfx_exp, system, progress, suite, debug=debug)
+        defs.save_as_defs(def_file)
+        my_scheduler.start_suite(defs.suite_name, def_file, begin=begin)
