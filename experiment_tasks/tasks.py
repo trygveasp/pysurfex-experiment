@@ -111,7 +111,7 @@ class AbstractTask(object):
         os.chdir(self.wdir)
 
         hh = self.dtg.strftime("%H")
-        self.fcint = self.config.get_fcint(hh, mbr=self.mbr)
+        self.fcint = self.get_fcint(hh, mbr=self.mbr)
         self.fg_dtg = self.dtg - timedelta(hours=self.fcint)
         self.next_dtg = self.dtg + timedelta(hours=self.fcint)
         self.next_dtgpp = self.next_dtg
@@ -268,6 +268,159 @@ class AbstractTask(object):
 
         return setting
 
+    def get_total_unique_hh_list(self):
+        # Create a list of all unique HHs from all members
+        # print(self.members, self.get_hh_list())
+        hh_list_all = []
+        if self.members is not None:
+            for mbr in self.members:
+                hh_l = self.get_hh_list(mbr=mbr)
+                for hh in hh_l:
+                    hh = "{:02d}".format(int(hh))
+                    if hh not in hh_list_all:
+                        hh_list_all.append(hh)
+        else:
+            hh_l = self.get_hh_list()
+            for hh in hh_l:
+                hh = "{:02d}".format(int(hh))
+                if hh not in hh_list_all:
+                    hh_list_all.append(hh)
+
+        # print(hh_list_all)
+        # Sort this list
+        hh_list = []
+        for hh in sorted(hh_list_all):
+            hh_list.append(hh)
+
+        return hh_list
+
+    def get_fcint(self, cycle, mbr=None):
+        hh_list = self.get_hh_list(mbr=mbr)
+        fcint = None
+        if len(hh_list) > 1:
+            for hh in range(0, len(hh_list)):
+                h = int(hh_list[hh]) % 24
+                if h == int(cycle) % 24:
+                    if hh == 0:
+                        fcint = (int(hh_list[0]) - int(hh_list[len(hh_list) - 1])) % 24
+                    else:
+                        fcint = int(hh_list[hh]) - int(hh_list[hh - 1])
+        else:
+            fcint = 24
+        return fcint
+
+    def get_hh_list(self, mbr=None):
+        hh_list = self.get_setting("GENERAL#HH_LIST", mbr=mbr)
+        ll_list = self.get_setting("GENERAL#LL_LIST", mbr=mbr)
+        # print(hh_list, ll_list)
+        hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
+        return hh_list
+
+    def get_ll_list(self, mbr=None):
+        hh_list = self.get_setting("GENERAL#HH_LIST", mbr=mbr)
+        ll_list = self.get_setting("GENERAL#LL_LIST", mbr=mbr)
+        hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
+        return ll_list
+
+    @staticmethod
+    def expand_list(string, fmt="{:03d}", sep1=",", sep2=":", sep3="-", maxval=None, add_last=False, tstep=None):
+        elements = string.split(sep1)
+        expanded_list = []
+        if string.strip() == "":
+            return expanded_list
+
+        for i in range(0, len(elements)):
+            element = elements[i]
+            # print(element)
+            if element.find(sep2) > 0 or element.find(sep3) > 0:
+                step = 1
+                if element.find(sep2) > 0:
+                    p1, step = element.split(sep2)
+                else:
+                    p1 = element
+
+                start, end = p1.split(sep3)
+                for ll in range(int(start), int(end) + 1, int(step)):
+                    add = True
+                    if maxval is not None:
+                        if ll > maxval:
+                            add = False
+                    if add:
+                        if tstep is not None:
+                            if (ll * 60) % tstep == 0:
+                                ll = int(ll * 60 / tstep)
+                            else:
+                                print(ll)
+                                raise Exception("Time step is not a minute!")
+                        this_ll = fmt.format(ll)
+                        expanded_list.append(this_ll)
+            else:
+                # print(fmt, element)
+                # print(fmt.decode('ascii'))
+                add = True
+                ll = int(element)
+                if maxval is not None:
+                    if ll > maxval:
+                        add = False
+                if add:
+                    if tstep is not None:
+                        if (ll * 60) % tstep == 0:
+                            ll = int(ll * 60 / tstep)
+                        else:
+                            raise Exception("Time step is not a minute! " + str(ll))
+                    ll = fmt.format(ll)
+                    expanded_list.append(ll)
+
+        # Add last value if wanted and not existing
+        if maxval is not None and add_last:
+            if tstep is not None:
+                if (maxval * 60) % tstep == 0:
+                    maxval = int(maxval * 60 / tstep)
+                else:
+                    raise Exception("Time step is not a minute!")
+            if str(maxval) not in expanded_list:
+                ll = fmt.format(maxval)
+                expanded_list.append(ll)
+        return expanded_list
+
+    def expand_hh_and_ll_list(self, hh_list, ll_list, sep=":"):
+        # hhs = split_hh_and_ll(hh_list)
+        # lls = split_hh_and_ll(ll_list)
+        hhs = self.expand_list(hh_list, fmt="{:02d}")
+        lls_in = self.expand_list(ll_list, fmt="{:d}")
+        # print(hhs)
+        # print(lls_in)
+
+        lls = []
+        j = 0
+        for i in range(0, len(hhs)):
+            lls.append(lls_in[j])
+            j = j + 1
+            if j == len(lls_in):
+                j = 0
+
+        if len(hhs) != len(lls):
+            raise Exception
+
+        expanded_hh_list = []
+        expanded_ll_list = []
+        for i in range(0, len(hhs)):
+            ll = lls[i]
+            # print(i, hhs[i])
+            if hhs[i].find(sep) > 0:
+                p1, step = hhs[i].split(sep)
+                h1, h2 = p1.split("-")
+                for h in range(int(h1), int(h2) + 1, int(step)):
+                    hh = "{:02d}".format(h)
+                    expanded_hh_list.append(hh)
+                    expanded_ll_list.append(ll)
+            else:
+                hh = "{:02d}".format(int(hhs[i]))
+                expanded_hh_list.append(hh)
+                expanded_ll_list.append(ll)
+
+        # print(expanded_hh_list, expanded_ll_list)
+        return expanded_hh_list, expanded_ll_list
 
 class Dummy(object):
 

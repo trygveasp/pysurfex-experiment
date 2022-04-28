@@ -5,12 +5,12 @@ import json
 
 class Progress(object):
     def __init__(self, progress, progress_pp):
-        """Initialize the experiment progress
+        """
+        Initialize the experiment progress
 
-        :param progress: Contains the current date/time information
-        :type progress: dict
-        :param progress_pp: Contains the current date/time information for psot-processing
-        :type progress_pp: dict
+        Args:
+            progress (dict): Contains the current date/time information
+            progress_pp (dict): Contains the current date/time information for psot-processing
         """
 
         # Update DTG/DTGBED/DTGEND
@@ -76,12 +76,15 @@ class Progress(object):
 
     # Members could potentially have different DTGBEGs
     def get_dtgbeg(self, fcint):
-        """get the first DTG of the run
+        """
+        get the first DTG of the run
 
-        :param fcint: Time in hours between the forecasts/analysis
-        :type fcint: int
-        :return: first DTG of the run
-        :rtype datetime.datetime
+        Args:
+            fcint (int): Time in hours between the forecasts/analysis
+
+        Returns:
+            dtgbeg (datetime.datetime):  first DTG of the run
+
         """
 
         dtgbeg = self.dtgbeg
@@ -120,13 +123,12 @@ class Progress(object):
 
 class ProgressFromFile(Progress):
     def __init__(self, progress_file, progress_pp_file):
-        """Initialize a progress object from files
+        """
+        Initialize a progress object from files
 
         Args:
-        :param progress_file: Full path of the progress files
-        :type progress_file: str
-        :param progress_pp_file: Full path of the post-processing progress file
-        :type progress_pp_file: str
+            progress_file (str): Full path of the progress files
+            progress_pp_file (str): Full path of the post-processing progress file
         """
 
         self.progress_file = progress_file
