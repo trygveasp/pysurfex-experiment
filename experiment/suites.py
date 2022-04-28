@@ -4,8 +4,26 @@ import scheduler
 
 class SurfexSuite(scheduler.SuiteDefinition):
 
-    def __init__(self, suite_name, exp, joboutdir, env_submit, server_config, server_log, dtgs, def_file, dtgbeg=None,
+    def __init__(self, suite_name, exp, joboutdir, env_submit, dtgs, dtgbeg=None,
                  debug=False):
+        """initialize a SurfexSuite object
+
+        Args:
+        :param suite_name: Name of the suite
+        :type suite_name: str
+        :param exp: Experiment you want to run
+        :type exp: experiment.Experiment
+        :param joboutdir: Directory for job and log files
+        :type joboutdir: str
+        :param env_submit: Submission environment for jobs
+        :type env_submit: dict
+        :param dtgs: The DTGs you want to run
+        :type dtgs: list
+        :param dtgbeg: First DTG of the experiment run
+        :type dtgbeg: datetime
+        :param debug: Debug option
+        :type debug: bool
+        """
 
         if dtgbeg is None:
             dtgbeg_str = dtgs[0].strftime("%Y%m%d%H")
@@ -24,7 +42,8 @@ class SurfexSuite(scheduler.SuiteDefinition):
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
         # server_log = exp.get_file_name(lib, "server_log", full_path=True)
 
-        print(pythonpath)
+        if debug:
+            print("PYTHONPATH: ", pythonpath)
         ecf_job_cmd = "PYTHONPATH=" + pythonpath + " && " + exp_dir + "/bin/ECF_submit_exp " \
                       "-ensmbr %ENSMBR% " \
                       "-dtg %DTG% " + \
@@ -48,8 +67,8 @@ class SurfexSuite(scheduler.SuiteDefinition):
                          "-ecf_rid %ECF_RID% " \
                          "-submission_id %SUBMISSION_ID%"
 
-        scheduler.SuiteDefinition.__init__(self, suite_name, def_file, joboutdir, ecf_files, env_submit,
-                                           server_config, server_log,
+        self.suite_name = suite_name
+        scheduler.SuiteDefinition.__init__(self, suite_name, joboutdir, ecf_files, env_submit,
                                            ecf_home=ecf_home, ecf_include=ecf_include, ecf_out=ecf_out,
                                            ecf_jobout=ecf_jobout,
                                            ecf_job_cmd=ecf_job_cmd,
@@ -345,12 +364,18 @@ class SurfexSuite(scheduler.SuiteDefinition):
                     scheduler.EcflowSuiteTrigger(post_processing_dtg_node[pp_dtg_str]))
                 cycle_input_dtg_node[dtg_str].add_part_trigger(triggers)
 
-    def save_as_defs(self):
-        self.suite.save_as_defs()
+    def save_as_defs(self, def_file):
+        """Save definition file
+
+        Args:
+        :param def_file: Full path of the definition file
+        :type def_file: str
+        """
+        self.suite.save_as_defs(def_file)
 
 
 class UnitTestSuite(scheduler.SuiteDefinition):
-    def __init__(self, suite_name, exp, def_file, joboutdir, env_submit, server_config, server_log):
+    def __init__(self, suite_name, exp, joboutdir, env_submit):
 
         # TODO use SFX_DATA
         lib = exp.wd + ""
@@ -388,8 +413,7 @@ class UnitTestSuite(scheduler.SuiteDefinition):
                          "-ecf_rid %ECF_RID% " \
                          "-submission_id %SUBMISSION_ID%"
 
-        scheduler.SuiteDefinition.__init__(self, suite_name, def_file, joboutdir, ecf_files, env_submit,
-                                           server_config, server_log,
+        scheduler.SuiteDefinition.__init__(self, suite_name, joboutdir, ecf_files, env_submit,
                                            ecf_home=ecf_home, ecf_include=ecf_include, ecf_out=ecf_out,
                                            ecf_jobout=ecf_jobout,
                                            ecf_job_cmd=ecf_job_cmd,
@@ -419,12 +443,10 @@ class UnitTestSuite(scheduler.SuiteDefinition):
                                   def_status="suspended")
 
 
-def get_defs(exp, system, server, progress, suite_type, def_file, debug=False):
+def get_defs(exp, system, progress, suite_type, debug=False):
     suite_name = exp.name
     joboutdir = system.get_var("JOBOUTDIR", "0")
     env_submit = exp.wd + "Env_submit"
-    server_config = exp.wd + "/Env_server"
-    server_log = server.logfile
     hh_list = exp.config.get_total_unique_hh_list()
     dtgstart = progress.dtg
     dtgbeg = progress.dtgbeg
@@ -454,11 +476,9 @@ def get_defs(exp, system, server, progress, suite_type, def_file, debug=False):
             raise Exception
         dtg = dtg + timedelta(hours=fcint)
     if suite_type == "surfex":
-        return SurfexSuite(suite_name, exp, joboutdir, env_submit, server_config, server_log, dtgs, def_file,
-                           dtgbeg=dtgbeg)
-        # return None
+        return SurfexSuite(suite_name, exp, joboutdir, env_submit, dtgs=dtgs, dtgbeg=dtgbeg)
     elif suite_type == "unittest":
-        defs = UnitTestSuite(suite_name, exp, def_file, joboutdir, env_submit, server_config, server_log)
+        defs = UnitTestSuite(suite_name, exp, joboutdir, env_submit)
         return defs
     else:
         raise Exception()

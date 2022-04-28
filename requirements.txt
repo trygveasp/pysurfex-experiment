@@ -1,5 +1,7 @@
 argparse
 toml
+numpy
+pyyaml
 tomlkit
 json; python_version < '3'
 pysurfex

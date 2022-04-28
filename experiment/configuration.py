@@ -2,29 +2,19 @@ import experiment_setup
 import json
 
 
-class Configuration(object):
+class ExpConfiguration(object):
 
-    def __init__(self, conf_dict, member_conf_dict, geo=None, debug=False):
+    def __init__(self, conf_dict, member_conf_dict, debug=False):
+        """Configuration object used to write experiment config files and create suite definition
+
+        Args:
+            conf_dict (dict):
+            member_conf_dict (dict):
+            debug (bool):
+        """
 
         self.debug = debug
         self.settings = conf_dict
-        if "GEOMETRY" not in self.settings:
-            self.settings.update({"GEOMETRY": {}})
-        if geo is None:
-            geo = "Not set"
-        self.settings["GEOMETRY"].update({"GEO": geo})
-
-        # Set default file names
-        if "CPGDFILE" not in self.settings["SURFEX"]["IO"]:
-            self.settings["SURFEX"]["IO"].update({"CPGDFILE": "PGD"})
-        if "CPREPFILE" not in self.settings["SURFEX"]["IO"]:
-            self.settings["SURFEX"]["IO"].update({"CPREPFILE": "PREP"})
-        if "CSURFFILE" not in self.settings["SURFEX"]["IO"]:
-            self.settings["SURFEX"]["IO"].update({"CSURFFILE": "SURFOUT"})
-        if "LFAGMAP" not in self.settings["SURFEX"]["IO"]:
-            self.settings["SURFEX"]["IO"].update({"LFAGMAP": True})
-
-        self.settings["SURFEX"]["ASSIM"]["ISBA"]["EKF"].update({"FILE_PATTERN": "SURFOUT_PERT@PERT@"})
 
         # Find EPS information
         self.members = None
@@ -47,6 +37,7 @@ class Configuration(object):
                     raise Exception("Could not find config for member " + str(mbr))
                 member_settings.update({str(mbr): mbr_configs})
         self.member_settings = member_settings
+
         # self.do_build = self.setting_is("COMPILE#BUILD", "yes")
         self.ecoclimap_sg = self.setting_is("SURFEX#COVER#SG", True)
         self.gmted = self.setting_is("SURFEX#ZS#YZS", "gmted2010.dir")
@@ -59,7 +50,16 @@ class Configuration(object):
                 perts.append(p)
         self.perts = perts
 
-    def dump_json(self, filename, indent=None, debug=False):
+    def dump_json(self, filename, indent=None):
+        """dump a json file with configuration
+
+        Args:
+            filename (str): Filename of json file to write
+            indent (int): Indentation in filename
+
+        Returns:
+            None
+        """
         if json is None:
             raise Exception("json module not loaded")
 
@@ -67,9 +67,9 @@ class Configuration(object):
             "settings": self.settings,
             "member_settings": self.member_settings
         }
-        if debug:
+        if self.debug:
             print(__file__, settings)
-        json.dump(open(filename, "w"), settings, indent=indent)
+        json.dump(settings, open(filename, "w"), indent=indent)
 
     def max_fc_length(self, mbr=None):
         ll_list = self.get_ll_list(mbr=mbr)
@@ -140,8 +140,8 @@ class Configuration(object):
 
     def get_setting(self, setting, **kwargs):
         mbr = None
-        if mbr in kwargs:
-            mbr = kwargs["mbr"]
+        if "mbr" in kwargs:
+            mbr = str(kwargs["mbr"])
         sep = "#"
         if "sep" in kwargs:
             sep = kwargs["sep"]
@@ -169,14 +169,12 @@ class Configuration(object):
 
         if keys[0] in settings:
             this_setting = settings[keys[0]]
-            # print(this_setting)
+            if self.debug:
+                print("get_setting", keys[0], "->", this_setting)
             if len(keys) > 1:
                 for key in keys[1:]:
                     if key in this_setting:
                         this_setting = this_setting[key]
-                        # Time information
-                        # this_setting = surfex.SystemFilePaths.substitute_string(this_setting)
-                        # this_setting = surfex.SystemFilePaths.parse_setting(this_setting, **kwargs)
                     else:
                         if default is not None:
                             this_setting = default
@@ -190,7 +188,8 @@ class Configuration(object):
             else:
                 this_setting = None
 
-        # print(setting, this_setting, mbr, type(this_setting))
+        if self.debug:
+            print("get_setting", setting, this_setting, mbr, type(this_setting))
         return this_setting
 
     def update_setting(self, setting, value, mbr=None, sep="#"):
@@ -370,7 +369,7 @@ class Configuration(object):
         return expanded_hh_list, expanded_ll_list
 
 
-class ConfigurationFromJson(Configuration):
+class ExpConfigurationFromJson(ExpConfiguration):
 
     def __init__(self, all_settings, debug=False):
         if json is None:
@@ -378,18 +377,16 @@ class ConfigurationFromJson(Configuration):
 
         settings = all_settings["config"]
         member_settings = all_settings["member_config"]
-        Configuration.__init__(self, settings, member_settings, debug=debug)
+        ExpConfiguration.__init__(self, settings, member_settings, debug=debug)
 
 
-class ConfigurationFromJsonFile(Configuration):
+class ConfigurationFromJsonFile(ExpConfiguration):
 
     def __init__(self, filename, debug=False):
         if json is None:
             raise Exception("json module not loaded")
 
         all_settings = json.load(open(filename, "r"))
-        print(filename)
-        print(all_settings)
         settings = all_settings["config"]
         member_settings = all_settings["member_config"]
-        Configuration.__init__(self, settings, member_settings, debug=debug)
+        ExpConfiguration.__init__(self, settings, member_settings, debug=debug)

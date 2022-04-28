@@ -37,9 +37,12 @@ ecf_tryno = "%ECF_TRYNO%"
 ecf_rid = "%ECF_RID%"
 submission_id = "%SUBMISSION_ID%"
 task_name = "%TASK%"
+debug = True
 args = "%ARGS%"
 if args == "":
-    args = None
+    args = {"wrapper": wrapper}
+
+# TODO join args
 
 task = scheduler.EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid, submission_id)
 
@@ -72,6 +75,15 @@ with scheduler.EcflowClient(server, task) as ci:
         "DTGPP": dtg
     }
 
+    # From ecflow?
+    debug: True
+    kwargs = {
+        "force": False,
+        "check_existence": True,
+        "print_namelist": True
+    }
+
     system_file_paths = json.load(open(lib + "/exp_system.json", "r"))[host]
-    task_class(task, task_config, system_variables, system_file_paths, progress, mbr=mbr, stream=stream, args=args).run(
-        wrapper=wrapper)
+    print(task_class.__name__)
+    task_class(task, task_config, system_variables, system_file_paths, progress,
+               mbr=mbr, stream=stream, debug=debug, **kwargs).run()

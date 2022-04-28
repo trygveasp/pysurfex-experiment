@@ -5,6 +5,13 @@ import json
 
 class Progress(object):
     def __init__(self, progress, progress_pp):
+        """
+        Initialize the experiment progress
+
+        Args:
+            progress (dict): Contains the current date/time information
+            progress_pp (dict): Contains the current date/time information for psot-processing
+        """
 
         # Update DTG/DTGBED/DTGEND
         if "DTG" in progress:
@@ -69,6 +76,17 @@ class Progress(object):
 
     # Members could potentially have different DTGBEGs
     def get_dtgbeg(self, fcint):
+        """
+        get the first DTG of the run
+
+        Args:
+            fcint (int): Time in hours between the forecasts/analysis
+
+        Returns:
+            dtgbeg (datetime.datetime):  first DTG of the run
+
+        """
+
         dtgbeg = self.dtgbeg
         if (self.dtg - timedelta(hours=int(fcint))) < self.dtgbeg:
             dtgbeg = self.dtg
@@ -104,10 +122,17 @@ class Progress(object):
 
 
 class ProgressFromFile(Progress):
-    def __init__(self, progress, progress_pp):
+    def __init__(self, progress_file, progress_pp_file):
+        """
+        Initialize a progress object from files
 
-        self.progress_file = progress
-        self.progress_pp_file = progress_pp
+        Args:
+            progress_file (str): Full path of the progress files
+            progress_pp_file (str): Full path of the post-processing progress file
+        """
+
+        self.progress_file = progress_file
+        self.progress_pp_file = progress_pp_file
         if os.path.exists(self.progress_file):
             progress = json.load(open(self.progress_file, "r"))
         else:

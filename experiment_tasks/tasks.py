@@ -5,16 +5,31 @@ import numpy as np
 import yaml
 from datetime import timedelta, datetime
 import shutil
-import time
 
 
 class AbstractTask(object):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        """ Initialize a task run by the default ecflow container
 
-        # TODO
-        debug = False
-        if "debug" in kwargs:
-            debug = kwargs["debug"]
+        All tasks implelementing this base class will work with the default ecflow container
+
+        Args:
+            task: A scheduler.EcflowTask object
+            config(dict): Dict with configuration
+
+            system (dict): System variables for each host number.
+            exp_file_paths (dict): Paths to dependencies used in the experiment
+            progress (dict): Date/time information for the experiment
+            mbr (str): Ensemble member number
+            stream (str): Stream number
+            debug (bool): Enable debug information
+            **kwargs: Arbitrary keyword arguments.
+
+        Raises:
+
+        Returns:
+
+        """
 
         if surfex is None:
             raise Exception("Surfex module not properly loaded!")
@@ -25,53 +40,48 @@ class AbstractTask(object):
         self.exp_file_paths = surfex.SystemFilePaths(exp_file_paths)
         self.wd = self.exp_file_paths.get_system_path("exp_dir")
 
-        self.mbr = None
-        if "mbr" in kwargs:
-            self.mbr = kwargs["mbr"]
-
-        if debug:
-            print(config)
+        self.members = None
+        self.mbr = mbr
+        self.stream = stream
+        self.sfx_exp_vars = None
+        self.debug = debug
+        if self.debug:
             print("        config: ", json.dumps(config, sort_keys=True, indent=2))
             print("        system: ", json.dumps(system, sort_keys=True, indent=2))
             print("exp_file_paths: ", json.dumps(self.exp_file_paths.system_file_paths, sort_keys=True, indent=2))
-            print("        kwargs: ", kwargs)
 
         # Domain/geo
         self.config = surfex.ConfigurationFromJson(config.copy())
-        domain = self.config.get_setting("GEOMETRY#DOMAIN", mbr=self.mbr)
+
+        settings = config["config"]
+        self.members = None
+        if "FORECAST" in settings:
+            if "ENSMSEL" in settings["FORECAST"]:
+                self.members = settings["FORECAST"]["ENSMSEL"]
+                if len(self.members) == 0:
+                    self.members = None
+                else:
+                    settings = config["member_config"]
+        self.settings = settings
+
+        domain = self.get_setting("GEOMETRY#DOMAIN", mbr=self.mbr)
         domains = self.wd + "/config/domains/Harmonie_domains.json"
         domains = json.load(open(domains, "r"))
         domain_json = surfex.set_domain(domains, domain, hm_mode=True)
         geo = surfex.get_geo_object(domain_json, debug=debug)
-        self.config.settings["GEOMETRY"].update({"GEO": geo})
+        # self.config.settings["GEOMETRY"].update({"GEO": geo})
         self.geo = geo
 
         self.task = task
-        self.task_settings = None
 
-        if kwargs is not None and "task_settings" in kwargs:
-            self.task_settings = kwargs["task_settings"]
-
-        self.stream = None
-        if "stream" in kwargs:
-            self.stream = kwargs["stream"]
-
-        args = None
-        if "args" in kwargs:
-            iargs = kwargs["args"]
-            if iargs != "" and iargs is not None:
-                args = {}
-                iargs = iargs.split(" ")
-                for a in iargs:
-                    var = str(a).split("=")
-                    key = var[0]
-                    value = var[1]
-                    args.update({key: value})
-        self.args = args
+        wrapper = ""
+        if wrapper in kwargs:
+            wrapper = kwargs["wrapper"]
+        self.wrapper = wrapper
 
         masterodb = False
-        lfagmap = self.config.get_setting("SURFEX#IO#LFAGMAP", mbr=self.mbr)
-        self.csurf_filetype = self.config.get_setting("SURFEX#IO#CSURF_FILETYPE", mbr=self.mbr)
+        lfagmap = self.get_setting("SURFEX#IO#LFAGMAP", mbr=self.mbr)
+        self.csurf_filetype = self.get_setting("SURFEX#IO#CSURF_FILETYPE", mbr=self.mbr)
         self.suffix = surfex.SurfFileTypeExtension(self.csurf_filetype, lfagmap=lfagmap, masterodb=masterodb).suffix
 
         self.wrk = self.exp_file_paths.get_system_path("wrk_dir", default_dir="default_wrk_dir", mbr=self.mbr,
@@ -101,7 +111,7 @@ class AbstractTask(object):
         os.chdir(self.wdir)
 
         hh = self.dtg.strftime("%H")
-        self.fcint = self.config.get_fcint(hh, mbr=self.mbr)
+        self.fcint = self.get_fcint(hh, mbr=self.mbr)
         self.fg_dtg = self.dtg - timedelta(hours=self.fcint)
         self.next_dtg = self.dtg + timedelta(hours=self.fcint)
         self.next_dtgpp = self.next_dtg
@@ -122,59 +132,335 @@ class AbstractTask(object):
                 value = self.system[key]
                 self.sfx_exp_vars.update({key: value})
 
-    def run(self, **kwargs):
-        # self.prepare(**kwargs)
-        # Add system variables to arguments
-        if self.sfx_exp_vars is not None:
-            kwargs.update({"sfx_exp_vars": self.sfx_exp_vars})
-        self.execute(**kwargs)
-        self.postfix(**kwargs)
+    def run(self):
 
-    def execute(self, **kwargs):
-        print("WARNING: Using empty base class execute " + str(kwargs))
+        self.execute()
+        self.postfix()
 
-    def postfix(self, **kwargs):
-        print("Base class postfix " + str(kwargs))
+    def execute(self):
+        print("WARNING: Using empty base class execute ")
+
+    def postfix(self):
+        print("Base class postfix")
         if self.wrk is not None:
             os.chdir(self.wrk)
 
         if self.wdir is not None:
             shutil.rmtree(self.wdir)
 
+    def get_setting(self, setting, **kwargs):
+        """
+
+        Args:
+            setting:
+            **kwargs:
+
+        Returns:
+            this_setting
+        """
+
+        check_parsing = False
+        if "check_parsing" in kwargs:
+            check_parsing = kwargs["check_parsing"]
+        kwargs.update({"check_parsing": False})
+        this_setting = self.config.get_setting(setting, **kwargs)
+
+        # Parse setting
+        kwargs.update({"check_parsing": check_parsing})
+        this_setting = self.parse_setting(this_setting, **kwargs)
+        return this_setting
+
+    def parse_setting(self, setting, **kwargs):
+
+        verbosity = 0
+        if "verbosity" in kwargs:
+            verbosity = kwargs["verbosity"]
+
+        check_parsing = True
+        if "check_parsing" in kwargs:
+            check_parsing = kwargs["check_parsing"]
+        # Check on arguments
+        if kwargs is not None and isinstance(setting, str):
+            validtime = None
+            if "validtime" in kwargs:
+                validtime = kwargs["validtime"]
+            mbr = None
+            if "mbr" in kwargs:
+                mbr = kwargs["mbr"]
+            basedtg = None
+            if "basedtg" in kwargs:
+                basedtg = kwargs["basedtg"]
+            tstep = None
+            if "tstep" in kwargs:
+                tstep = kwargs["tstep"]
+            pert = None
+            if "pert" in kwargs:
+                pert = kwargs["pert"]
+            var = None
+            if "var" in kwargs:
+                var = kwargs["var"]
+
+            if basedtg is not None:
+                if isinstance(basedtg, str):
+                    basedtg = datetime.strptime(basedtg, "%Y%m%d%H")
+            if validtime is not None:
+                if isinstance(validtime, str):
+                    validtime = datetime.strptime(validtime, "%Y%m%d%H")
+            else:
+                validtime = basedtg
+
+            if basedtg is not None and validtime is not None:
+                lead_time = validtime - basedtg
+                setting = str(setting).replace("@YYYY_LL@", validtime.strftime("%Y"))
+                setting = str(setting).replace("@MM_LL@", validtime.strftime("%m"))
+                setting = str(setting).replace("@DD_LL@", validtime.strftime("%d"))
+                setting = str(setting).replace("@HH_LL@", validtime.strftime("%H"))
+                setting = str(setting).replace("@mm_LL@", validtime.strftime("%M"))
+                lead_seconds = int(lead_time.total_seconds())
+                # lead_minutes = int(lead_seconds / 3600)
+                lead_hours = int(lead_seconds / 3600)
+                setting = str(setting).replace("@LL@", "{:02d}".format(lead_hours))
+                setting = str(setting).replace("@LLL@", "{:03d}".format(lead_hours))
+                setting = str(setting).replace("@LLLL@", "{:04d}".format(lead_hours))
+                if tstep is not None:
+                    lead_step = int(lead_seconds / tstep)
+                    setting = str(setting).replace("@TTT@", "{:03d}".format(lead_step))
+                    setting = str(setting).replace("@TTTT@", "{:04d}".format(lead_step))
+
+            if basedtg is not None:
+                setting = str(setting).replace("@YMD@", basedtg.strftime("%Y%m%d"))
+                setting = str(setting).replace("@YYYY@", basedtg.strftime("%Y"))
+                setting = str(setting).replace("@YY@", basedtg.strftime("%y"))
+                setting = str(setting).replace("@MM@", basedtg.strftime("%m"))
+                setting = str(setting).replace("@DD@", basedtg.strftime("%d"))
+                setting = str(setting).replace("@HH@", basedtg.strftime("%H"))
+                setting = str(setting).replace("@mm@", basedtg.strftime("%M"))
+
+            if mbr is not None:
+                setting = str(setting).replace("@E@", "mbr{:d}".format(int(mbr)))
+                setting = str(setting).replace("@EE@", "mbr{:02d}".format(int(mbr)))
+                setting = str(setting).replace("@EEE@", "mbr{:03d}".format(int(mbr)))
+            else:
+                setting = str(setting).replace("@E@", "")
+                setting = str(setting).replace("@EE@", "")
+                setting = str(setting).replace("@EEE@", "")
+
+            if pert is not None:
+                print("replace", pert, "in ", setting)
+                setting = str(setting).replace("@PERT@", str(pert))
+                print("replaced", pert, "in ", setting)
+
+            if var is not None:
+                setting = str(setting).replace("@VAR@", var)
+
+            if self.sfx_exp_vars is not None:
+                if verbosity > 2:
+                    print(self.sfx_exp_vars, setting)
+                for sfx_exp_var in self.sfx_exp_vars:
+                    if isinstance(self.sfx_exp_vars[sfx_exp_var], str):
+                        if verbosity > 4:
+                            print(str(setting), "  <--> ", "@" + sfx_exp_var + "@", self.sfx_exp_vars[sfx_exp_var])
+                        setting = str(setting).replace("@" + sfx_exp_var + "@", self.sfx_exp_vars[sfx_exp_var])
+
+        if check_parsing:
+            if isinstance(setting, str) and setting.count("@") > 1:
+                raise Exception("Setting was not substituted properly? " + setting)
+
+        return setting
+
+    def get_total_unique_hh_list(self):
+        # Create a list of all unique HHs from all members
+        # print(self.members, self.get_hh_list())
+        hh_list_all = []
+        if self.members is not None:
+            for mbr in self.members:
+                hh_l = self.get_hh_list(mbr=mbr)
+                for hh in hh_l:
+                    hh = "{:02d}".format(int(hh))
+                    if hh not in hh_list_all:
+                        hh_list_all.append(hh)
+        else:
+            hh_l = self.get_hh_list()
+            for hh in hh_l:
+                hh = "{:02d}".format(int(hh))
+                if hh not in hh_list_all:
+                    hh_list_all.append(hh)
+
+        # print(hh_list_all)
+        # Sort this list
+        hh_list = []
+        for hh in sorted(hh_list_all):
+            hh_list.append(hh)
+
+        return hh_list
+
+    def get_fcint(self, cycle, mbr=None):
+        hh_list = self.get_hh_list(mbr=mbr)
+        fcint = None
+        if len(hh_list) > 1:
+            for hh in range(0, len(hh_list)):
+                h = int(hh_list[hh]) % 24
+                if h == int(cycle) % 24:
+                    if hh == 0:
+                        fcint = (int(hh_list[0]) - int(hh_list[len(hh_list) - 1])) % 24
+                    else:
+                        fcint = int(hh_list[hh]) - int(hh_list[hh - 1])
+        else:
+            fcint = 24
+        return fcint
+
+    def get_hh_list(self, mbr=None):
+        hh_list = self.get_setting("GENERAL#HH_LIST", mbr=mbr)
+        ll_list = self.get_setting("GENERAL#LL_LIST", mbr=mbr)
+        # print(hh_list, ll_list)
+        hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
+        return hh_list
+
+    def get_ll_list(self, mbr=None):
+        hh_list = self.get_setting("GENERAL#HH_LIST", mbr=mbr)
+        ll_list = self.get_setting("GENERAL#LL_LIST", mbr=mbr)
+        hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
+        return ll_list
+
+    @staticmethod
+    def expand_list(string, fmt="{:03d}", sep1=",", sep2=":", sep3="-", maxval=None, add_last=False, tstep=None):
+        elements = string.split(sep1)
+        expanded_list = []
+        if string.strip() == "":
+            return expanded_list
+
+        for i in range(0, len(elements)):
+            element = elements[i]
+            # print(element)
+            if element.find(sep2) > 0 or element.find(sep3) > 0:
+                step = 1
+                if element.find(sep2) > 0:
+                    p1, step = element.split(sep2)
+                else:
+                    p1 = element
+
+                start, end = p1.split(sep3)
+                for ll in range(int(start), int(end) + 1, int(step)):
+                    add = True
+                    if maxval is not None:
+                        if ll > maxval:
+                            add = False
+                    if add:
+                        if tstep is not None:
+                            if (ll * 60) % tstep == 0:
+                                ll = int(ll * 60 / tstep)
+                            else:
+                                print(ll)
+                                raise Exception("Time step is not a minute!")
+                        this_ll = fmt.format(ll)
+                        expanded_list.append(this_ll)
+            else:
+                # print(fmt, element)
+                # print(fmt.decode('ascii'))
+                add = True
+                ll = int(element)
+                if maxval is not None:
+                    if ll > maxval:
+                        add = False
+                if add:
+                    if tstep is not None:
+                        if (ll * 60) % tstep == 0:
+                            ll = int(ll * 60 / tstep)
+                        else:
+                            raise Exception("Time step is not a minute! " + str(ll))
+                    ll = fmt.format(ll)
+                    expanded_list.append(ll)
+
+        # Add last value if wanted and not existing
+        if maxval is not None and add_last:
+            if tstep is not None:
+                if (maxval * 60) % tstep == 0:
+                    maxval = int(maxval * 60 / tstep)
+                else:
+                    raise Exception("Time step is not a minute!")
+            if str(maxval) not in expanded_list:
+                ll = fmt.format(maxval)
+                expanded_list.append(ll)
+        return expanded_list
+
+    def expand_hh_and_ll_list(self, hh_list, ll_list, sep=":"):
+        # hhs = split_hh_and_ll(hh_list)
+        # lls = split_hh_and_ll(ll_list)
+        hhs = self.expand_list(hh_list, fmt="{:02d}")
+        lls_in = self.expand_list(ll_list, fmt="{:d}")
+        # print(hhs)
+        # print(lls_in)
+
+        lls = []
+        j = 0
+        for i in range(0, len(hhs)):
+            lls.append(lls_in[j])
+            j = j + 1
+            if j == len(lls_in):
+                j = 0
+
+        if len(hhs) != len(lls):
+            raise Exception
+
+        expanded_hh_list = []
+        expanded_ll_list = []
+        for i in range(0, len(hhs)):
+            ll = lls[i]
+            # print(i, hhs[i])
+            if hhs[i].find(sep) > 0:
+                p1, step = hhs[i].split(sep)
+                h1, h2 = p1.split("-")
+                for h in range(int(h1), int(h2) + 1, int(step)):
+                    hh = "{:02d}".format(h)
+                    expanded_hh_list.append(hh)
+                    expanded_ll_list.append(ll)
+            else:
+                hh = "{:02d}".format(int(hhs[i]))
+                expanded_hh_list.append(hh)
+                expanded_ll_list.append(ll)
+
+        # print(expanded_hh_list, expanded_ll_list)
+        return expanded_hh_list, expanded_ll_list
 
 class Dummy(object):
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
         self.task = task
         print("Dummy task initialized: ", task)
+        print("           mbr: ", mbr)
+        print("        stream: ", stream)
+        print("         debug: ", debug)
+        print("        kwargs: ", kwargs)
         print("        Config: ", json.dumps(config, sort_keys=True, indent=2))
         print("        system: ", json.dumps(system, sort_keys=True, indent=2))
         print("exp_file_paths: ", json.dumps(exp_file_paths, sort_keys=True, indent=2))
         print("      progress: ", json.dumps(progress, sort_keys=True, indent=2))
-        print("        kwargs: ", kwargs)
 
-    def run(self, **kwargs):
-        print("Dummy task ", self.task, "is run: ", kwargs)
+    def run(self):
+        print("Dummy task ", self.task, "is run")
 
 
 class PrepareCycle(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
 
-    def run(self, **kwargs):
-        self.execute(**kwargs)
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
 
-    def execute(self, **kwargs):
+    def run(self):
+        self.execute()
+
+    def execute(self):
         if os.path.exists(self.wrk):
             shutil.rmtree(self.wrk)
 
 
 class QualityControl(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress,  mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
-    def execute(self, **kwargs):
+    def execute(self):
 
         an_time = self.dtg
         # archive_root = self.get_setting("archive_root")
@@ -277,37 +563,39 @@ class QualityControl(AbstractTask):
         print(self.obsdir)
         output = self.obsdir + "/qc_" + self.translation[self.var_name] + ".json"
         try:
-            tests = self.config.get_setting("OBSERVATIONS#QC#" + self.var_name.upper() + "#TESTS")
+            tests = self.get_setting("OBSERVATIONS#QC#" + self.var_name.upper() + "#TESTS")
         except Exception as e:
-            tests = self.config.get_setting("OBSERVATIONS#QC#TESTS")
+            if self.debug:
+                print("Use default test " + str(e))
+            tests = self.get_setting("OBSERVATIONS#QC#TESTS")
 
         indent = 2
         blacklist = {}
-        debug = True
         print(surfex.__file__)
-        tests = surfex.titan.define_quality_control(tests, settings, an_time, domain_geo=self.geo, debug=debug,
-                                                    blacklist=blacklist)
+        tests = surfex.titan.define_quality_control(tests, settings, an_time, domain_geo=self.geo,
+                                                    debug=self.debug, blacklist=blacklist)
 
         if "netatmo" in settings["sets"]:
-            filepattern = self.config.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN", check_parsing=False)
+            filepattern = self.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN")
             settings["sets"]["netatmo"].update({"filepattern": filepattern})
             print(filepattern)
         if "bufr" in settings["sets"]:
             settings["sets"]["bufr"].update({"filepattern": self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"})
 
         datasources = surfex.obs.get_datasources(an_time, settings["sets"])
-        data_set = surfex.TitanDataSet(self.var_name, settings, tests, datasources, an_time, debug=debug)
+        data_set = surfex.TitanDataSet(self.var_name, settings, tests, datasources, an_time, debug=self.debug)
         data_set.perform_tests()
 
         data_set.write_output(output, indent=indent)
 
 
 class OptimalInterpolation(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress,  mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
-    def execute(self, **kwargs):
+    def execute(self):
 
         if self.var_name in self.translation:
             var = self.translation[self.var_name]
@@ -321,17 +609,17 @@ class OptimalInterpolation(AbstractTask):
         elev_gradient = 0
         epsilon = 0.25
 
-        hlength = self.config.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#HLENGTH", default=hlength)
-        vlength = self.config.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#VLENGTH", default=vlength)
-        wlength = self.config.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#WLENGTH", default=wlength)
-        elev_gradient = self.config.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#GRADIENT",
+        hlength = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#HLENGTH", default=hlength)
+        vlength = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#VLENGTH", default=vlength)
+        wlength = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#WLENGTH", default=wlength)
+        elev_gradient = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#GRADIENT",
                                                 default=elev_gradient)
-        max_locations = self.config.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MAX_LOCATIONS",
+        max_locations = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MAX_LOCATIONS",
                                                 default=max_locations)
-        epsilon = self.config.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#EPISLON", default=epsilon)
-        minvalue = self.config.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MINVALUE", default=None,
+        epsilon = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#EPISLON", default=epsilon)
+        minvalue = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MINVALUE", default=None,
                                            abort=False)
-        maxvalue = self.config.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MAXVALUE", default=None,
+        maxvalue = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MAXVALUE", default=None,
                                            abort=False)
         input_file = self.archive + "/raw_" + var + ".nc"
         output_file = self.archive + "/an_" + var + ".nc"
@@ -356,13 +644,14 @@ class OptimalInterpolation(AbstractTask):
 
 
 class FirstGuess(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
     def execute(self, **kwargs):
 
-        firstguess = self.config.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
+        firstguess = self.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
         fg_file = self.exp_file_paths.get_system_file("first_guess_dir", firstguess, basedtg=self.fg_dtg,
                                                       validtime=self.dtg, default_dir="default_first_guess_dir")
 
@@ -372,12 +661,13 @@ class FirstGuess(AbstractTask):
 
 
 class CycleFirstGuess(FirstGuess):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        FirstGuess.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        FirstGuess.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                            stream=stream, debug=debug, **kwargs)
 
-    def execute(self, **kwargs):
+    def execute(self):
 
-        firstguess = self.config.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
+        firstguess = self.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
         fg_file = self.exp_file_paths.get_system_file("first_guess_dir", firstguess, basedtg=self.fg_dtg,
                                                       validtime=self.dtg, default_dir="default_first_guess_dir")
 
@@ -387,11 +677,12 @@ class CycleFirstGuess(FirstGuess):
 
 
 class Oi2soda(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
-    def execute(self, **kwargs):
+    def execute(self):
 
         yy = self.dtg.strftime("%y")
         mm = self.dtg.strftime("%m")
@@ -406,9 +697,9 @@ class Oi2soda(AbstractTask):
         sd = None
 
         an_variables = {"t2m": False, "rh2m": False, "sd": False}
-        obs_types = self.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-        nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
-        snow_ass = self.config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
+        obs_types = self.get_setting("SURFEX#ASSIM#OBS#COBS_M")
+        nnco = self.get_setting("SURFEX#ASSIM#OBS#NNCO")
+        snow_ass = self.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
         snow_ass_done = False
         if len(snow_ass) > 0:
             hh = int(self.dtg.strftime("%H"))
@@ -450,22 +741,21 @@ class Oi2soda(AbstractTask):
 
 
 class Qc2obsmon(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
-    def execute(self, **kwargs):
+    def execute(self):
 
-        kwargs.update({"dtg": self.dtg})
         outdir = self.extrarch + "/ecma_sfc/" + self.dtg.strftime("%Y%m%d%H") + "/"
         os.makedirs(outdir, exist_ok=True)
         output = outdir + "/ecma.db"
-        kwargs.update({"output": output})
 
         if os.path.exists(output):
             os.unlink(output)
-        nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
-        obs_types = self.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
+        nnco = self.get_setting("SURFEX#ASSIM#OBS#NNCO")
+        obs_types = self.get_setting("SURFEX#ASSIM#OBS#COBS_M")
         for ivar in range(0, len(nnco)):
             if nnco[ivar] == 1:
                 if len(obs_types) > ivar:
@@ -480,21 +770,20 @@ class Qc2obsmon(AbstractTask):
 
                     if var_in != "sd":
                         var_name = self.translation[var_in]
-                        kwargs.update({"qc": self.obsdir + "/qc_" + var_name + ".json"})
-                        kwargs.update({"fg_file": self.archive + "/raw_" + var_name + ".nc"})
-                        kwargs.update({"an_file": self.archive + "/an_" + var_name + ".nc"})
-                        kwargs.update({"varname": var_in})
-                        kwargs.update({"file_var": var_name})
-                        surfex.write_obsmon_sqlite_file(**kwargs)
+                        qc = self.obsdir + "/qc_" + var_name + ".json"
+                        fg_file = self.archive + "/raw_" + var_name + ".nc"
+                        an_file = self.archive + "/an_" + var_name + ".nc"
+                        surfex.write_obsmon_sqlite_file(dtg=self.dtg, output=output, qc=qc, fg_file=fg_file,
+                                                        an_file=an_file, varname=var_in, file_var=var_name)
 
 
 class FirstGuess4OI(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
-    def execute(self, **kwargs):
+    def execute(self):
 
         validtime = self.dtg
 
@@ -507,7 +796,7 @@ class FirstGuess4OI(AbstractTask):
             symlink_files.update({self.archive + "/raw.nc":  "raw" + extra + ".nc"})
         else:
             var_in = []
-            nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+            nnco = self.get_setting("SURFEX#ASSIM#OBS#NNCO")
 
             for ivar in range(0, len(nnco)):
                 if nnco[ivar] == 1:
@@ -531,13 +820,13 @@ class FirstGuess4OI(AbstractTask):
 
         output = self.archive + "/raw" + extra + ".nc"
         cache_time = 3600
-        if "cache_time" in kwargs:
-            cache_time = kwargs["cache_time"]
+        # if "cache_time" in kwargs:
+        #     cache_time = kwargs["cache_time"]
         cache = surfex.cache.Cache(True, cache_time)
         if os.path.exists(output):
             print("Output already exists " + output)
         else:
-            self.write_file(output, variables, self.geo, validtime, cache=cache, sfx_exp_vars=self.sfx_exp_vars)
+            self.write_file(output, variables, self.geo, validtime, cache=cache)
 
         # Create symlinks
         for target in symlink_files:
@@ -546,30 +835,28 @@ class FirstGuess4OI(AbstractTask):
                 os.unlink(target)
             os.symlink(linkfile, target)
 
-    def write_file(self, output, variables, geo, validtime, cache=None, sfx_exp_vars=None):
+    def write_file(self, output, variables, geo, validtime, cache=None):
 
         fg = None
         for var in variables:
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg, validtime=self.dtg,
-                                                    sfx_exp_vars=sfx_exp_vars)
+                inputfile = self.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg, validtime=self.dtg)
             except Exception as e:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
-                inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg, validtime=self.dtg,
-                                                    sfx_exp_vars=sfx_exp_vars)
+                inputfile = self.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg, validtime=self.dtg)
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                fileformat = self.config.get_setting(identifier + "FILEFORMAT")
+                fileformat = self.get_setting(identifier + "FILEFORMAT")
             except Exception as e:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
-                fileformat = self.config.get_setting(identifier + "FILEFORMAT")
+                fileformat = self.get_setting(identifier + "FILEFORMAT")
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                converter = self.config.get_setting(identifier + "CONVERTER")
+                converter = self.get_setting(identifier + "CONVERTER")
             except Exception as e:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
-                converter = self.config.get_setting(identifier + "CONVERTER")
+                converter = self.get_setting(identifier + "CONVERTER")
 
             print(inputfile, fileformat, converter)
             config_file = self.wd + "/config/first_guess.yml"
@@ -607,16 +894,14 @@ class FirstGuess4OI(AbstractTask):
 
 
 class LogProgress(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
-    def execute(self, **kwargs):
+    def execute(self):
 
-        stream = None
-        if "stream" in kwargs:
-            stream = kwargs["stream"]
-
+        stream = self.stream
         st = ""
         if stream is not None and stream != "":
             st = "_stream_" + stream
@@ -630,15 +915,14 @@ class LogProgress(AbstractTask):
 
 
 class LogProgressPP(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
-    def execute(self, **kwargs):
+    def execute(self):
 
-        stream = None
-        if "stream" in kwargs:
-            stream = kwargs["stream"]
+        stream = self.stream
 
         st = ""
         if stream is not None and stream != "":
@@ -653,105 +937,49 @@ class LogProgressPP(AbstractTask):
 
 
 class PrepareOiSoilInput(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
 
-    def execute(self, **kwargs):
+    def execute(self):
         # Create FG
         raise NotImplementedError
 
 
 class PrepareOiClimate(AbstractTask):
-    def __init__(self, task,  config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task,  config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
 
-    def execute(self, **kwargs):
+    def execute(self):
         # Create CLIMATE.dat
         raise NotImplementedError
 
 
 class PrepareSST(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
 
-    def execute(self, **kwargs):
+    def execute(self):
         # Create CLIMATE.dat
         raise NotImplementedError
 
 
 class PrepareLSM(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
 
-    def execute(self, **kwargs):
+    def execute(self):
 
         file = self.archive + "/raw_nc"
         output = self.exp_file_paths.get_system_file("climdir", "LSM.DAT", check_existence=False,
                                                      default_dir="default_climdir")
         fileformat = "netcdf"
         converter = "none"
-        kwargs = {
-            "var": "land_area_fraction",
-            "file":  file,
-            "fileformat": fileformat,
-            "output": output,
-            "dtg": self.dtg,
-            "geo": self.geo,
-            "converter": converter,
-        }
-        print(kwargs)
-        surfex.lsm_file_assim(**kwargs)
+
+        surfex.lsm_file_assim(var="land_area_fraction", file=file, fileformat=fileformat, output=output,
+                              dtg=self.dtg, geo=self.geo, converter=converter)
 
 
-# Two test cases
-class UnitTest(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-
-    def execute(self, **kwargs):
-        os.makedirs("/tmp/host0/job/test_start_and_run/", exist_ok=True)
-        fh = open("/tmp/host1/scratch/sfx_home/test_start_and_run/unittest_ok", "w")
-        fh.write("ok")
-        fh.close()
-
-
-class SleepingBeauty(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-
-    def execute(self, **kwargs):
-        print("Sleeping beauty...")
-        print("Create /tmp/host1/scratch/sfx_home/test_start_and_run/SleepingBeauty")
-        os.makedirs("/tmp/host0/job/test_start_and_run/", exist_ok=True)
-        fh = open("/tmp/host1/scratch/sfx_home/test_start_and_run/SleepingBeauty", "w")
-        fh.write("SleepingBeauty")
-        fh.close()
-        for i in range(0, 20):
-            print("sleep.... ", i, "\n")
-            time.sleep(1)
-
-
-class SleepingBeauty2(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-
-    def execute(self, **kwargs):
-        print("Will the real Sleeping Beauty, please wake up! please wake up!")
-        print("Create /tmp/host1/scratch/sfx_home/test_start_and_run/SleepingBeauty2")
-        os.makedirs("/tmp/host0/job/test_start_and_run/", exist_ok=True)
-        fh = open("/tmp/host1/scratch/sfx_home/test_start_and_run/SleepingBeauty2", "w")
-        fh.write("SleepingBeauty")
-        fh.close()
-
-
-class WakeUpCall(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-
-    def execute(self, **kwargs):
-        print("This job is default suspended and manually submitted!")
-        print("Create /tmp/host1/scratch/sfx_home/test_start_and_run/test_submit")
-        os.makedirs("/tmp/host0/job/test_start_and_run/", exist_ok=True)
-        fh = open("/tmp/host1/scratch/sfx_home/test_start_and_run/test_submit", "w")
-        fh.write("Job was submitted")
-        fh.close()

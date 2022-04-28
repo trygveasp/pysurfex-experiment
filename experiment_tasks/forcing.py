@@ -7,20 +7,25 @@ import json
 
 
 class Forcing(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+                              stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
-        # self.binary = self.config.
 
-    def execute(self, **kwargs):
+        user_config = None
+        if "user_config" in kwargs:
+            user_config = kwargs["user_config"]
+        self.user_config = user_config
+
+    def execute(self):
 
         dtg = self.dtg
         hh = self.dtg.strftime("%H")
         fcint = self.config.get_fcint(hh, mbr=self.mbr)
 
-        user_config = None
-        if user_config is not None:
-            user_config = yaml.load(open(kwargs["user_config"]))
+        kwargs = {}
+        if self.user_config is not None:
+            user_config = yaml.load(open(self.user_config))
             kwargs.update({"user_config": user_config})
 
         json.dump(self.geo.json, open(self.wdir + "/domain.json", "w"), indent=2)
@@ -36,7 +41,7 @@ class Forcing(AbstractTask):
                                                           default_dir="default_forcing_dir")
         os.makedirs(forcing_dir, exist_ok=True)
 
-        output_format = self.config.get_setting("SURFEX#IO#CFORCING_FILETYPE").lower()
+        output_format = self.get_setting("SURFEX#IO#CFORCING_FILETYPE").lower()
         if output_format == "netcdf":
             output = forcing_dir + "/FORCING.nc"
         else:
@@ -45,19 +50,19 @@ class Forcing(AbstractTask):
         kwargs.update({"of": output})
         kwargs.update({"output_format": output_format})
 
-        pattern = self.config.get_setting("FORCING#PATTERN", check_parsing=False)
+        pattern = self.get_setting("FORCING#PATTERN", check_parsing=False)
         input_format = self.config.get_setting("FORCING#INPUT_FORMAT")
-        zref = self.config.get_setting("FORCING#ZREF")
-        zval = self.config.get_setting("FORCING#ZVAL")
-        uref = self.config.get_setting("FORCING#UREF")
-        uval = self.config.get_setting("FORCING#UVAL")
-        zsoro_converter = self.config.get_setting("FORCING#ZSORO_CONVERTER")
-        sca_sw = self.config.get_setting("FORCING#SCA_SW")
-        co2 = self.config.get_setting("FORCING#CO2")
-        rain_converter = self.config.get_setting("FORCING#RAIN_CONVERTER")
-        wind_converter = self.config.get_setting("FORCING#WIND_CONVERTER")
-        wind_dir_converter = self.config.get_setting("FORCING#WINDDIR_CONVERTER")
-        debug = self.config.get_setting("FORCING#DEBUG")
+        zref = self.get_setting("FORCING#ZREF")
+        zval = self.get_setting("FORCING#ZVAL")
+        uref = self.get_setting("FORCING#UREF")
+        uval = self.get_setting("FORCING#UVAL")
+        zsoro_converter = self.get_setting("FORCING#ZSORO_CONVERTER")
+        sca_sw = self.get_setting("FORCING#SCA_SW")
+        co2 = self.get_setting("FORCING#CO2")
+        rain_converter = self.get_setting("FORCING#RAIN_CONVERTER")
+        wind_converter = self.get_setting("FORCING#WIND_CONVERTER")
+        wind_dir_converter = self.get_setting("FORCING#WINDDIR_CONVERTER")
+        debug = self.get_setting("FORCING#DEBUG")
 
         kwargs.update({"input_format": input_format})
         kwargs.update({"pattern": pattern})
