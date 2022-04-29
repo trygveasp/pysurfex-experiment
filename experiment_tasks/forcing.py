@@ -21,17 +21,17 @@ class Forcing(AbstractTask):
 
         dtg = self.dtg
         hh = self.dtg.strftime("%H")
-        fcint = self.config.get_fcint(hh, mbr=self.mbr)
+        fcint = self.get_fcint(hh, mbr=self.mbr)
 
         kwargs = {}
         if self.user_config is not None:
-            user_config = yaml.load(open(self.user_config))
+            user_config = yaml.safe_load(open(self.user_config))
             kwargs.update({"user_config": user_config})
 
         json.dump(self.geo.json, open(self.wdir + "/domain.json", "w"), indent=2)
         kwargs.update({"domain": self.wdir + "/domain.json"})
         global_config = self.wd + "/config/config.yml"
-        global_config = yaml.load(open(global_config, "r"))
+        global_config = yaml.safe_load(open(global_config, "r"))
         kwargs.update({"config": global_config})
 
         kwargs.update({"dtg_start": dtg.strftime("%Y%m%d%H")})

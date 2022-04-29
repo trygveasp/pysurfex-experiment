@@ -63,10 +63,16 @@ class ExpConfiguration(object):
         if json is None:
             raise Exception("json module not loaded")
 
-        settings = {
-            "settings": self.settings,
-            "member_settings": self.member_settings
-        }
+        settings = self.settings.copy()
+        if self.members is not None:
+            for member in self.members:
+                member_settings = {}
+                for setting in self.member_settings:
+                    member_setting = self.get_setting(setting, mbr=member)
+                    member_settings = experiment_setup.merge_toml_env(member_settings, member_setting)
+
+                settings.update({member: experiment_setup.merge_toml_env(settings, member_settings)})
+
         if self.debug:
             print(__file__, settings)
         json.dump(settings, open(filename, "w"), indent=indent)
@@ -141,7 +147,8 @@ class ExpConfiguration(object):
     def get_setting(self, setting, **kwargs):
         mbr = None
         if "mbr" in kwargs:
-            mbr = str(kwargs["mbr"])
+            if kwargs["mbr"] is not None:
+                mbr = str(kwargs["mbr"])
         sep = "#"
         if "sep" in kwargs:
             sep = kwargs["sep"]

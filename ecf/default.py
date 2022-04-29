@@ -68,7 +68,10 @@ with scheduler.EcflowClient(server, task) as ci:
         raise Exception("Class not found for task " + task_name)
 
     # The task knows which host it runs on and which member it is
-    task_config = json.load(open(lib + "/exp_configuration.json", "r"))
+    if mbr is None:
+        task_config = json.load(open(lib + "/exp_configuration.json", "r"))
+    else:
+        task_config = json.load(open(lib + "/exp_configuration.json", "r"))[mbr]
     progress = {
         "DTG": dtg,
         "DTGBEG": dtgbeg,

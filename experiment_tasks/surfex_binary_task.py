@@ -137,7 +137,7 @@ class Pgd(SurfexBinaryTask):
 
     def execute(self):
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
-        output = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir", verbosity=10)
+        output = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
         xyz = self.get_setting("COMPILE#XYZ")
         binary = self.bindir + "/PGD" + xyz
 
@@ -157,8 +157,7 @@ class Prep(SurfexBinaryTask):
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
         prep_file = self.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILE",
-                                     validtime=self.dtg,
-                                     basetime=self.fg_dtg)
+                                     validtime=self.dtg, basedtg=self.fg_dtg)
         prep_filetype = self.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILETYPE")
         prep_pgdfile = self.get_setting("INITIAL_CONDITIONS#PREP_PGDFILE")
         prep_pgdfiletype = self.get_setting("INITIAL_CONDITIONS#PREP_PGDFILETYPE")

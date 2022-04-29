@@ -166,7 +166,7 @@ class ExpFromFiles(Exp):
                      submit_exceptions=submit_exceptions,
                      system_file_paths=system_file_paths, debug=debug,
                      system=system, server=server, env_submit=env_submit, progress=progress)
-        self.dump_exp_configuration(self.wd + "/exp_configuration.json")
+        self.config.dump_json(self.wd + "/exp_configuration.json")
 
     def get_config_files(self):
         """Get the needed set of configurations files

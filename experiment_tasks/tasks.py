@@ -51,9 +51,9 @@ class AbstractTask(object):
             print("exp_file_paths: ", json.dumps(self.exp_file_paths.system_file_paths, sort_keys=True, indent=2))
 
         # Domain/geo
-        self.config = surfex.ConfigurationFromJson(config.copy())
+        self.config = surfex.Configuration(config.copy())
 
-        settings = config["config"]
+        settings = config
         self.members = None
         if "FORECAST" in settings:
             if "ENSMSEL" in settings["FORECAST"]:
@@ -84,18 +84,16 @@ class AbstractTask(object):
         self.csurf_filetype = self.get_setting("SURFEX#IO#CSURF_FILETYPE", mbr=self.mbr)
         self.suffix = surfex.SurfFileTypeExtension(self.csurf_filetype, lfagmap=lfagmap, masterodb=masterodb).suffix
 
-        self.wrk = self.exp_file_paths.get_system_path("wrk_dir", default_dir="default_wrk_dir", mbr=self.mbr,
-                                                       basedtg=self.dtg)
-        self.archive = self.exp_file_paths.get_system_path("archive_dir", default_dir="default_archive_dir",
-                                                           mbr=self.mbr, basedtg=self.dtg)
+        self.wrk = self.get_system_path("wrk_dir", default_dir="default_wrk_dir", mbr=self.mbr, basedtg=self.dtg)
+        self.archive = self.get_system_path("archive_dir", default_dir="default_archive_dir", mbr=self.mbr,
+                                            basedtg=self.dtg)
         os.makedirs(self.archive, exist_ok=True)
-        self.bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
+        self.bindir = self.get_system_path("bin_dir", default_dir="default_bin_dir")
 
-        self.extrarch = self.exp_file_paths.get_system_path("extrarch_dir", default_dir="default_extrarch_dir",
-                                                            mbr=self.mbr,  basedtg=self.dtg)
+        self.extrarch = self.get_system_path("extrarch_dir", default_dir="default_extrarch_dir", mbr=self.mbr,
+                                             basedtg=self.dtg)
         os.makedirs(self.extrarch, exist_ok=True)
-        self.obsdir = self.exp_file_paths.get_system_path("obs_dir", default_dir="default_obs_dir", mbr=self.mbr,
-                                                          basedtg=self.dtg)
+        self.obsdir = self.get_system_path("obs_dir", default_dir="default_obs_dir", mbr=self.mbr, basedtg=self.dtg)
 
         self.exp_file_paths.add_system_file_path("wrk_dir", self.wrk)
         self.exp_file_paths.add_system_file_path("bin_dir", self.bindir)
@@ -148,57 +146,59 @@ class AbstractTask(object):
         if self.wdir is not None:
             shutil.rmtree(self.wdir)
 
-    def get_setting(self, setting, **kwargs):
+    def get_system_path(self, dname, default_dir=None, mbr=None, validtime=None, basedtg=None):
+
+        path = self.exp_file_paths.get_system_path(dname, default_dir=default_dir, mbr=mbr,
+                                                   validtime=validtime, basedtg=basedtg)
+        if mbr is not None:
+            path = str(path).replace("@E@", "mbr{:d}".format(int(mbr)))
+            path = str(path).replace("@EE@", "mbr{:02d}".format(int(mbr)))
+            path = str(path).replace("@EEE@", "mbr{:03d}".format(int(mbr)))
+        else:
+            path = str(path).replace("@E@", "")
+            path = str(path).replace("@EE@", "")
+            path = str(path).replace("@EEE@", "")
+        return path
+
+    def get_system_file(self, dname, file, default_dir=None, mbr=None, validtime=None, basedtg=None):
+
+        file = self.exp_file_paths.get_system_file(dname, file, default_dir=default_dir, mbr=mbr,
+                                                   validtime=validtime, basedtg=basedtg)
+        return file
+
+    def get_setting(self, setting, check_parsing=True, validtime=None, basedtg=None, mbr=None, tstep=None, pert=None,
+                    var=None, default=None, abort=True):
         """
 
         Args:
             setting:
-            **kwargs:
+            check_parsing:
+            validtime:
+            basedtg:
+            mbr:
+            tstep:
+            pert:
+            var:
+            default:
+            abort:
 
         Returns:
-            this_setting
+
         """
 
-        check_parsing = False
-        if "check_parsing" in kwargs:
-            check_parsing = kwargs["check_parsing"]
-        kwargs.update({"check_parsing": False})
-        this_setting = self.config.get_setting(setting, **kwargs)
+        this_setting = self.config.get_setting(setting, check_parsing=False, validtime=validtime, basedtg=basedtg,
+                                               mbr=mbr, tstep=tstep, pert=pert, var=var, default=default, abort=abort)
 
         # Parse setting
-        kwargs.update({"check_parsing": check_parsing})
-        this_setting = self.parse_setting(this_setting, **kwargs)
+        this_setting = self.parse_setting(this_setting, check_parsing=check_parsing, validtime=validtime,
+                                          basedtg=basedtg, mbr=mbr, tstep=tstep, pert=pert, var=var)
         return this_setting
 
-    def parse_setting(self, setting, **kwargs):
+    def parse_setting(self, setting, check_parsing=True, validtime=None, basedtg=None, mbr=None, tstep=None, pert=None,
+                      var=None):
 
-        verbosity = 0
-        if "verbosity" in kwargs:
-            verbosity = kwargs["verbosity"]
-
-        check_parsing = True
-        if "check_parsing" in kwargs:
-            check_parsing = kwargs["check_parsing"]
         # Check on arguments
-        if kwargs is not None and isinstance(setting, str):
-            validtime = None
-            if "validtime" in kwargs:
-                validtime = kwargs["validtime"]
-            mbr = None
-            if "mbr" in kwargs:
-                mbr = kwargs["mbr"]
-            basedtg = None
-            if "basedtg" in kwargs:
-                basedtg = kwargs["basedtg"]
-            tstep = None
-            if "tstep" in kwargs:
-                tstep = kwargs["tstep"]
-            pert = None
-            if "pert" in kwargs:
-                pert = kwargs["pert"]
-            var = None
-            if "var" in kwargs:
-                var = kwargs["var"]
+        if isinstance(setting, str):
 
             if basedtg is not None:
                 if isinstance(basedtg, str):
@@ -254,11 +254,11 @@ class AbstractTask(object):
                 setting = str(setting).replace("@VAR@", var)
 
             if self.sfx_exp_vars is not None:
-                if verbosity > 2:
+                if self.debug:
                     print(self.sfx_exp_vars, setting)
                 for sfx_exp_var in self.sfx_exp_vars:
                     if isinstance(self.sfx_exp_vars[sfx_exp_var], str):
-                        if verbosity > 4:
+                        if self.debug:
                             print(str(setting), "  <--> ", "@" + sfx_exp_var + "@", self.sfx_exp_vars[sfx_exp_var])
                         setting = str(setting).replace("@" + sfx_exp_var + "@", self.sfx_exp_vars[sfx_exp_var])
 
@@ -421,6 +421,7 @@ class AbstractTask(object):
 
         # print(expanded_hh_list, expanded_ll_list)
         return expanded_hh_list, expanded_ll_list
+
 
 class Dummy(object):
 
@@ -613,14 +614,14 @@ class OptimalInterpolation(AbstractTask):
         vlength = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#VLENGTH", default=vlength)
         wlength = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#WLENGTH", default=wlength)
         elev_gradient = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#GRADIENT",
-                                                default=elev_gradient)
+                                         default=elev_gradient)
         max_locations = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MAX_LOCATIONS",
-                                                default=max_locations)
+                                         default=max_locations)
         epsilon = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#EPISLON", default=epsilon)
         minvalue = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MINVALUE", default=None,
-                                           abort=False)
+                                    abort=False)
         maxvalue = self.get_setting("OBSERVATIONS#OI#" + self.var_name.upper() + "#MAXVALUE", default=None,
-                                           abort=False)
+                                    abort=False)
         input_file = self.archive + "/raw_" + var + ".nc"
         output_file = self.archive + "/an_" + var + ".nc"
 
@@ -689,8 +690,7 @@ class Oi2soda(AbstractTask):
         dd = self.dtg.strftime("%d")
         hh = self.dtg.strftime("%H")
         obfile = "OBSERVATIONS_" + yy + mm + dd + "H" + hh + ".DAT"
-        output = self.exp_file_paths.get_system_file("obs_dir", obfile, mbr=self.mbr, basedtg=self.dtg,
-                                                     default_dir="default_obs_dir")
+        output = self.get_system_file("obs_dir", obfile, mbr=self.mbr, basedtg=self.dtg,  default_dir="default_obs_dir")
 
         t2m = None
         rh2m = None
@@ -860,7 +860,7 @@ class FirstGuess4OI(AbstractTask):
 
             print(inputfile, fileformat, converter)
             config_file = self.wd + "/config/first_guess.yml"
-            config = yaml.load(open(config_file, "r"))
+            config = yaml.safe_load(open(config_file, "r"))
             defs = config[fileformat]
             defs.update({"filepattern": inputfile})
 
