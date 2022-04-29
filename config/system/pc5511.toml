@@ -8,25 +8,26 @@
 COMPCENTRE="LOCAL"
 
 # Define hosts
-HOSTS = ["pc4384"]
+HOSTS = ["pc5511"]
 
 # Location of working data, fast and large system
 # Experiment identifier and directories
 # EXP is defined when an experiment is started by "Harmonie start ..."
-SFX_EXP_DATA = "$HOME/scratch/sfx_home/$EXP"	# HM_DATA on main HIRLAM host
-# experiment archive directory in LPFS
-SFX_EXP_EXP = "$HOME/scratch/sfx_home/$EXP/$EXP"
+SFX_EXP_DATA = "/home/@USER@/scratch/sfx_home/@EXP@"	# HM_DATA on main HIRLAM host
 # directory for scripts, compiled objects, executables
-SFX_EXP_LIB = "$HOME/sfx_home/$EXP"
+SFX_EXP_LIB = "/home/@USER@/scratch/sfx_home/@EXP@/lib"
 
 HOST_NAME = ""
-ECF_HOST = "pc4384"
-ECF_LOGHOST = "pc4384"
+ECF_HOST = "pc5511"
+ECF_LOGHOST = "pc5511"
 
 HOST_INSTALL = "0"
 
-JOBOUTDIR = "$HOME/ecflow"
+JOBOUTDIR = "/home/@USER@/scratch/sfx_home/ecflow"
 MKDIR = "mkdir -p"
 RSYNC = "rsync -avh"
 
-SURFEX_CONFIG = ""
+SURFEX_CONFIG = "pc5511"
+SCHEDULER_PYTHONPATH = "/home/trygveasp/git/pysurfex-scheduler"
+LOGIN_HOST = "pc5511"
+SYNC_DATA = false

@@ -7,7 +7,7 @@
   "ecoclimap_dir": "/lustre/storeA/users/asmundb/surfex/climdata/",
   "ecoclimap_cover_dir": "/lustre/storeA/users/asmundb/surfex/climdata/",
   "ecoclimap_bin_dir": "/modules/SOURCES/centos7-SOURCES/surfex/cy43_develop/util/offline/MY_RUN/ECOCLIMAP/",
-  "ecoclimap_sg_cover_dir": "//lustre/storeA/users/asmundb/surfex/climdata/",
+  "ecoclimap_sg_cover_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/COVER/",
   "tree_height_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/HT/",
   "albnir_soil_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBNIR_SNOWFREE",
   "albnir_veg_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBNIR_SNOWFREE",
