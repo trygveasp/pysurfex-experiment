@@ -23,21 +23,6 @@ def parse_surfex_script(argv):
     # co
     parser.add_argument("--file", type=str, default=None, required=False, help="File to checkout")
 
-    '''
-    # Setup variables
-    parser.add_argument('-rev', dest="rev", help="Surfex experiement source revison", type=str, required=False,
-                        default=None)
-    parser.add_argument('-surfex', dest="pysurfex", help="Pysurfex library", type=str, required=False,
-                        default=None)
-    parser.add_argument('-scheduler', dest="pysurfex_scheduler", help="Pysurfex-scheduler library", type=str,
-                        required=False, default=None)
-    parser.add_argument('-experiment', dest="pysurfex_experiment", help="Pysurfex-experiment library", type=str,
-                        required=False, default=None)
-    parser.add_argument('-host', dest="host", help="Host label for setup files", type=str, required=False,
-                        default=None)
-    '''
-    parser.add_argument('--config', help="Config", type=str, required=False, default=None)
-    parser.add_argument('--config_file', help="Config file", type=str, required=False, default=None)
     parser.add_argument('--debug', dest="debug", action="store_true", help="Debug information")
     parser.add_argument('--version', action='version', version=experiment.__version__)
 
@@ -70,7 +55,6 @@ def surfex_script(**kwargs):
     dtg = kwargs["dtg"]
     dtgend = kwargs["dtgend"]
     suite = kwargs["suite"]
-    stream = kwargs["stream"]
 
     begin = True
     if "begin" in kwargs:
@@ -157,7 +141,7 @@ def surfex_script(**kwargs):
 
         # Set experiment from files. Should be existing now after setup
         exp_dependencies_file = wd + "/paths_to_sync.json"
-        sfx_exp = experiment.ExpFromFiles(exp_dependencies_file, stream=stream)
+        sfx_exp = experiment.ExpFromFiles(exp_dependencies_file, debug=debug)
         system = sfx_exp.system
 
         data0 = system.get_var("SFX_EXP_DATA", "0")
@@ -196,3 +180,46 @@ def surfex_script(**kwargs):
         defs = experiment.get_defs(sfx_exp, system, progress, suite, debug=debug)
         defs.save_as_defs(def_file)
         my_scheduler.start_suite(defs.suite_name, def_file, begin=begin)
+
+
+def parse_update_config(argv):
+    """Parse the command line input arguments."""
+    parser = ArgumentParser("Update Surfex offline configuration")
+    parser.add_argument('-exp_name', dest="exp", help="Experiment name", type=str, default=None)
+    parser.add_argument('--wd', help="Experiment working directory", type=str, default=None)
+    parser.add_argument('--debug', dest="debug", action="store_true", help="Debug information")
+    parser.add_argument('--version', action='version', version=experiment.__version__)
+
+    args = parser.parse_args(argv)
+    kwargs = {}
+    for arg in vars(args):
+        kwargs.update({arg: getattr(args, arg)})
+    return kwargs
+
+
+def update_config(**kwargs):
+
+    debug = False
+    if "debug" in kwargs:
+        debug = kwargs["debug"]
+
+    exp = None
+    if "exp" in kwargs:
+        exp = kwargs["exp"]
+
+    wd = None
+    if "wd" in kwargs:
+        wd = kwargs["wd"]
+
+    # Find experiment
+    if wd is None:
+        wd = os.getcwd()
+        print("Setting current working directory as WD: " + wd)
+    if exp is None:
+        print("Setting EXP from WD:" + wd)
+        exp = wd.split("/")[-1]
+        print("EXP = " + exp)
+
+    # Set experiment from files. Should be existing now after setup
+    exp_dependencies_file = wd + "/paths_to_sync.json"
+    experiment.ExpFromFiles(exp_dependencies_file, debug=debug)
