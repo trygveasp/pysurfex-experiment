@@ -36,6 +36,15 @@ class SurfexBinaryTask(AbstractTask):
             pert = kwargs["pert"]
         self.pert = pert
 
+        xyz = ".exe"
+        libdir = self.sfx_exp_vars["SFX_EXP_LIB"]
+        xyz_file = libdir + "/xyz"
+        if os.path.exists(xyz_file):
+            xyz = open(xyz_file, "r").read().rstrip()
+        else:
+            print(xyz_file + " not found. Assume XYZ=" + xyz)
+        self.xyz = xyz
+
     def execute(self):
         raise NotImplementedError
 
@@ -70,7 +79,7 @@ class SurfexBinaryTask(AbstractTask):
             raise NotImplementedError(self.mode + " is not implemented!")
 
         print("pgd", pgd_file_path)
-        print(self.perturbed, pert)
+        print(self.perturbed, self.pert)
 
         self.namelist = surfex.BaseNamelist(self.mode, self.config, self.input_path, forc_zs=forc_zs,
                                             prep_file=prep_file, prep_filetype=prep_filetype,
@@ -108,7 +117,7 @@ class SurfexBinaryTask(AbstractTask):
             surffile = None
 
         if self.perturbed:
-            surfex.PerturbedOffline(binary, batch, prepfile, pert, settings, input_data,
+            surfex.PerturbedOffline(binary, batch, prepfile, self.pert, settings, input_data,
                                     pgdfile=pgdfile, surfout=surffile,
                                     archive_data=archive_data,
                                     print_namelist=self.print_namelist)
@@ -138,8 +147,7 @@ class Pgd(SurfexBinaryTask):
     def execute(self):
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         output = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
-        xyz = self.get_setting("COMPILE#XYZ")
-        binary = self.bindir + "/PGD" + xyz
+        binary = self.bindir + "/PGD" + self.xyz
 
         if not os.path.exists(output) or self.force:
             SurfexBinaryTask.execute_binary(self, binary=binary, output=output)
@@ -164,8 +172,7 @@ class Prep(SurfexBinaryTask):
         prepfile = self.get_setting("SURFEX#IO#CPREPFILE") + self.suffix
         output = self.exp_file_paths.get_system_file("prep_dir", prepfile, basedtg=self.dtg,
                                                      default_dir="default_archive_dir")
-        xyz = self.get_setting("COMPILE#XYZ")
-        binary = self.bindir + "/PREP" + xyz
+        binary = self.bindir + "/PREP" + self.xyz
 
         if not os.path.exists(output) or self.force:
 
@@ -192,8 +199,7 @@ class Forecast(SurfexBinaryTask):
 
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
-        xyz = self.get_setting("COMPILE#XYZ")
-        binary = self.bindir + "/OFFLINE" + xyz
+        binary = self.bindir + "/OFFLINE" + self.xyz
         forc_zs = self.get_setting("FORECAST#FORC_ZS")
 
         output = self.archive + "/" + self.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
@@ -232,9 +238,8 @@ class PerturbedRun(SurfexBinaryTask):
 
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
-        xyz = self.get_setting("COMPILE#XYZ")
         bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
-        binary = bindir + "/OFFLINE" + xyz
+        binary = bindir + "/OFFLINE" + self.xyz
         forc_zs = self.get_setting("FORECAST#FORC_ZS")
 
         # PREP file is previous analysis unless first assimilation cycle
@@ -243,14 +248,15 @@ class PerturbedRun(SurfexBinaryTask):
         else:
             prepfile = "ANALYSIS" + self.suffix
 
-        prep_file_path = self.exp_file_paths.get_system_file("prep_dir", prepfile, mbr=self.mbr, basedtg=self.fg_dtg)
+        prep_file_path = self.exp_file_paths.get_system_file("prep_dir", prepfile, mbr=self.mbr, basedtg=self.fg_dtg,
+                                                             default_dir="default_archive_dir")
 
-        output = self.archive + "/" + self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT" + self.pert + self.suffix
+        output = self.archive + "/" + self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT" + str(self.pert) + self.suffix
 
         # Forcing dir is for previous cycle
         # TODO If pertubed runs moved to pp it should be a diffenent dtg
         self.exp_file_paths.add_system_file_path("forcing_dir", self.exp_file_paths.get_system_path(
-            "forcing_dir", mbr=self.mbr, basedtg=self.fg_dtg))
+            "forcing_dir", mbr=self.mbr, basedtg=self.fg_dtg, default_dir="default_forcing_dir"))
 
         if not os.path.exists(output) or self.force:
             SurfexBinaryTask.execute_binary(self, binary, output,
@@ -268,9 +274,8 @@ class Soda(SurfexBinaryTask):
                                   stream=stream, **kwargs)
 
     def execute(self):
-        xyz = self.get_setting("COMPILE#XYZ")
         bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
-        binary = bindir + "/SODA" + xyz
+        binary = bindir + "/SODA" + self.xyz
 
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
@@ -284,6 +289,10 @@ class Soda(SurfexBinaryTask):
                                                                     default_dir="default_archive_dir")
             self.exp_file_paths.add_system_file_path("perturbed_run_dir", perturbed_run_dir,
                                                      mbr=self.mbr, basedtg=self.dtg)
+            first_guess_dir = self.exp_file_paths.get_system_path("default_archive_dir", mbr=self.mbr,
+                                                                  validtime=self.dtg, basedtg=self.fg_dtg)
+            self.exp_file_paths.add_system_file_path("first_guess_dir", first_guess_dir)
+
             perturbed_file_pattern = self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT@PERT@" + self.suffix
 
         if not os.path.exists(output) or self.force:
