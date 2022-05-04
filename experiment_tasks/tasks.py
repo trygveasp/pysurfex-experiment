@@ -577,7 +577,7 @@ class QualityControl(AbstractTask):
                                                     debug=self.debug, blacklist=blacklist)
 
         if "netatmo" in settings["sets"]:
-            filepattern = self.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN")
+            filepattern = self.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN", check_parsing=False)
             settings["sets"]["netatmo"].update({"filepattern": filepattern})
             print(filepattern)
         if "bufr" in settings["sets"]:
@@ -711,7 +711,7 @@ class Oi2soda(AbstractTask):
             if nnco[ivar] == 1:
                 if obs_types[ivar] == "T2M":
                     an_variables.update({"t2m": True})
-                elif obs_types[ivar] == "RH2M":
+                elif obs_types[ivar] == "HU2M":
                     an_variables.update({"rh2m": True})
                 elif obs_types[ivar] == "SWE":
                     if snow_ass_done:
@@ -761,7 +761,7 @@ class Qc2obsmon(AbstractTask):
                 if len(obs_types) > ivar:
                     if obs_types[ivar] == "T2M":
                         var_in = "t2m"
-                    elif obs_types[ivar] == "RH2M":
+                    elif obs_types[ivar] == "HU2M":
                         var_in = "rh2m"
                     elif obs_types[ivar] == "SWE":
                         var_in = "sd"
