@@ -37,6 +37,9 @@
     },
     "Soda": {
       "VMEM": "#$ -l h_vmem=12G"
+    },
+    "PerturbedRun": {
+      "VMEM": "#$ -l h_vmem=12G"
     }
   }
 }
