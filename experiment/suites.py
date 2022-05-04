@@ -234,7 +234,7 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                 print(__file__, ivar, nncv[ivar])
                             if ivar == 0:
                                 name = "REF"
-                                args = "pert=" + str(ivar) + " name=" + name
+                                args = "pert=" + str(ivar) + "; name=" + name
                                 if debug:
                                     print(__file__, args)
                                 variables = scheduler.EcflowSuiteVariable("ARGS", args)
@@ -244,7 +244,7 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                                           triggers=triggers)
                             if nncv[ivar] == 1:
                                 name = names[ivar]
-                                args = "pert=" + str(ivar + 1) + " name=" + name
+                                args = "pert=" + str(ivar + 1) + "; name=" + name
                                 if debug:
                                     print(__file__, args)
                                 variables = scheduler.EcflowSuiteVariable("ARGS", args)
@@ -272,7 +272,7 @@ class SurfexSuite(scheduler.SuiteDefinition):
                         if nnco[t] == 1:
                             if obs_types[t] == "T2M":
                                 an_variables.update({"t2m": True})
-                            elif obs_types[t] == "RH2M":
+                            elif obs_types[t] == "HU2M":
                                 an_variables.update({"rh2m": True})
                             elif obs_types[t] == "SWE":
                                 if do_snow_ass:
