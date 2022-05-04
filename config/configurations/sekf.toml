@@ -73,12 +73,12 @@ LDB_VERSION = "3.0"
 
 # ISBA settings
 [SURFEX.ISBA]
-SCHEME = "3-L"                      # Type of ISBA scheme in SURFEX. Options: "3-L"|"2-L"|"DIF"
+SCHEME = "DIF"                      # Type of ISBA scheme in SURFEX. Options: "3-L"|"2-L"|"DIF"
 NPATCH = 2                          # Number of patches over land in SURFEX (see also LISBA_CANOPY)
 MEB = false                         # Enable Multi Energy Budget (MEB) model
 CANOPY = false                      # Activates surface boundary multi layer scheme over land in SURFEX
                                     # (must be false for NPATCH>1)
-SNOW = "D95"                        # Type of snow scheme in SURFEX. Options: "D95" and "3-L"
+SNOW = "3-L"                        # Type of snow scheme in SURFEX. Options: "D95" and "3-L"
 YSOC_TOP = "soc_top.dir"            # Soil organic carbon data. Options: "soc_top.dir"
 YSOC_SUB = "soc_sub.dir"            # Soil organic carbon data. Options: "soc_sub.dir"
 
@@ -130,9 +130,10 @@ TEB = "NONE"                         # Assimilation method for TEB tile: "NONE"|
 LOBSHEADER = false                          # ASCII observation file has header
 CFILE_FORMAT_OBS = "ASCII"                  # File format for observations when using SODA: "ASCII"|"FA"
 LOBSNAT = false                             # Observation ASCII file only contains nature points
+COBS_M = ["T2M_P","HU2M_P","WG2 ","LAI","SWE"]  # Observation types
 NNCO = [1, 1, 0, 0, 1]                      # Active observation types
                                             # (Element 1=T2m, element 2=RH2m and element 3=Soil moisture, element 5=SWE)
-XERROBS_M = [1.0, 0.1, 0.1, 0.1, 0.1, 20.0] # Observation error (used in EKF)
+XERROBS_M = [1.0, 0.1, 0.1, 0.1, 20.0]      # Observation error (used in EKF)
 LSWE = false                                # Assimilate SWE, if false assimilate snow depth
 
 [SURFEX.ASSIM.SEA]
@@ -171,6 +172,7 @@ CVAR_M = ["TG1", "TG2", "WG1" , "WG2"]  # Control variables
 XPRT_M = [0.0001, 0.0001, 0.00001, 0.00001] # Perturbation magnitude
 XSCALE_Q = 0.125                        # Scaling of obs error
 EVOLVE_B = false                        # Evolve B matrix each cycle
+LLINCHECK = false
 # SURFEX offline experiment configuration file
 #
 
@@ -187,17 +189,18 @@ LL_LIST="48,3,3,3,3,3,3,3"              # Forecast lengths for the cycles [h], r
 ####################################################################################################
 # Compilation settings
 #####################################################################################################
-BUILD = false                           # Turn on or off the compilation and binary build (true/false)
-XYZ = ".exe"
+BUILD = true                           # Turn on or off the compilation and binary build (true/false)
 
 [GEOMETRY]
 #####################################################################################################
 # Geometry
 #####################################################################################################
+DOMAIN="DRAMMEN"
+
+[OBSERVATIONS]
+NETATMO_FILEPATTERN = "@SFX_EXP_DATA@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@YYYY@@MM@@DD@T@HH@@mm@*Z*.json"
 
 [INITIAL_CONDITIONS]
-ANASURF = "gridpp"
-# "/nobackup/prod2/cooper/BD_archive/2020/09/16/00/fc20200916_00+003
 PREP_INPUT_FILE = "@SFX_EXP_LIB@/nam/prep_from_namelist_values.json"
 PREP_INPUT_FILETYPE = "json"
 PREP_PGDFILE = ""
@@ -248,8 +251,8 @@ FORC_ZS = true
 SURFEX_LSELECT = "yes"                  # Only write selected fields in surfex outpute files. (yes|no)
 
 [FORCING]
-PATTERN = "/tmp/host1/testdata/fc@YYYY@@MM@@DD@@HH@+@LLLL@grib2"
-INPUT_FORMAT = "grib2"
+PATTERN = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
+INPUT_FORMAT = "netcdf"
 RAIN_CONVERTER = "totalprec"
 ZREF = "ml"
 ZVAL = "constant"
