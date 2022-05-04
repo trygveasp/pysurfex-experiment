@@ -39,8 +39,20 @@ submission_id = "%SUBMISSION_ID%"
 task_name = "%TASK%"
 debug = True
 args = "%ARGS%"
+kwargs = {}
 if args == "":
     args = {"wrapper": wrapper}
+else:
+    print(args)
+    for arg in args.split(";"):
+        print(arg)
+        parts = arg.split("=")
+        print(parts)
+        print(len(parts))
+        if len(parts) == 2:
+            kwargs.update({parts[0]: parts[1]})
+
+print(kwargs)
 
 # TODO join args
 
@@ -80,11 +92,11 @@ with scheduler.EcflowClient(server, task) as ci:
 
     # From ecflow?
     debug: True
-    kwargs = {
+    kwargs.update({
         "force": False,
         "check_existence": True,
         "print_namelist": True
-    }
+    })
 
     system_file_paths = json.load(open(lib + "/exp_system.json", "r"))[host]
     print(task_class.__name__)
