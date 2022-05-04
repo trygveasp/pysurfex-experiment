@@ -270,9 +270,9 @@ class SurfexSuite(scheduler.SuiteDefinition):
                     nnco = exp.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
                     for t in range(0, len(obs_types)):
                         if nnco[t] == 1:
-                            if obs_types[t] == "T2M":
+                            if obs_types[t] == "T2M" or obs_types[t] == "T2M_P":
                                 an_variables.update({"t2m": True})
-                            elif obs_types[t] == "HU2M":
+                            elif obs_types[t] == "HU2M" or obs_types[t] == "HU2M_P":
                                 an_variables.update({"rh2m": True})
                             elif obs_types[t] == "SWE":
                                 if do_snow_ass:

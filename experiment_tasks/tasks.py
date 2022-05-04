@@ -709,9 +709,9 @@ class Oi2soda(AbstractTask):
 
         for ivar in range(0, len(obs_types)):
             if nnco[ivar] == 1:
-                if obs_types[ivar] == "T2M":
+                if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
                     an_variables.update({"t2m": True})
-                elif obs_types[ivar] == "HU2M":
+                elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
                     an_variables.update({"rh2m": True})
                 elif obs_types[ivar] == "SWE":
                     if snow_ass_done:
@@ -735,9 +735,10 @@ class Oi2soda(AbstractTask):
                         "file": self.archive + "/an_" + var_name + ".nc",
                         "var": var_name
                     }
-
+        print(t2m)
+        print(rh2m)
+        print(sd)
         surfex.oi2soda(self.dtg, t2m=t2m, rh2m=rh2m, sd=sd, output=output)
-        # surfex.run_surfex_binary(binary)
 
 
 class Qc2obsmon(AbstractTask):
@@ -759,9 +760,9 @@ class Qc2obsmon(AbstractTask):
         for ivar in range(0, len(nnco)):
             if nnco[ivar] == 1:
                 if len(obs_types) > ivar:
-                    if obs_types[ivar] == "T2M":
+                    if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
                         var_in = "t2m"
-                    elif obs_types[ivar] == "HU2M":
+                    elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
                         var_in = "rh2m"
                     elif obs_types[ivar] == "SWE":
                         var_in = "sd"
