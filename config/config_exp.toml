@@ -15,7 +15,6 @@ LL_LIST="48,3,3,3,3,3,3,3"              # Forecast lengths for the cycles [h], r
 # Compilation settings
 #####################################################################################################
 BUILD = false                           # Turn on or off the compilation and binary build (true/false)
-XYZ = ".exe"
 
 [GEOMETRY]
 #####################################################################################################
