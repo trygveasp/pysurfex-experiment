@@ -9,7 +9,7 @@ XTSTEP_OUTPUT = 3600.0              # Output interval from the binary OFFLINE
 LSELECT = false                     # Only write selected diagnostics
  
 [SURFEX.COVER]                      # Land cover information
-YCOVER = "ecosg_final_map.dir"     # Version of ECOCLIMAP for surfex (1,2,SG)
+YCOVER = "ecosg_final_map.dir"      # Version of ECOCLIMAP for surfex (1,2,SG)
 SG = true                           # ECOCLIMAP second generation
 
 [SURFEX.ISBA]
