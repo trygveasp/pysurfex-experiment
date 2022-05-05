@@ -464,104 +464,173 @@ class QualityControl(AbstractTask):
     def execute(self):
 
         an_time = self.dtg
-        # archive_root = self.get_setting("archive_root")
-        settings_var = {
-          "t2m": {
-            "sets": {
-              "netatmo": {
-                "varname": "Temperature",
-                "filetype": "netatmo",
-                "tests": {
-                  "nometa": {
-                    "do_test": True
-                  },
-                  "domain": {
-                    "do_test": True
-                  },
-                  "blacklist": {
-                    "do_test": True
-                  },
-                  "redundancy": {
-                    "do_test": True
-                  },
-                  "plausibility": {
-                    "do_test": True,
-                    "maxval": 340,
-                    "minval": 200
-                  }
-                }
-              }
-            }
-          },
-          "rh2m": {
-            "sets": {
-              "netatmo": {
-                "varname": "Humidity",
-                "filetype": "netatmo",
-                "tests": {
-                  "nometa": {
-                    "do_test": True
-                  },
-                  "domain": {
-                    "do_test": True
-                  },
-                  "blacklist": {
-                    "do_test": True
-                  },
-                  "redundancy": {
-                    "do_test": True
-                  },
-                  "plausibility": {
-                    "do_test": True,
-                    "minval": 0,
-                    "maxval": 100
-                  }
-                }
-              }
-            }
-          },
-          "sd": {
-            "sets": {
-              "bufr": {
-                "filetype": "bufr",
-                "varname": "totalSnowDepth",
-                "tests": {
-                  "nometa": {
-                    "do_test": True
-                  },
-                  "domain": {
-                    "do_test": True
-                  },
-                  "blacklist": {
-                    "do_test": True
-                  },
-                  "redundancy": {
-                    "do_test": True
-                  },
-                  "plausibility": {
-                    "do_test": True,
-                    "minval": 0,
-                    "maxval": 10000
-                  }
-                }
-              }
-            }
-          }
-        }
 
-        settings = settings_var[self.var_name]
         sfx_lib = self.exp_file_paths.get_system_path("sfx_exp_lib")
-        settings.update({"domain": {"domain_file": sfx_lib + "/domain.json"}})
+
         fg_file = self.exp_file_paths.get_system_file("archive_dir", "raw.nc", basedtg=self.dtg,
                                                       default_dir="default_archive_dir")
-        settings.update({
+
+        # Default
+        settings = {
+            "domain": {
+                "domain_file": sfx_lib + "/domain.json"
+            },
             "firstguess": {
                 "fg_file": fg_file,
                 "fg_var": self.translation[self.var_name]
             }
-        })
+        }
+        default_tests = {
+            "nometa": {
+                "do_test": True
+            },
+            "domain": {
+                "do_test": True,
+            },
+            "blacklist": {
+                "do_test": True
+            },
+            "redundancy": {
+                "do_test": True
+            }
+        }
 
-        print(self.obsdir)
+        # T2M
+        if self.var_name == "t2m":
+            synop_obs = self.get_setting("OBSERVATIONS#SYNOP_OBS_T2M")
+            data_sets = {}
+            if synop_obs:
+                bufr_tests = default_tests
+                bufr_tests.update({
+                    "plausibility": {
+                        "do_test": True,
+                        "maxval": 340,
+                        "minval": 200
+                    }
+                })
+                filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                data_sets.update({
+                    "bufr": {
+                        "filepattern": filepattern,
+                        "filetype": "bufr",
+                        "varname": "airTemperatureAt2M",
+                        "tests": bufr_tests
+                    }
+                })
+            netatmo_obs = self.get_setting("OBSERVATIONS#NETATMO_OBS_T2M")
+            if netatmo_obs:
+                netatmo_tests = default_tests
+                netatmo_tests.update({
+                    "sct": {
+                        "do_test": True
+                    },
+                    "plausibility": {
+                        "do_test": True,
+                        "maxval": 340,
+                        "minval": 200
+                    }
+                })
+                filepattern = self.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN", check_parsing=False)
+                data_sets.update({
+                    "netatmo": {
+                        "filepattern": filepattern,
+                        "varname": "Temperature",
+                        "filetype": "netatmo",
+                        "tests": netatmo_tests
+                    }
+                })
+
+            settings.update({
+                "sets": data_sets
+            })
+
+        # RH2M
+        elif self.var_name == "rh2m":
+            synop_obs = self.get_setting("OBSERVATIONS#SYNOP_OBS_RH2M")
+            data_sets = {}
+            if synop_obs:
+                bufr_tests = default_tests
+                bufr_tests.update({
+                    "plausibility": {
+                        "do_test": True,
+                        "maxval": 100,
+                        "minval": 0
+                    }
+                })
+                filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                data_sets.update({
+                    "bufr": {
+                        "filepattern": filepattern,
+                        "filetype": "bufr",
+                        "varname": "relativeHumidityAt2M",
+                        "tests": bufr_tests
+                    }
+                })
+
+            netatmo_obs = self.get_setting("OBSERVATIONS#NETATMO_OBS_RH2M")
+            if netatmo_obs:
+                netatmo_tests = default_tests
+                netatmo_tests.update({
+                    "sct": {
+                        "do_test": True
+                    },
+                    "plausibility": {
+                        "do_test": True,
+                        "maxval": 10000,
+                        "minval": 0
+                    }
+                })
+                filepattern = self.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN", check_parsing=False)
+                data_sets.update({
+                    "netatmo": {
+                        "filepattern": filepattern,
+                        "varname": "Humidity",
+                        "filetype": "netatmo",
+                        "tests": netatmo_tests
+                    }
+                })
+
+            settings.update({
+                "sets": data_sets
+            })
+
+        # Snow Depth
+        elif self.var_name == "sd":
+            synop_obs = self.get_setting("OBSERVATIONS#SYNOP_OBS_SD")
+            data_sets = {}
+            if synop_obs:
+                bufr_tests = default_tests
+                bufr_tests.update({
+                    "plausibility": {
+                        "do_test": True,
+                        "maxval": 1000,
+                        "minval": 0
+                    },
+                    "firstguess": {
+                        "do_test": True,
+                        "negdiff": 0.5,
+                        "posdiff": 0.5
+                    }
+                })
+                filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                data_sets.update({
+                    "bufr": {
+                        "filepattern": filepattern,
+                        "filetype": "bufr",
+                        "varname": "totalSnowDepth",
+                        "tests": bufr_tests
+                    }
+                })
+
+            settings.update({
+                "sets": data_sets
+            })
+        else:
+            raise NotImplementedError
+
+        print("Settings")
+        print(json.dumps(settings, indent=2, sort_keys=True))
+
         output = self.obsdir + "/qc_" + self.translation[self.var_name] + ".json"
         try:
             tests = self.get_setting("OBSERVATIONS#QC#" + self.var_name.upper() + "#TESTS")
@@ -573,15 +642,9 @@ class QualityControl(AbstractTask):
         indent = 2
         blacklist = {}
         print(surfex.__file__)
+        json.dump(settings, open("settings.json", "w"), indent=2)
         tests = surfex.titan.define_quality_control(tests, settings, an_time, domain_geo=self.geo,
                                                     debug=self.debug, blacklist=blacklist)
-
-        if "netatmo" in settings["sets"]:
-            filepattern = self.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN", check_parsing=False)
-            settings["sets"]["netatmo"].update({"filepattern": filepattern})
-            print(filepattern)
-        if "bufr" in settings["sets"]:
-            settings["sets"]["bufr"].update({"filepattern": self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"})
 
         datasources = surfex.obs.get_datasources(an_time, settings["sets"])
         data_set = surfex.TitanDataSet(self.var_name, settings, tests, datasources, an_time, debug=self.debug)

@@ -19,6 +19,7 @@ class SurfexBinaryTask(AbstractTask):
         self.soda = False
         self.namelist = None
 
+        print(kwargs)
         print_namelist = True
         if "print_namelist" in kwargs:
             print_namelist = kwargs["print_namelist"]
@@ -33,8 +34,12 @@ class SurfexBinaryTask(AbstractTask):
         self.force = force
         pert = None
         if "pert" in kwargs:
-            pert = kwargs["pert"]
+            pert = int(kwargs["pert"])
         self.pert = pert
+        ivar = None
+        if "ivar" in kwargs:
+            ivar = int(kwargs["ivar"])
+        self.ivar = ivar
 
         xyz = ".exe"
         libdir = self.sfx_exp_vars["SFX_EXP_LIB"]
@@ -49,7 +54,7 @@ class SurfexBinaryTask(AbstractTask):
         raise NotImplementedError
 
     def execute_binary(self, binary, output, pgd_file_path=None, prep_file_path=None,
-                       pert=None, archive_data=None, forc_zs=False,
+                       archive_data=None, forc_zs=False,
                        masterodb=True, perturbed_file_pattern=None, fcint=3, prep_file=None, prep_filetype=None,
                        prep_pgdfile=None, prep_pgdfiletype=None):
 
@@ -117,7 +122,14 @@ class SurfexBinaryTask(AbstractTask):
             surffile = None
 
         if self.perturbed:
-            surfex.PerturbedOffline(binary, batch, prepfile, self.pert, settings, input_data,
+            if self.pert > 0:
+                print(self.ivar)
+                surfex.PerturbedOffline(binary, batch, prepfile, self.ivar, settings, input_data,
+                                        pgdfile=pgdfile, surfout=surffile,
+                                        archive_data=archive_data,
+                                        print_namelist=self.print_namelist)
+            else:
+                surfex.SURFEXBinary(binary, batch, prepfile, settings, input_data,
                                     pgdfile=pgdfile, surfout=surffile,
                                     archive_data=archive_data,
                                     print_namelist=self.print_namelist)
@@ -265,6 +277,10 @@ class PerturbedRun(SurfexBinaryTask):
                                             prep_file_path=prep_file_path)
         else:
             print("Output already exists: ", output)
+
+    # Make sure we don't clean yet
+    def postfix(self):
+        pass
 
 
 class Soda(SurfexBinaryTask):

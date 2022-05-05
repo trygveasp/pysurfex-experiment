@@ -229,12 +229,14 @@ class SurfexSuite(scheduler.SuiteDefinition):
                         if fg_dtg in cycle_input_dtg_node:
                             triggers = scheduler.EcflowSuiteTriggers(
                                 scheduler.EcflowSuiteTrigger(cycle_input_dtg_node[fg_dtg]))
+
+                        nivar = 1
                         for ivar in range(0, len(nncv)):
                             if debug:
                                 print(__file__, ivar, nncv[ivar])
                             if ivar == 0:
                                 name = "REF"
-                                args = "pert=" + str(ivar) + "; name=" + name
+                                args = "pert=" + str(ivar) + ";name=" + name + ";ivar=0"
                                 if debug:
                                     print(__file__, args)
                                 variables = scheduler.EcflowSuiteVariable("ARGS", args)
@@ -244,13 +246,14 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                                           triggers=triggers)
                             if nncv[ivar] == 1:
                                 name = names[ivar]
-                                args = "pert=" + str(ivar + 1) + "; name=" + name
+                                args = "pert=" + str(ivar + 1) + ";name=" + name + ";ivar=" + str(nivar)
                                 if debug:
                                     print(__file__, args)
                                 variables = scheduler.EcflowSuiteVariable("ARGS", args)
                                 pert = scheduler.EcflowSuiteFamily(name, perturbations, variables=variables)
                                 scheduler.EcflowSuiteTask("PerturbedRun", pert, ecf_files=ecf_files,
                                                           triggers=triggers)
+                                nivar = nivar + 1
 
                     prepare_oi_soil_input = None
                     prepare_oi_climate = None
