@@ -30,7 +30,7 @@ class Forcing(AbstractTask):
 
         json.dump(self.geo.json, open(self.wdir + "/domain.json", "w"), indent=2)
         kwargs.update({"domain": self.wdir + "/domain.json"})
-        global_config = self.wd + "/config/config.yml"
+        global_config = self.lib + "/config/config.yml"
         global_config = yaml.safe_load(open(global_config, "r"))
         kwargs.update({"config": global_config})
 

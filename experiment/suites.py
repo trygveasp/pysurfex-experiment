@@ -4,7 +4,7 @@ import scheduler
 
 class SurfexSuite(scheduler.SuiteDefinition):
 
-    def __init__(self, suite_name, exp, joboutdir, env_submit, dtgs, dtgbeg=None,
+    def __init__(self, suite_name, exp, joboutdir, env_submit, dtgs, next_start_dtg, dtgbeg=None,
                  debug=False):
         """initialize a SurfexSuite object
 
@@ -139,10 +139,17 @@ class SurfexSuite(scheduler.SuiteDefinition):
         prediction_dtg_node = {}
         post_processing_dtg_node = {}
         prev_dtg = None
-        for dtg in dtgs:
+        for idtg in range(0, len(dtgs)):
+            dtg = dtgs[idtg]
+            if idtg < (len(dtgs) - 1):
+                next_dtg = dtgs[idtg + 1]
+            else:
+                next_dtg = next_start_dtg
+            next_dtg_str = next_dtg.strftime("%Y%m%d%H")
             dtg_str = dtg.strftime("%Y%m%d%H")
             variables = [
                 scheduler.EcflowSuiteVariable("DTG", dtg_str),
+                scheduler.EcflowSuiteVariable("DTG_NEXT", next_dtg_str),
                 scheduler.EcflowSuiteVariable("DTGBEG", dtgbeg_str)
             ]
             triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete])
@@ -479,7 +486,7 @@ def get_defs(exp, system, progress, suite_type, debug=False):
             raise Exception
         dtg = dtg + timedelta(hours=fcint)
     if suite_type == "surfex":
-        return SurfexSuite(suite_name, exp, joboutdir, env_submit, dtgs=dtgs, dtgbeg=dtgbeg)
+        return SurfexSuite(suite_name, exp, joboutdir, env_submit, dtgs, dtg, dtgbeg=dtgbeg, debug=debug)
     elif suite_type == "unittest":
         defs = UnitTestSuite(suite_name, exp, joboutdir, env_submit)
         return defs

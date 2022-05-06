@@ -39,10 +39,8 @@ submission_id = "%SUBMISSION_ID%"
 task_name = "%TASK%"
 debug = True
 args = "%ARGS%"
-kwargs = {}
-if args == "":
-    args = {"wrapper": wrapper}
-else:
+kwargs = {"wrapper": wrapper}
+if args != "":
     print(args)
     for arg in args.split(";"):
         print(arg)

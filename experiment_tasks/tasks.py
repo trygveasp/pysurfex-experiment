@@ -39,7 +39,7 @@ class AbstractTask(object):
 
         self.exp_file_paths = surfex.SystemFilePaths(exp_file_paths)
         self.wd = self.exp_file_paths.get_system_path("exp_dir")
-
+        self.lib = system["SFX_EXP_LIB"]
         self.members = None
         self.mbr = mbr
         self.stream = stream
@@ -65,7 +65,7 @@ class AbstractTask(object):
         self.settings = settings
 
         domain = self.get_setting("GEOMETRY#DOMAIN", mbr=self.mbr)
-        domains = self.wd + "/config/domains/Harmonie_domains.json"
+        domains = self.lib + "/config/domains/Harmonie_domains.json"
         domains = json.load(open(domains, "r"))
         domain_json = surfex.set_domain(domains, domain, hm_mode=True)
         geo = surfex.get_geo_object(domain_json, debug=debug)
@@ -75,7 +75,7 @@ class AbstractTask(object):
         self.task = task
 
         wrapper = ""
-        if wrapper in kwargs:
+        if "wrapper" in kwargs:
             wrapper = kwargs["wrapper"]
         self.wrapper = wrapper
 
@@ -113,7 +113,7 @@ class AbstractTask(object):
         self.fg_dtg = self.dtg - timedelta(hours=self.fcint)
         self.next_dtg = self.dtg + timedelta(hours=self.fcint)
         self.next_dtgpp = self.next_dtg
-        self.input_path = self.wd + "/nam"
+        self.input_path = self.lib + "/nam"
 
         self.fg_guess_sfx = self.wrk + "/first_guess_sfx"
         self.fc_start_sfx = self.wrk + "/fc_start_sfx"
@@ -923,7 +923,7 @@ class FirstGuess4OI(AbstractTask):
                 converter = self.get_setting(identifier + "CONVERTER")
 
             print(inputfile, fileformat, converter)
-            config_file = self.wd + "/config/first_guess.yml"
+            config_file = self.lib + "/config/first_guess.yml"
             config = yaml.safe_load(open(config_file, "r"))
             defs = config[fileformat]
             defs.update({"filepattern": inputfile})
@@ -955,49 +955,6 @@ class FirstGuess4OI(AbstractTask):
 
         if fg is not None:
             fg.close()
-
-
-class LogProgress(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
-                              stream=stream, debug=debug, **kwargs)
-        self.var_name = task.family1
-
-    def execute(self):
-
-        stream = self.stream
-        st = ""
-        if stream is not None and stream != "":
-            st = "_stream_" + stream
-        progress_file = self.wd + "/progress" + st + ".json"
-
-        # Update progress
-        next_dtg = self.next_dtg.strftime("%Y%m%d%H")
-        dtgbeg = self.dtgbeg.strftime("%Y%m%d%H")
-        progress = {"DTG": next_dtg, "DTGBEG": dtgbeg}
-        json.dump(progress, open(progress_file, "w"), indent=2)
-
-
-class LogProgressPP(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
-                              stream=stream, debug=debug, **kwargs)
-        self.var_name = task.family1
-
-    def execute(self):
-
-        stream = self.stream
-
-        st = ""
-        if stream is not None and stream != "":
-            st = "_stream_" + stream
-
-        progress_pp_file = self.wd + "/progressPP" + st + ".json"
-
-        # Update progress
-        next_dtgpp = self.next_dtgpp.strftime("%Y%m%d%H")
-        progress = {"DTGPP": next_dtgpp}
-        json.dump(progress, open(progress_pp_file, "w"), indent=2)
 
 
 class PrepareOiSoilInput(AbstractTask):
