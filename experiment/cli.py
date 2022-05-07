@@ -222,4 +222,11 @@ def update_config(**kwargs):
 
     # Set experiment from files. Should be existing now after setup
     exp_dependencies_file = wd + "/paths_to_sync.json"
-    experiment.ExpFromFiles(exp_dependencies_file, debug=debug)
+    sfx_exp = experiment.ExpFromFiles(exp_dependencies_file, debug=debug)
+    system = sfx_exp.system
+
+    data0 = system.get_var("SFX_EXP_DATA", "0")
+    logfile = data0 + "/ECF.log"
+
+    # Create exp scheduler json file
+    sfx_exp.write_scheduler_info(logfile)
