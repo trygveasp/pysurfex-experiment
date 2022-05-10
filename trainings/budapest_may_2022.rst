@@ -20,6 +20,7 @@ https://github.com/metno/pysurfex-scheduler/blob/master/requirements.txt
 You will need python3 and I reccomend to install either with "pip3 install [package] --user" or python3 -m pip install [package] --user. This does not require special permissions and will install in ~/.local. You can of course also install it system-wide but not everyone can do this.
 
 .. code-block:: bash
+
   # extra-dependencies is the path to ~/.local or wherever you put your extra needed dependencies installed above
   export PYTHONPATH=[path-to-pysurfex-clone]:[path-to-pysurfex-experimet-clone]:[path-to-pysurfex-experiment-clone]:[extra-dependencies]:$PYTHONPATH
   export PATH=[path-to-pysurfex-clone]/bin:[path-to-pysurfex-experiment-clone]/bin:$PATH
