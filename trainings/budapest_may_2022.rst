@@ -50,12 +50,13 @@ Assumptions:
 - Examples will use a test domain called Drammen close to Oslo in Norway. Domain is found in [path-to-pysurfex]/examples/domains/drammen.json
 
 
-E1.1: Create offline forcing
+E1.1: Create offline forcing using the MET-Nordic analysis from thredds
 ------------------------------------------------------
+
+This exercise is reading 1 km re-analysed forcing from surfex forcing files located on thredds at MET-Norway. Many points and might be slow with a poor connection, but is the best avaliable forcing we can provide and you can get it from everywhere.
 
 .. code-block:: bash
 
-   # Create offline surfex forcing using the MET-Nordic analysis from thredds. 
    # You can also use forcing files from here: /hpc/perm/ms/no/sbu/training/budapest_2022_pysurfex_training_data.tgz
    # -p nobackup/trainingData/netcdf_forcing/FORCING_20220428T07Z.nc
    
@@ -72,6 +73,30 @@ E1.1: Create offline forcing
    --wind_converter none \
    --wind_dir_converter none \
    -ig [path-to-pysurfex]/examples/domains/met_nordic.json
+   
+E.1.1 Same exersice with MEPS deterministic from thredds
+
+.. code-block:: bash
+
+   cd
+   mkdir -p sfx_home
+   cd sfx_home
+   mkdir forcing_meps
+   cd forcing_meps
+
+   create_forcing 2022042803 2022042806 \
+   -d [path-to-pysurfex]/examples/domains/drammen.json \
+   -p "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.n \
+   --zsoro_converter phi2m \
+   -i netcdf \
+   --rain_converter totalprec \
+   --wind_converter windspeed \
+   --wind_dir_converter winddir \
+   --uval constant \
+   --zval constant \
+   --sca_sw constant \
+   --co2 constant
+
 
 
 E1.2: Create PREP file
