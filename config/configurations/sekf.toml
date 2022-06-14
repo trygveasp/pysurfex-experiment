@@ -227,24 +227,6 @@ ENSMSEL = []                            # Ensemble members to run (list with mem
 
 FORC_ZS = true
 
-# **** Postprocessing/output ****
-#TFLAG = "h"                             # Time flag for model output. (h|min)
-                                        # h   = hour based output
-                                        # min = minute based output
-
-# The unit of should be:
-#   - hours   if TFLAG="h"
-#   - minutes if TFLAG="min"
-
-# Writeup times of # history,surfex and fullpos files
-# Comma separated list, and/or range(s) like:
-# t1,t2,t3-t4,t5-t6:step    tb-te == tb-te:1 == tb,tb+1,tb+2,...,te
-#SFXSELTIMES = "00-60:3"                 # Surfex select file output times
-                                        # Only meaningful if SURFEX_LSELECT=yes
-#SWRITUPTIMES = "00-06:3"                # Surfex model state output times
-#SFXWFTIMES = "00-06:3"                  # SURFEX history FA file IO server gathering times
-SURFEX_LSELECT = "yes"                  # Only write selected fields in surfex outpute files. (yes|no)
-
 [FORCING]
 PATTERN = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
 INPUT_FORMAT = "netcdf"

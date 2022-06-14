@@ -921,12 +921,24 @@ class FirstGuess4OI(AbstractTask):
             except Exception as e:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 converter = self.get_setting(identifier + "CONVERTER")
+            try:
+                identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
+                input_geo_file = self.get_setting(identifier + "INPUT_GEO_FILE")
+            except Exception as e:
+                identifier = "INITIAL_CONDITIONS#FG4OI#"
+                input_geo_file = self.get_setting(identifier + "INPUT_GEO_FILE")
 
-            print(inputfile, fileformat, converter)
+            print(inputfile, fileformat, converter, input_geo_file)
             config_file = self.lib + "/config/first_guess.yml"
             config = yaml.safe_load(open(config_file, "r"))
             defs = config[fileformat]
-            defs.update({"filepattern": inputfile})
+            geo_input = None
+            if input_geo_file != "":
+                geo_iput = surfex.get_geo_object(open(input_geo_file, "r"))
+            defs.update({
+                "filepattern": inputfile,
+                "geo_input": geo_input
+                })
 
             converter_conf = config[var][fileformat]["converter"]
             if converter not in config[var][fileformat]["converter"]:
