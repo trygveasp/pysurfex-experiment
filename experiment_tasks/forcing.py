@@ -52,7 +52,7 @@ class Forcing(AbstractTask):
 
         pattern = self.get_setting("FORCING#PATTERN", check_parsing=False)
         input_format = self.config.get_setting("FORCING#INPUT_FORMAT")
-        kwargs.update({"geo_input_file": self.config.get_setting("FORCING#INPUT_GEO_FILE"})
+        kwargs.update({"geo_input_file": self.config.get_setting("FORCING#INPUT_GEO_FILE")})
         zref = self.get_setting("FORCING#ZREF")
         zval = self.get_setting("FORCING#ZVAL")
         uref = self.get_setting("FORCING#UREF")
