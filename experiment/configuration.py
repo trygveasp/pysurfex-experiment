@@ -1,19 +1,26 @@
-import experiment_setup
+"""Experiment configuration."""
 import json
+import logging
+import experiment_setup
 
 
 class ExpConfiguration(object):
+    """The main experiment configuration.
 
-    def __init__(self, conf_dict, member_conf_dict, debug=False):
-        """Configuration object used to write experiment config files and create suite definition
+    It is based on a merged general configuration and a member specific configuration.
+    Contrary to the surfex configuration which is a dict with the actual configuration for the
+    given member etc.
+
+    """
+
+    def __init__(self, conf_dict, member_conf_dict):
+        """Constuct object used to write experiment config files and create suite definition.
 
         Args:
             conf_dict (dict):
             member_conf_dict (dict):
-            debug (bool):
-        """
 
-        self.debug = debug
+        """
         self.settings = conf_dict
 
         # Find EPS information
@@ -45,13 +52,13 @@ class ExpConfiguration(object):
         self.ekf = self.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF")
         nncv = self.get_setting("SURFEX#ASSIM#ISBA#EKF#NNCV")
         perts = []
-        for p in range(0, len(nncv)):
-            if nncv[p] == 1:
-                perts.append(p)
+        for pert_number, value in enumerate(nncv):
+            if value == 1:
+                perts.append(pert_number)
         self.perts = perts
 
     def dump_json(self, filename, indent=None):
-        """dump a json file with configuration
+        """Dump a json file with configuration.
 
         Args:
             filename (str): Filename of json file to write
@@ -59,6 +66,7 @@ class ExpConfiguration(object):
 
         Returns:
             None
+
         """
         if json is None:
             raise Exception("json module not loaded")
@@ -69,82 +77,153 @@ class ExpConfiguration(object):
                 member_settings = {}
                 for setting in self.member_settings:
                     member_setting = self.get_setting(setting, mbr=member)
-                    member_settings = experiment_setup.merge_toml_env(member_settings, member_setting)
+                    member_settings = experiment_setup.merge_toml_env(member_settings,
+                                                                      member_setting)
 
-                settings.update({member: experiment_setup.merge_toml_env(settings, member_settings)})
+                settings.update({member: experiment_setup.merge_toml_env(settings,
+                                                                         member_settings)})
 
-        if self.debug:
-            print(__file__, settings)
-        json.dump(settings, open(filename, "w"), indent=indent)
+        logging.debug("Settings: %s", str(settings))
+        with open(filename, mode="w", encoding="UTF-8") as file_handler:
+            json.dump(settings, file_handler, indent=indent)
 
     def max_fc_length(self, mbr=None):
+        """Calculate the max forecast time.
+
+        Args:
+            mbr (int, optional): ensemble member. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         ll_list = self.get_ll_list(mbr=mbr)
         max_fc = -1
-        for ll in ll_list:
-            if int(ll) > int(max_fc):
-                max_fc = int(ll)
+        for ll_val in ll_list:
+            if int(ll_val) > int(max_fc):
+                max_fc = int(ll_val)
         return max_fc
 
-    @staticmethod
-    def has_sfc_analysis(anasurf):
-        if anasurf in ["CANARI", "gridpp"]:
-            return True
-        else:
-            return False
-
     def setting_is(self, setting, value, **kwargs):
+        """Check if setting is value.
+
+        Args:
+            setting (_type_): _description_
+            value (_type_): _description_
+
+        Returns:
+            bool: True if found, False if not found.
+        """
         if self.get_setting(setting, **kwargs) == value:
             return True
-        else:
-            return False
+        return False
 
     def setting_is_not(self, setting, value, **kwargs):
+        """Check if setting is not value.
+
+        Args:
+            setting (_type_): _description_
+            value (_type_): _description_
+
+        Returns:
+            bool: True if not found, False if found.
+
+        """
         found = False
         if self.get_setting(setting, **kwargs) == value:
             found = True
 
         if found:
             return False
-        else:
-            return True
+        return True
 
     def value_is_one_of(self, setting, value, **kwargs):
+        """Check if the setting contains value.
+
+        Args:
+            setting (_type_): _description_
+            value (list): _description_
+
+        Returns:
+            bool: True if found, False if not found.
+
+        """
         found = False
         setting = self.get_setting(setting, **kwargs)
-        # if type(setting) is not list:
-        #    raise Exception("Excpected a list as input, got ", type(setting))
-        for s in setting:
-            if s == value:
+        for test_setting in setting:
+            if test_setting == value:
                 found = True
         return found
 
     def value_is_not_one_of(self, setting, value, **kwargs):
+        """Check if the setting does not contain value.
 
+        Args:
+            setting (_type_): _description_
+            value (list): _description_
+
+        Returns:
+            bool: True if not found, False if found.
+
+        """
         found = self.value_is_one_of(setting, value, **kwargs)
         if found:
             return False
-        else:
-            return True
+        return True
 
     def setting_is_one_of(self, setting, values, **kwargs):
+        """Check if setting is one of the provided list of values.
+
+        Args:
+            setting (_type_): _description_
+            values (_type_): _description_
+
+        Raises:
+            Exception: _description_
+
+        Returns:
+            bool: True if found, False if not found.
+
+        """
         found = False
         setting = self.get_setting(setting, **kwargs)
-        if type(values) is not list:
+        if not isinstance(values, list):
             raise Exception("Excpected a list as input, got ", type(values))
-        for v in values:
-            if setting == v:
+        for val in values:
+            if setting == val:
                 found = True
         return found
 
     def setting_is_not_one_of(self, setting, values, **kwargs):
+        """Check if setting is not one of the provided list of values.
 
+        Args:
+            setting (_type_): _description_
+            values (_type_): _description_
+
+        Returns:
+            bool: True if not found, False if found.
+
+        """
         found = self.setting_is_one_of(setting, values, **kwargs)
         if found:
             return False
-        else:
-            return True
+        return True
 
     def get_setting(self, setting, **kwargs):
+        """Get the setting (and possibly extrapolate it).
+
+        Args:
+            setting (_type_): _description_
+
+        Raises:
+            Exception: _description_
+            Exception: _description_
+            KeyError: _description_
+            KeyError: _description_
+
+        Returns:
+            _type_: value
+        """
         mbr = None
         if "mbr" in kwargs:
             if kwargs["mbr"] is not None:
@@ -176,8 +255,7 @@ class ExpConfiguration(object):
 
         if keys[0] in settings:
             this_setting = settings[keys[0]]
-            if self.debug:
-                print("get_setting", keys[0], "->", this_setting)
+            logging.debug("get_setting %s -> %s", keys[0], str(this_setting))
             if len(keys) > 1:
                 for key in keys[1:]:
                     if key in this_setting:
@@ -195,12 +273,23 @@ class ExpConfiguration(object):
             else:
                 this_setting = None
 
-        if self.debug:
-            print("get_setting", setting, this_setting, mbr, type(this_setting))
+        logging.debug("get_setting %s %s %s %s", str(setting), str(this_setting), str(mbr),
+                                                 type(this_setting))
         return this_setting
 
     def update_setting(self, setting, value, mbr=None, sep="#"):
+        """Update the setting.
 
+        Args:
+            setting (_type_): _description_
+            value (_type_): _description_
+            mbr (_type_, optional): _description_. Defaults to None.
+            sep (str, optional): _description_. Defaults to "#".
+
+        Raises:
+            Exception: _description_
+
+        """
         if sep is None:
             keys = [setting]
         else:
@@ -216,12 +305,17 @@ class ExpConfiguration(object):
             self.settings = experiment_setup.merge_toml_env(self.settings, dsetting)
         else:
             if self.members is not None and str(mbr) in self.members:
-                self.member_settings[str(mbr)] = experiment_setup.merge_toml_env(self.member_settings[str(mbr)],
-                                                                                 dsetting)
+                self.member_settings[str(mbr)] = \
+                    experiment_setup.merge_toml_env(self.member_settings[str(mbr)], dsetting)
             else:
                 raise Exception("Not a valid member: " + str(mbr))
 
     def get_total_unique_hh_list(self):
+        """Get a list of unique start times for the forecasts.
+
+        Returns:
+            list: List with times
+        """
         # Create a list of all unique HHs from all members
         # print(self.members, self.get_hh_list())
         hh_list_all = []
@@ -248,6 +342,15 @@ class ExpConfiguration(object):
         return hh_list
 
     def get_fcint(self, cycle, mbr=None):
+        """Get the the interval between the forecasts.
+
+        Args:
+            cycle (_type_): _description_
+            mbr (_type_, optional): _description_. Defaults to None.
+
+        Returns:
+            _type_: _description_
+        """
         hh_list = self.get_hh_list(mbr=mbr)
         fcint = None
         if len(hh_list) > 1:
@@ -263,20 +366,60 @@ class ExpConfiguration(object):
         return fcint
 
     def get_hh_list(self, mbr=None):
+        """Get a list of forecast start times.
+
+        Args:
+            mbr (int, optional): ensemble member. Defaults to None.
+
+        Returns:
+            list: Forecast start times.
+
+        """
         hh_list = self.get_setting("GENERAL#HH_LIST", mbr=mbr)
         ll_list = self.get_setting("GENERAL#LL_LIST", mbr=mbr)
-        # print(hh_list, ll_list)
         hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
         return hh_list
 
     def get_ll_list(self, mbr=None):
+        """Get a list of forecast lead times.
+
+        Args:
+            mbr (int, optional): ensemble member. Defaults to None.
+
+        Returns:
+            list: Forecast lead times.
+
+        """
         hh_list = self.get_setting("GENERAL#HH_LIST", mbr=mbr)
         ll_list = self.get_setting("GENERAL#LL_LIST", mbr=mbr)
         hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
         return ll_list
 
     @staticmethod
-    def expand_list(string, fmt="{:03d}", sep1=",", sep2=":", sep3="-", maxval=None, add_last=False, tstep=None):
+    def expand_list(string, fmt="{:03d}", sep1=",", sep2=":", sep3="-", maxval=None, add_last=False,
+                    tstep=None):
+        """Expand the lists of forecast start times/lead times.
+
+        Args:
+            string (str): _description_
+            fmt (str, optional): format. Defaults to "{:03d}".
+            sep1 (str, optional): First separator. Defaults to ",".
+            sep2 (str, optional): Second separator. Defaults to ":".
+            sep3 (str, optional): Third separator. Defaults to "-".
+            maxval (int, optional): Maximum value. Defaults to None.
+            add_last (bool, optional): if last value should be added. Defaults to False.
+            tstep (int, optional): time step in forecast. Needed for minute output.
+                                   Defaults to None.
+
+        Raises:
+            Exception: _description_
+            Exception: _description_
+            Exception: _description_
+
+        Returns:
+            list: Expaned list of values.
+
+        """
         elements = string.split(sep1)
         expanded_list = []
         if string.strip() == "":
@@ -337,6 +480,20 @@ class ExpConfiguration(object):
         return expanded_list
 
     def expand_hh_and_ll_list(self, hh_list, ll_list, sep=":"):
+        """Expand both HH_LIST and LL_LIST.
+
+        Args:
+            hh_list (_type_): _description_
+            ll_list (_type_): _description_
+            sep (str, optional): _description_. Defaults to ":".
+
+        Raises:
+            Exception: _description_
+
+        Returns:
+            tuple: expanded_hh_list, expanded_ll_list
+
+        """
         # hhs = split_hh_and_ll(hh_list)
         # lls = split_hh_and_ll(ll_list)
         hhs = self.expand_list(hh_list, fmt="{:02d}")
@@ -376,24 +533,33 @@ class ExpConfiguration(object):
         return expanded_hh_list, expanded_ll_list
 
 
-class ExpConfigurationFromJson(ExpConfiguration):
+class ExpConfigurationFromDict(ExpConfiguration):
+    """Create an experiment configuration from a dict."""
 
-    def __init__(self, all_settings, debug=False):
-        if json is None:
-            raise Exception("json module not loaded")
+    def __init__(self, all_settings):
+        """Constuct an experiment configuration from a dict.
 
+        Contains both general settings and member specific settings.
+
+        Args:
+            all_settings (dict): All settings in a dict.
+
+        """
         settings = all_settings["config"]
         member_settings = all_settings["member_config"]
-        ExpConfiguration.__init__(self, settings, member_settings, debug=debug)
+        ExpConfiguration.__init__(self, settings, member_settings)
 
 
-class ConfigurationFromJsonFile(ExpConfiguration):
+class ConfigurationFromJsonFile(ExpConfigurationFromDict):
+    """Create an experiment configuration from a json file."""
 
-    def __init__(self, filename, debug=False):
-        if json is None:
-            raise Exception("json module not loaded")
+    def __init__(self, filename):
+        """Create an experiment configuration from a json file.
 
-        all_settings = json.load(open(filename, "r"))
-        settings = all_settings["config"]
-        member_settings = all_settings["member_config"]
-        ExpConfiguration.__init__(self, settings, member_settings, debug=debug)
+        Args:
+            filename (str): Filename
+
+        """
+        with open(filename, mode="r", encoding="utf-8") as file_handler:
+            all_settings = json.load(file_handler)
+        ExpConfigurationFromDict.__init__(self, all_settings)

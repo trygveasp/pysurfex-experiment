@@ -1,14 +1,32 @@
-from experiment_tasks import AbstractTask
-import surfex
+"""Tasks running surfex binaries."""
 import os
 from datetime import timedelta
-
+import logging
+import surfex
+from experiment_tasks import AbstractTask
 
 class SurfexBinaryTask(AbstractTask):
-    def __init__(self, task, system, config, exp_file_paths, progress, mode,
-                 mbr=None, stream=None, debug=False, **kwargs):
-        AbstractTask.__init__(self, task, system, config, exp_file_paths, progress, debug=debug, mbr=mbr,
-                              stream=stream, **kwargs)
+    """Main surfex binary task executing all tasks.
+
+    Args:
+        AbstractTask (object): Inheritance of base task class
+    """
+
+    def __init__(self, task, system, config, exp_file_paths, progress, mode, **kwargs):
+        """Construct a surfex binary task.
+
+        Args:
+            task (_type_): _description_
+            system (_type_): _description_
+            config (_type_): _description_
+            exp_file_paths (_type_): _description_
+            progress (_type_): _description_
+            mode (_type_): _description_
+            mbr (_type_, optional): _description_. Defaults to None.
+            stream (_type_, optional): _description_. Defaults to None.
+            debug (bool, optional): _description_. Defaults to False.
+        """
+        AbstractTask.__init__(self, task, system, config, exp_file_paths, progress, **kwargs)
 
         self.mode = mode
         self.need_pgd = True
@@ -19,79 +37,113 @@ class SurfexBinaryTask(AbstractTask):
         self.soda = False
         self.namelist = None
 
-        print(kwargs)
-        print_namelist = True
-        if "print_namelist" in kwargs:
-            print_namelist = kwargs["print_namelist"]
+        logging.debug("kwargs: %s", kwargs)
+        print_namelist = kwargs.get("print_namelist")
+        if print_namelist is None:
+            print_namelist = True
+
         self.print_namelist = print_namelist
-        check_existence = True
-        if "check_existence" in kwargs:
-            check_existence = kwargs["check_existence"]
+        check_existence = kwargs.get("check_existence")
+        if check_existence is None:
+            check_existence = True
         self.check_existence = check_existence
-        force = False
-        if "force" in kwargs:
-            force = kwargs["force"]
+
+        force = kwargs.get("force")
+        if force is None:
+            force = False
         self.force = force
-        pert = None
-        if "pert" in kwargs:
-            pert = int(kwargs["pert"])
+
+        pert = kwargs.get("pert")
+        if pert is not None:
+            pert = int(pert)
         self.pert = pert
-        ivar = None
-        if "ivar" in kwargs:
-            ivar = int(kwargs["ivar"])
-        self.ivar = ivar
+
+        self.ivar = kwargs.get("ivar")
 
         xyz = ".exe"
         libdir = self.sfx_exp_vars["SFX_EXP_LIB"]
         xyz_file = libdir + "/xyz"
         if os.path.exists(xyz_file):
-            xyz = open(xyz_file, "r").read().rstrip()
+            xyz = open(xyz_file, "r", mode="r", encoding="utf-8").read().rstrip()
         else:
-            print(xyz_file + " not found. Assume XYZ=" + xyz)
+            logging.info("%s not found. Assume XYZ=%s", xyz_file, xyz)
         self.xyz = xyz
 
     def execute(self):
+        """Execute task.
+
+        Raises:
+            NotImplementedError: Should be implemented by child classes
+        """
         raise NotImplementedError
 
     def execute_binary(self, binary, output, pgd_file_path=None, prep_file_path=None,
                        archive_data=None, forc_zs=False,
-                       masterodb=True, perturbed_file_pattern=None, fcint=3, prep_file=None, prep_filetype=None,
+                       masterodb=True, perturbed_file_pattern=None, fcint=3, prep_file=None,
+                       prep_filetype=None,
                        prep_pgdfile=None, prep_pgdfiletype=None):
+        """Execute the surfex binary.
 
+        Args:
+            binary (str): Full path to binary
+            output (str): Full path to output file
+            pgd_file_path (str, optional): _description_. Defaults to None.
+            prep_file_path (str, optional): _description_. Defaults to None.
+            archive_data (surfex.OutputDataFromSurfexBinaries, optional): A mapping of produced
+                files and where to archive them. Defaults to None.
+            forc_zs (bool, optional): _description_. Defaults to False.
+            masterodb (bool, optional): _description_. Defaults to True.
+            perturbed_file_pattern (_type_, optional): _description_. Defaults to None.
+            fcint (int, optional): _description_. Defaults to 3.
+            prep_file (_type_, optional): _description_. Defaults to None.
+            prep_filetype (_type_, optional): _description_. Defaults to None.
+            prep_pgdfile (_type_, optional): _description_. Defaults to None.
+            prep_pgdfiletype (_type_, optional): _description_. Defaults to None.
+
+        Raises:
+            NotImplementedError: Unknown implementation.
+        """
         rte = os.environ
         if self.mode == "pgd":
             self.pgd = True
             self.need_pgd = False
             self.need_prep = False
-            input_data = surfex.PgdInputData(self.config, self.exp_file_paths, check_existence=self.check_existence)
+            input_data = surfex.PgdInputData(self.config, self.exp_file_paths,
+                                             check_existence=self.check_existence)
         elif self.mode == "prep":
             self.prep = True
             self.need_prep = False
-            input_data = surfex.PrepInputData(self.config, self.exp_file_paths, check_existence=self.check_existence,
+            input_data = surfex.PrepInputData(self.config, self.exp_file_paths,
+                                              check_existence=self.check_existence,
                                               prep_file=prep_file, prep_pgdfile=prep_pgdfile)
         elif self.mode == "offline":
-            input_data = surfex.OfflineInputData(self.config, self.exp_file_paths, check_existence=self.check_existence)
+            input_data = surfex.OfflineInputData(self.config, self.exp_file_paths,
+                                                 check_existence=self.check_existence)
         elif self.mode == "soda":
             self.soda = True
             # print(kwargs)
-            input_data = surfex.SodaInputData(self.config, self.exp_file_paths, check_existence=self.check_existence,
+            input_data = surfex.SodaInputData(self.config, self.exp_file_paths,
+                                              check_existence=self.check_existence,
                                               dtg=self.dtg, masterodb=masterodb,
                                               perturbed_file_pattern=perturbed_file_pattern)
         elif self.mode == "perturbed":
             self.perturbed = True
-            input_data = surfex.OfflineInputData(self.config, self.exp_file_paths, check_existence=self.check_existence)
+            input_data = surfex.OfflineInputData(self.config, self.exp_file_paths,
+                                                 check_existence=self.check_existence)
         else:
             raise NotImplementedError(self.mode + " is not implemented!")
 
-        print("pgd", pgd_file_path)
-        print(self.perturbed, self.pert)
+        logging.debug("pgd %s", pgd_file_path)
+        logging.debug("self.perturbed %s, self.pert %s", self.perturbed, self.pert)
 
-        self.namelist = surfex.BaseNamelist(self.mode, self.config, self.input_path, forc_zs=forc_zs,
+        self.namelist = surfex.BaseNamelist(self.mode, self.config, self.input_path,
+                                            forc_zs=forc_zs,
                                             prep_file=prep_file, prep_filetype=prep_filetype,
-                                            prep_pgdfile=prep_pgdfile, prep_pgdfiletype=prep_pgdfiletype,
+                                            prep_pgdfile=prep_pgdfile, 
+                                            prep_pgdfiletype=prep_pgdfiletype,
                                             dtg=self.dtg, fcint=fcint)
 
-        print("rte", rte)
+        logging.debug("rte %s", str(rte))
         batch = surfex.BatchJob(rte, wrapper=self.wrapper)
 
         # settings = surfex.ascii2nml(json_settings)
@@ -117,7 +169,8 @@ class SurfexBinaryTask(AbstractTask):
                                        lfagmap=lfagmap)
 
         if self.need_prep and self.need_pgd:
-            surffile = surfex.SURFFile(filetype, surffile, self.geo, archive_file=output, lfagmap=lfagmap)
+            surffile = surfex.SURFFile(filetype, surffile, self.geo, archive_file=output,
+                                       lfagmap=lfagmap)
         else:
             surffile = None
 
@@ -151,14 +204,30 @@ class SurfexBinaryTask(AbstractTask):
 
 
 class Pgd(SurfexBinaryTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, debug=False, mbr=None,
-                 stream=None, **kwargs):
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "pgd", debug=debug, mbr=mbr,
-                                  stream=stream, **kwargs)
+    """Running PGD task.
+
+    Args:
+        SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
+    """
+
+    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+        """Construct a Pgd task object.
+
+        Args:
+            task (_type_): _description_
+            config (_type_): _description_
+            system (_type_): _description_
+            exp_file_paths (_type_): _description_
+            progress (_type_): _description_
+        """
+        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "pgd",
+                                  **kwargs)
 
     def execute(self):
+        """Execute."""
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
-        output = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
+        output = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
+                                                     default_dir="default_climdir")
         binary = self.bindir + "/PGD" + self.xyz
 
         if not os.path.exists(output) or self.force:
@@ -168,14 +237,30 @@ class Pgd(SurfexBinaryTask):
 
 
 class Prep(SurfexBinaryTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "prep", debug=debug, mbr=mbr,
-                                  stream=stream, **kwargs)
+    """Running PREP task.
+
+    Args:
+        SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
+    """
+
+    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+        """Construct Prep task.
+
+        Args:
+            task (_type_): _description_
+            config (_type_): _description_
+            system (_type_): _description_
+            exp_file_paths (_type_): _description_
+            progress (_type_): _description_
+        """
+        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "prep",
+                                  **kwargs)
 
     def execute(self):
-
+        """Execute."""
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
-        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
+        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, 
+                                                            default_dir="default_climdir")
         prep_file = self.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILE",
                                      validtime=self.dtg, basedtg=self.fg_dtg)
         prep_filetype = self.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILETYPE")
@@ -202,15 +287,30 @@ class Prep(SurfexBinaryTask):
 
 
 class Forecast(SurfexBinaryTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, debug=False, mbr=None,
-                 stream=None, **kwargs):
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "offline", debug=debug, mbr=mbr,
-                                  stream=stream, **kwargs)
+    """Running Forecast task.
+
+    Args:
+        SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
+    """
+
+    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+        """Construct the forecast task.
+
+        Args:
+            task (_type_): _description_
+            config (_type_): _description_
+            system (_type_): _description_
+            exp_file_paths (_type_): _description_
+            progress (_type_): _description_
+        """
+        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "offline",
+                                 **kwargs)
 
     def execute(self):
-
+        """Execute."""
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
-        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
+        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
+                                                            default_dir="default_climdir")
         binary = self.bindir + "/OFFLINE" + self.xyz
         forc_zs = self.get_setting("FORECAST#FORC_ZS")
 
@@ -231,25 +331,41 @@ class Forecast(SurfexBinaryTask):
 
         if not os.path.exists(output) or self.force:
             SurfexBinaryTask.execute_binary(self, binary, output,
-                                            pgd_file_path=pgd_file_path, prep_file_path=self.fc_start_sfx,
+                                            pgd_file_path=pgd_file_path,
+                                            prep_file_path=self.fc_start_sfx,
                                             forc_zs=forc_zs, archive_data=archive_data)
         else:
             print("Output already exists: ", output)
 
     def postfix(self):
-        pass
+        """Do default postfix."""
 
 
 class PerturbedRun(SurfexBinaryTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, debug=False, mbr=None,
-                 stream=None, **kwargs):
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "perturbed", debug=debug,
-                                  mbr=mbr, stream=stream, **kwargs)
+    """Running a perturbed forecast task.
+
+    Args:
+        SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
+    """
+
+    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+        """Construct a perturbed run task.
+
+        Args:
+            task (_type_): _description_
+            config (_type_): _description_
+            system (_type_): _description_
+            exp_file_paths (_type_): _description_
+            progress (_type_): _description_
+        """
+        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "perturbed",
+                                 **kwargs)
 
     def execute(self):
-
+        """Execute."""
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
-        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
+        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, 
+                                                            default_dir="default_climdir")
         bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
         binary = bindir + "/OFFLINE" + self.xyz
         forc_zs = self.get_setting("FORECAST#FORC_ZS")
@@ -260,15 +376,20 @@ class PerturbedRun(SurfexBinaryTask):
         else:
             prepfile = "ANALYSIS" + self.suffix
 
-        prep_file_path = self.exp_file_paths.get_system_file("prep_dir", prepfile, mbr=self.mbr, basedtg=self.fg_dtg,
+        prep_file_path = self.exp_file_paths.get_system_file("prep_dir", prepfile, mbr=self.mbr,
+                                                             basedtg=self.fg_dtg,
                                                              default_dir="default_archive_dir")
 
-        output = self.archive + "/" + self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT" + str(self.pert) + self.suffix
+        output = self.archive + "/" + self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT" + \
+                                      str(self.pert) + self.suffix
 
         # Forcing dir is for previous cycle
         # TODO If pertubed runs moved to pp it should be a diffenent dtg
-        self.exp_file_paths.add_system_file_path("forcing_dir", self.exp_file_paths.get_system_path(
-            "forcing_dir", mbr=self.mbr, basedtg=self.fg_dtg, default_dir="default_forcing_dir"))
+        self.exp_file_paths.add_system_file_path("forcing_dir",
+                                                 self.exp_file_paths.get_system_path("forcing_dir",
+                                                                mbr=self.mbr,
+                                                                basedtg=self.fg_dtg, 
+                                                                default_dir="default_forcing_dir"))
 
         if not os.path.exists(output) or self.force:
             SurfexBinaryTask.execute_binary(self, binary, output,
@@ -280,21 +401,37 @@ class PerturbedRun(SurfexBinaryTask):
 
     # Make sure we don't clean yet
     def postfix(self):
-        pass
+        """Do no postfix."""
 
 
 class Soda(SurfexBinaryTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, debug=False, mbr=None,
-                 stream=None, **kwargs):
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "soda", debug=debug, mbr=mbr,
-                                  stream=stream, **kwargs)
+    """Running SODA (Surfex Offline Data Assimilation) task.
+
+    Args:
+        SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
+    """
+
+    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+        """Construct a Soda task.
+
+        Args:
+            task (_type_): _description_
+            config (_type_): _description_
+            system (_type_): _description_
+            exp_file_paths (_type_): _description_
+            progress (_type_): _description_
+        """
+        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "soda",
+                                  **kwargs)
 
     def execute(self):
+        """Execute."""
         bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
         binary = bindir + "/SODA" + self.xyz
 
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
-        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, default_dir="default_climdir")
+        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
+                                                            default_dir="default_climdir")
 
         prep_file_path = self.fg_guess_sfx
         output = self.archive + "/ANALYSIS" + self.suffix
@@ -302,14 +439,17 @@ class Soda(SurfexBinaryTask):
         if self.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
             # TODO If pertubed runs moved to pp it should be a diffenent dtg
             perturbed_run_dir = self.exp_file_paths.get_system_path("archive_dir",
-                                                                    default_dir="default_archive_dir")
+                                                                 default_dir="default_archive_dir")
             self.exp_file_paths.add_system_file_path("perturbed_run_dir", perturbed_run_dir,
                                                      mbr=self.mbr, basedtg=self.dtg)
-            first_guess_dir = self.exp_file_paths.get_system_path("default_archive_dir", mbr=self.mbr,
-                                                                  validtime=self.dtg, basedtg=self.fg_dtg)
+            first_guess_dir = self.exp_file_paths.get_system_path("first_guess_dir",
+                                                                  mbr=self.mbr,
+                                                                  validtime=self.dtg,
+                                                                  basedtg=self.fg_dtg)
             self.exp_file_paths.add_system_file_path("first_guess_dir", first_guess_dir)
 
-            perturbed_file_pattern = self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT@PERT@" + self.suffix
+            perturbed_file_pattern = self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT@PERT@" + \
+                                                      self.suffix
 
         if not os.path.exists(output) or self.force:
             SurfexBinaryTask.execute_binary(self, binary, output, pgd_file_path=pgd_file_path,
@@ -325,4 +465,4 @@ class Soda(SurfexBinaryTask):
 
     # Make sure we don't clean yet
     def postfix(self):
-        pass
+        """Do no postfix."""

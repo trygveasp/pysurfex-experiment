@@ -1,14 +1,30 @@
-from experiment_tasks import AbstractTask
-import surfex
+"""Forcing task."""
 import os
-import yaml
 from datetime import timedelta
 import json
+import yaml
+import logging
+from experiment_tasks import AbstractTask
+import surfex
 
 
 class Forcing(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
+    """Create forcing task."""
+
+    def __init__(self, task, config, system, exp_file_paths, progress, stream=None,
+                 debug=False, **kwargs):
+        """Construct forcing task.
+
+        Args:
+            task (scheduler.task): The task
+            config (dict): Actual configuration dict
+            system (dict): System dict
+            exp_file_paths (dict): Exp file paths dict
+            progress (dict): Date time information
+            stream (int, optional): Stream. Defaults to None.
+            debug (bool, optional): _description_. Defaults to False.
+        """
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress,
                               stream=stream, debug=debug, **kwargs)
         self.var_name = task.family1
 
@@ -18,20 +34,25 @@ class Forcing(AbstractTask):
         self.user_config = user_config
 
     def execute(self):
+        """Execute the forcing task.
 
+        Raises:
+            NotImplementedError: _description_
+        """
         dtg = self.dtg
-        hh = self.dtg.strftime("%H")
-        fcint = self.get_fcint(hh, mbr=self.mbr)
+        hour = self.dtg.strftime("%H")
+        fcint = self.get_fcint(hour)
 
         kwargs = {}
         if self.user_config is not None:
-            user_config = yaml.safe_load(open(self.user_config))
+            user_config = yaml.safe_load(open(self.user_config, mode="r", encoding="utf-8"))
             kwargs.update({"user_config": user_config})
 
-        json.dump(self.geo.json, open(self.wdir + "/domain.json", "w"), indent=2)
+        json.dump(self.geo.json, open(self.wdir + "/domain.json", mode="w", encoding="utf-8"),
+                                      indent=2)
         kwargs.update({"domain": self.wdir + "/domain.json"})
         global_config = self.lib + "/config/config.yml"
-        global_config = yaml.safe_load(open(global_config, "r"))
+        global_config = yaml.safe_load(open(global_config, mode="r", encoding="utf-8"))
         kwargs.update({"config": global_config})
 
         kwargs.update({"dtg_start": dtg.strftime("%Y%m%d%H")})
@@ -80,7 +101,7 @@ class Forcing(AbstractTask):
         kwargs.update({"debug": debug})
 
         if os.path.exists(output):
-            print("Output already exists: " + output)
+            logging.info("Output already exists: %s", output)
         else:
             options, var_objs, att_objs = surfex.forcing.set_forcing_config(**kwargs)
             surfex.forcing.run_time_loop(options, var_objs, att_objs)

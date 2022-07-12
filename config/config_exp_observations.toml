@@ -4,7 +4,7 @@
 #  TITAN observation settings
 #---------------------------------------------------
 SYNOP_OBS_T2M=true             # SYNOP 2m air temperature from bufr files
-SYNOP_OBS_RH2M=false            # SYNOP 2m relative humidity from bufr files
+SYNOP_OBS_RH2M=true            # SYNOP 2m relative humidity from bufr files
 SYNOP_OBS_SD=true              # SYNOP snow depth from bufr files
 NETATMO_OBS_T2M=true           # 2m air temperature observations from Netatmo stations
 NETATMO_OBS_RH2M=true          # 2m relative humidity observations from Netatmo stations

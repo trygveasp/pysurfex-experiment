@@ -4,9 +4,8 @@ import os
 
 
 class ConfigureOfflineBinaries(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
-                              stream=stream, debug=debug, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress,**kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
 
     def execute(self):
 
@@ -28,9 +27,8 @@ class ConfigureOfflineBinaries(AbstractTask):
 
 
 class MakeOfflineBinaries(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, mbr=None, stream=None, debug=False, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, mbr=mbr,
-                              stream=stream, debug=debug, **kwargs)
+    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
 
     def execute(self):
 

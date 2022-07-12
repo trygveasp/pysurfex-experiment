@@ -28,6 +28,6 @@ MKDIR = "mkdir -p"
 RSYNC = "rsync -avh"
 
 SURFEX_CONFIG = "pc5511"
-SCHEDULER_PYTHONPATH = "/home/trygveasp/git/pysurfex-scheduler"
+SCHEDULER_PYTHONPATH = "/home/trygveasp/projects/pysurfex/pysurfex-scheduler"
 LOGIN_HOST = "pc5511"
 SYNC_DATA = false

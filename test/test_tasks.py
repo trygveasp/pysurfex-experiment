@@ -1,22 +1,22 @@
+"""Unit testing of tasks."""
 import os
 import sys
-import surfex
 import unittest
-dir_path = os.path.abspath(os.path.dirname(__file__))
-scheduler_path = dir_path
-sys.path.insert(0, scheduler_path)
-import scheduler
-import experiment
-import experiment_setup
-import experiment_tasks
+from pathlib import Path
 import json
 import types
 import importlib.machinery
 import inspect
 import shutil
+import scheduler
+import surfex
+import experiment
+import experiment_setup
+import experiment_tasks
 
-
-class TestEcflowContainer(unittest.TestCase):
+'''
+class TestEcflowContainerAndTasks(unittest.TestCase):
+    """Test the ecflow containers and the tasks."""
 
     def setUp(self):
 
@@ -91,6 +91,7 @@ class TestEcflowContainer(unittest.TestCase):
         input_files = json.load(open(wd + "/exp_system.json", "r"))
         lib_dir = input_files["1"]["sfx_exp_lib"]
         sys.path.insert(0, lib_dir)
+        dir_path = os.path.abspath(os.path.dirname(__file__))
         input_files["0"].update({"bin_dir": dir_path + "/bin"})
         input_files["1"].update({"bin_dir": dir_path + "/bin"})
         json.dump(input_files, open(wd + "/exp_system.json", "w"))
@@ -193,3 +194,4 @@ class TestEcflowContainer(unittest.TestCase):
         system_file_paths = json.load(open(lib_dir + "/exp_system.json", "r"))[host]
         task_class(task, task_config, system_variables, system_file_paths, progress,
                    mbr=mbr, stream=stream, debug=True, wrapper=wrapper).run()
+'''

@@ -1,14 +1,31 @@
+"""Handle system specific settings."""
 import os
+import logging
 import json
 import toml
 
 
 class System(object):
-    def __init__(self, host_system, exp_name):
+    """Main system class.
 
-        # print(host_system)
+    Args:
+        object (_type_): _description_
+    """
+
+    def __init__(self, host_system, exp_name):
+        """Constuct a system object.
+
+        Args:
+            host_system (_type_): _description_
+            exp_name (_type_): _description_
+
+        Raises:
+            Exception: _description_
+        """
+        logging.debug(str(host_system))
         self.system_variables = ["SFX_EXP_DATA", "SFX_EXP_LIB", "JOBOUTDIR", "MKDIR",
-                                 "RSYNC", "HOSTS", "LOGIN_HOST", "SCHEDULER_PYTHONPATH", "SYNC_DATA", "SURFEX_CONFIG"]
+                                 "RSYNC", "HOSTS", "LOGIN_HOST", "SCHEDULER_PYTHONPATH",
+                                 "SYNC_DATA", "SURFEX_CONFIG"]
         self.hosts = None
         self.exp_name = exp_name
 
@@ -45,7 +62,14 @@ class System(object):
         self.system = system
 
     def dump_system_vars(self, filename, indent=None, stream=None):
+        """Dump system variables to a json file.
 
+        Args:
+            filename (_type_): _description_
+            indent (_type_, optional): _description_. Defaults to None.
+            stream (_type_, optional): _description_. Defaults to None.
+
+        """
         system_vars = {}
         for host in range(0, len(self.hosts)):
             host = str(host)
@@ -53,68 +77,100 @@ class System(object):
             for key in self.system_variables:
                 if key == "HOSTS":
                     value = self.get_var(key, host, stream=stream)
-                    print(value)
                     var_host.update({"HOSTNAME": value[int(host)]})
                 else:
                     value = self.get_var(key, host, stream=stream)
                     var_host.update({key: value})
+            logging.debug("HOST=%s KEY=%s VALUE=%s", str(host), str(key), str(value))
             system_vars.update({host: var_host})
-        json.dump(system_vars, open(filename, "w"), indent=indent)
+        json.dump(system_vars, open(filename, mode="w", encoding="utf-8"), indent=indent)
 
     def get_var(self, var, host, stream=None):
+        """Get the variable value.
+
+        Args:
+            var (_type_): variable name
+            host (int): host
+            stream (int, optional): _description_. Defaults to None.
+
+        Raises:
+            Exception: _description_
+            Exception: _description_
+            Exception: _description_
+
+        Returns:
+            _type_: variable value.
+
+        """
         if var == "HOSTS":
             if self.hosts is not None:
                 return self.hosts
-            else:
-                raise Exception("Variable " + var + " not found in system")
-        else:
-            if var in self.system[str(host)]:
-                if self.system[str(host)][var] is None:
-                    raise Exception(var + " is None!")
+            raise Exception("HOSTS not found in system")
+        if var == "SYNC_DATA" and str(host) == "0":
+            return None
 
-                if stream is None:
-                    stream = ""
+        if var in self.system[str(host)]:
+            if self.system[str(host)][var] is None:
+                raise Exception(var + " is None!")
 
-                value = self.system[str(host)][var]
-                if isinstance(value, str):
-                    value = value.replace("@STREAM@", str(stream))
-                    value = value.replace("@EXP@", self.exp_name)
-                    value = value.replace("@USER@", os.environ["USER"])
-                return value
-            elif var == "SYNC_DATA" and host == "0":
-                pass
-            else:
-                raise Exception("Variable " + var + " not found in system")
+            if stream is None:
+                stream = ""
+
+            value = self.system[str(host)][var]
+            if isinstance(value, str):
+                value = value.replace("@STREAM@", str(stream))
+                value = value.replace("@EXP@", self.exp_name)
+                value = value.replace("@USER@", os.environ["USER"])
+            return value
+        raise Exception("Variable " + var + " not found in system")
 
 
 class SystemFromFile(System):
-    def __init__(self, env_system_file, exp_name, debug=False):
+    """Create a system from a toml file."""
 
-        # system = System.get_file_name(wdir, full_path=True)
-        if debug:
-            print(__file__, env_system_file)
+    def __init__(self, env_system_file, exp_name):
+        """Construct the System object from a system file.
+
+        Args:
+            env_system_file (str): System toml file.
+            exp_name (str): Name of the experiment.
+
+        Raises:
+            FileNotFoundError: If system file not found.
+
+        """
+        logging.debug("Env_system_file: %s",env_system_file)
         if os.path.exists(env_system_file):
-            host_system = toml.load(open(env_system_file, "r"))
+            host_system = toml.load(open(env_system_file, mode="r", encoding="utf-8"))
         else:
             raise FileNotFoundError(env_system_file)
         System.__init__(self, host_system, exp_name)
 
 
-class SystemFilePathsFromSystem(object):
-
-    """
+class SystemFilePathsFromSystem():
+    """Set system file paths from a system object.
 
     Also set SFX_EXP system variables (File stucture/ssh etc)
 
     """
+
     def __init__(self, paths_in, system, hosts=None, stream=None, wdir=None):
+        """Construct a SystemFilePathsFromSystem object.
+
+        Args:
+            paths_in (_type_): _description_
+            system (_type_): _description_
+            hosts (_type_, optional): _description_. Defaults to None.
+            stream (_type_, optional): _description_. Defaults to None.
+            wdir (_type_, optional): _description_. Defaults to None.
+
+        """
         # surfex.SystemFilePaths.__init__(self, paths)
         if hosts is None:
             hosts = ["0"]
 
         # override paths from system file
         paths = {}
-        print(paths)
         for host in range(0, len(hosts)):
             host = str(host)
             paths_host = {}
@@ -128,6 +184,7 @@ class SystemFilePathsFromSystem(object):
             default_bin_dir = sfx_data + "/lib/offline/exe/"
             default_clim_dir = sfx_data + "/climate/"
             default_archive_dir = sfx_data + "/archive/@YYYY@/@MM@/@DD@/@HH@/@EEE@/"
+            default_first_guess_dir = default_archive_dir
             default_extarch_dir = sfx_data + "/archive/extract/"
             default_forcing_dir = sfx_data + "/forcing/@YYYY@@MM@@DD@@HH@/@EEE@/"
             default_obs_dir = sfx_data + "/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@EEE@/"
@@ -138,6 +195,7 @@ class SystemFilePathsFromSystem(object):
                 "sfx_exp_lib": sfx_lib,
                 "default_bin_dir": default_bin_dir,
                 "default_archive_dir": default_archive_dir,
+                "default_first_guess_dir": default_first_guess_dir,
                 "default_extrarch_dir": default_extarch_dir,
                 "default_climdir": default_clim_dir,
                 "default_wrk_dir": wrk_dir,
@@ -151,17 +209,36 @@ class SystemFilePathsFromSystem(object):
         self.paths = paths
 
     def dump_system(self, filename, indent=None):
-        json.dump(self.paths, open(filename, "w"), indent=indent)
+        """Dump the system to a json file.
+
+        Args:
+            filename (str): filename
+            indent (int, optional): indentation in file. Defaults to None.
+        """
+        json.dump(self.paths, open(filename, mode="w", encoding="utf-8"), indent=indent)
 
 
 class SystemFilePathsFromSystemFile(SystemFilePathsFromSystem):
-
-    """
+    """Set systemfilepaths from a system file.
 
     Also set SFX_EXP system variables (File stucture/ssh etc)
 
     """
+
     def __init__(self, system_file_paths, system, name, hosts=None, stream=None, wdir=None):
-        system_file_paths = json.load(open(system_file_paths, "r"))
+        """Construct the SystemFilePathsFromSystem object.
+
+        From a systemfilepath file and a system file.
+
+        Args:
+            system_file_paths (_type_): _description_
+            system (_type_): _description_
+            name (_type_): _description_
+            hosts (_type_, optional): _description_. Defaults to None.
+            stream (_type_, optional): _description_. Defaults to None.
+            wdir (_type_, optional): _description_. Defaults to None.
+        """
+        system_file_paths = json.load(open(system_file_paths, mode="r", encoding="UTF-8"))
         system = SystemFromFile(system, name)
-        SystemFilePathsFromSystem.__init__(self, system_file_paths, system, hosts=hosts, stream=stream, wdir=wdir)
+        SystemFilePathsFromSystem.__init__(self, system_file_paths, system, hosts=hosts,
+                                           stream=stream, wdir=wdir)
