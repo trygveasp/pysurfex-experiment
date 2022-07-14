@@ -2,8 +2,8 @@
 import os
 from datetime import timedelta
 import json
-import yaml
 import logging
+import yaml
 from experiment_tasks import AbstractTask
 import surfex
 
@@ -40,23 +40,23 @@ class Forcing(AbstractTask):
             NotImplementedError: _description_
         """
         dtg = self.dtg
-        hour = self.dtg.strftime("%H")
-        fcint = self.get_fcint(hour)
+        fcint = self.fcint
 
         kwargs = {}
         if self.user_config is not None:
             user_config = yaml.safe_load(open(self.user_config, mode="r", encoding="utf-8"))
             kwargs.update({"user_config": user_config})
 
-        json.dump(self.geo.json, open(self.wdir + "/domain.json", mode="w", encoding="utf-8"),
-                                      indent=2)
+        with open(self.wdir + "/domain.json", mode="w", encoding="utf-8") as file_handler:
+            json.dump(self.geo.json, file_handler, indent=2)
         kwargs.update({"domain": self.wdir + "/domain.json"})
         global_config = self.lib + "/config/config.yml"
-        global_config = yaml.safe_load(open(global_config, mode="r", encoding="utf-8"))
+        with open(global_config, mode="r", encoding="utf-8") as file_handler:
+            global_config = yaml.safe_load(file_handler)
         kwargs.update({"config": global_config})
 
         kwargs.update({"dtg_start": dtg.strftime("%Y%m%d%H")})
-        kwargs.update({"dtg_stop": (dtg + timedelta(hours=fcint)).strftime("%Y%m%d%H")})
+        kwargs.update({"dtg_stop": (dtg + timedelta(seconds=fcint)).strftime("%Y%m%d%H")})
 
         forcing_dir = self.exp_file_paths.get_system_path("forcing_dir", basedtg=self.dtg,
                                                           default_dir="default_forcing_dir")

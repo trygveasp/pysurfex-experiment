@@ -75,7 +75,6 @@ class Exp():
                 update_vars.update({"PYTHONPATH": f"{scheduler_pythonpath}:{exp_lib}:{pythonpath}"})
                 env_submit[submit_type][key_to_update] = update_vars
 
-
     def checkout(self, file):
         """Check out a file to the experiment.
 
@@ -223,21 +222,20 @@ class ExpFromFiles(Exp):
         domains = wdir + "/config/domains/Harmonie_domains.json"
         domains = json.load(open(domains, mode="r", encoding="UTF-8"))
         all_merged_settings["GEOMETRY"].update({"DOMAINS": domains})
-        merged_config, member_merged_config = \
-                                      experiment_setup.process_merged_settings(all_merged_settings)
+        m_config, member_m_config = experiment_setup.process_merged_settings(all_merged_settings)
 
         # Submission exceptions
         submit_exceptions = wdir + "/config/submit/submission.json"
         submit_exceptions = json.load(open(submit_exceptions, mode="r", encoding="UTF-8"))
 
-        Exp.__init__(self, exp_dependencies, merged_config, member_merged_config,
+        Exp.__init__(self, exp_dependencies, m_config, member_m_config,
                      submit_exceptions=submit_exceptions,
                      system_file_paths=system_file_paths,
                      system=system, server=server, env_submit=env_submit, progress=progress)
         self.config.dump_json(self.work_dir + "/exp_configuration.json", indent=2)
 
     @staticmethod
-    def get_config_files_dict(work_dir,  pysurfex_experiment=None, pysurfex=None, must_exists=True):
+    def get_config_files_dict(work_dir, pysurfex_experiment=None, pysurfex=None, must_exists=True):
         """Get the needed set of configurations files.
 
         Raises:

@@ -1,6 +1,7 @@
 """Experiment configuration."""
 import json
 import logging
+from datetime import timedelta
 import experiment_setup
 
 
@@ -45,6 +46,34 @@ class ExpConfiguration(object):
                 member_settings.update({str(mbr): mbr_configs})
         self.member_settings = member_settings
 
+        # Update time information
+        cycle_times = self.get_cycle_list()
+        fcint = {}
+        fcint_members = {}
+        fgint = {}
+        fgint_members = {}
+        for cycle in cycle_times:
+            cycle_delta = timedelta(hours=int(cycle))
+            cycle_string = self.format_cycle_string(cycle_delta)
+            fcint.update({cycle_string: int(self.set_fcint(cycle_delta).total_seconds())})
+            fgint.update({cycle_string: int(self.set_fgint(cycle_delta).total_seconds())})
+        if self.members is not None:
+            for mbr in self.members:
+                cycle_times = self.get_cycle_list(mbr=mbr)
+                for cycle in cycle_times:
+                    cycle_delta = timedelta(hours=int(cycle))
+                    cycle_string = self.format_cycle_string(cycle_delta)
+                    secs = int(self.set_fcint(cycle_delta, mbr=mbr).total_seconds())
+                    fcint_members.update({cycle_string: secs})
+                    secs = int(self.set_fgint(cycle_delta, mbr=mbr).total_seconds())
+                    fgint_members.update({cycle_string: secs})
+        self.settings["GENERAL"].update({"FCINT": fcint})
+        self.settings["GENERAL"].update({"FGINT": fgint})
+        logging.debug("fcint %s", str(fcint))
+        logging.debug("fcint_members %s", str(fcint_members))
+        logging.debug("fgint %s", str(fgint))
+        logging.debug("fgint_members %s", str(fgint_members))
+
         # self.do_build = self.setting_is("COMPILE#BUILD", "yes")
         self.ecoclimap_sg = self.setting_is("SURFEX#COVER#SG", True)
         self.gmted = self.setting_is("SURFEX#ZS#YZS", "gmted2010.dir")
@@ -56,6 +85,21 @@ class ExpConfiguration(object):
             if value == 1:
                 perts.append(pert_number)
         self.perts = perts
+
+    @staticmethod
+    def format_cycle_string(cycle_delta):
+        """Format the cycle string.
+
+        Args:
+            cycle_delta (datetime.timedelta): The time delta from midnight.
+
+        Returns:
+            str: Formatted string
+        """
+        secs = cycle_delta.total_seconds()
+        hours = int(secs / 3600)
+        mins = int(secs % 3600)
+        return f"{hours:02}{mins:02}"
 
     def dump_json(self, filename, indent=None):
         """Dump a json file with configuration.
@@ -96,7 +140,7 @@ class ExpConfiguration(object):
         Returns:
             _type_: _description_
         """
-        ll_list = self.get_ll_list(mbr=mbr)
+        ll_list = self.get_lead_time_list(mbr=mbr)
         max_fc = -1
         for ll_val in ll_list:
             if int(ll_val) > int(max_fc):
@@ -228,15 +272,15 @@ class ExpConfiguration(object):
         if "mbr" in kwargs:
             if kwargs["mbr"] is not None:
                 mbr = str(kwargs["mbr"])
-        sep = "#"
-        if "sep" in kwargs:
-            sep = kwargs["sep"]
-        abort = True
-        if "abort" in kwargs:
-            abort = kwargs["abort"]
-        default = None
-        if "default" in kwargs:
-            default = kwargs["default"]
+        sep = kwargs.get("sep")
+        if sep is None:
+            sep = "#"
+
+        abort = kwargs.get("abort")
+        if abort is None:
+            abort = True
+        default = kwargs.get("default")
+
         if mbr is None:
             settings = self.settings
         else:
@@ -270,11 +314,10 @@ class ExpConfiguration(object):
         else:
             if abort:
                 raise KeyError("Key not found " + keys[0])
-            else:
-                this_setting = None
+            this_setting = None
 
         logging.debug("get_setting %s %s %s %s", str(setting), str(this_setting), str(mbr),
-                                                 type(this_setting))
+                      type(this_setting))
         return this_setting
 
     def update_setting(self, setting, value, mbr=None, sep="#"):
@@ -310,7 +353,7 @@ class ExpConfiguration(object):
             else:
                 raise Exception("Not a valid member: " + str(mbr))
 
-    def get_total_unique_hh_list(self):
+    def get_total_unique_cycle_list(self):
         """Get a list of unique start times for the forecasts.
 
         Returns:
@@ -321,51 +364,117 @@ class ExpConfiguration(object):
         hh_list_all = []
         if self.members is not None:
             for mbr in self.members:
-                hh_l = self.get_hh_list(mbr=mbr)
-                for hh in hh_l:
-                    hh = "{:02d}".format(int(hh))
-                    if hh not in hh_list_all:
-                        hh_list_all.append(hh)
+                hh_l = self.get_cycle_list(mbr=mbr)
+                for hour in hh_l:
+                    hour = f"{int(hour):02d}"
+                    if hour not in hh_list_all:
+                        hh_list_all.append(hour)
         else:
-            hh_l = self.get_hh_list()
-            for hh in hh_l:
-                hh = "{:02d}".format(int(hh))
-                if hh not in hh_list_all:
-                    hh_list_all.append(hh)
+            hh_l = self.get_cycle_list()
+            for hour in hh_l:
+                hour = f"{int(hour):02d}"
+                if hour not in hh_list_all:
+                    hh_list_all.append(hour)
 
         # print(hh_list_all)
         # Sort this list
         hh_list = []
-        for hh in sorted(hh_list_all):
-            hh_list.append(hh)
+        for hour in sorted(hh_list_all):
+            hh_list.append(hour)
 
         return hh_list
 
-    def get_fcint(self, cycle, mbr=None):
-        """Get the the interval between the forecasts.
+    def get_fgint(self, dtg, mbr=None):
+        """Get the fgint.
 
         Args:
-            cycle (_type_): _description_
-            mbr (_type_, optional): _description_. Defaults to None.
+            dtg (datetime.datetime): Cycle time.
+            mbr (int, optional): Ensemble member. Defaults to None.
 
         Returns:
-            _type_: _description_
+            int: fgint in seconds
+
         """
-        hh_list = self.get_hh_list(mbr=mbr)
-        fcint = None
-        if len(hh_list) > 1:
-            for hh in range(0, len(hh_list)):
-                h = int(hh_list[hh]) % 24
-                if h == int(cycle) % 24:
-                    if hh == 0:
-                        fcint = (int(hh_list[0]) - int(hh_list[len(hh_list) - 1])) % 24
-                    else:
-                        fcint = int(hh_list[hh]) - int(hh_list[hh - 1])
-        else:
-            fcint = 24
+        time_stamp = dtg.strftime("%H%M")
+        fgints = self.get_setting("GENERAL#FGINT", mbr=mbr)
+        fgint = fgints.get(time_stamp)
+        logging.debug("FGINT=%s DTG=%s fgints=%s time_stamp=%s", fgint, dtg, str(fgints),
+                      time_stamp)
+        return fgint
+
+    def get_fcint(self, dtg, mbr=None):
+        """Get the fcint.
+
+        Args:
+            dtg (datetime.datetime): Cycle time.
+            mbr (int, optional): Ensemble member. Defaults to None.
+
+        Returns:
+            int: fcint in seconds
+
+        """
+        time_stamp = dtg.strftime("%H%M")
+        fcints = self.get_setting("GENERAL#FCINT", mbr=mbr)
+        fcint = fcints.get(time_stamp)
+        logging.debug("FCINT=%s DTG=%s fcints=%s time_stamp=%s", fcint, dtg, str(fcints),
+                      time_stamp)
         return fcint
 
-    def get_hh_list(self, mbr=None):
+    def set_fgint(self, cycle, mbr=None):
+        """Set the the interval between the forecasts before.
+
+        Args:
+            cycle (datetime.timedelta): Timedelta from midnight
+            mbr (int, optional): ensemble member. Defaults to None.
+
+        Returns:
+            datetime.timedelta: First guess intervall
+
+        """
+        hh_list = self.get_cycle_list(mbr=mbr)
+        prev_delta = None
+        for delta, val in enumerate(hh_list):
+            val = timedelta(hours=int(val))
+            logging.debug("delta=%s val=%s cycle=%s", delta, val, cycle)
+            if val == cycle:
+                if prev_delta is not None:
+                    return val - prev_delta
+            prev_delta = val
+        # 24 hours timdelta if we only have one cycle pr day.
+        if len(hh_list) == 1:
+            prev_delta = timedelta(hours=0)
+        return timedelta(hours=24) - prev_delta
+
+    def set_fcint(self, cycle, mbr=None):
+        """Set the the interval between the forecasts after.
+
+        Args:
+            cycle (datetime.timedelta): Timedelta from midnight
+            mbr (int, optional): ensemble member. Defaults to None.
+
+        Returns:
+            datetime.timedelta: Interval to  next forecast.
+
+        """
+        hh_list = self.get_cycle_list(mbr=mbr)
+        start_delta = None
+        first_val = None
+        for delta, val in enumerate(hh_list):
+            val = timedelta(hours=int(val))
+            logging.debug("delta=%s val=%s cycle=%s", delta, val, cycle)
+            if start_delta is not None:
+                return val - start_delta
+            if val == cycle:
+                start_delta = val
+            if first_val is None:
+                first_val = val
+
+        # 24 hours timdelta if we only have one cycle pr day.
+        if len(hh_list) == 1:
+            start_delta = timedelta(hours=0)
+        return timedelta(hours=24) - start_delta
+
+    def get_cycle_list(self, mbr=None):
         """Get a list of forecast start times.
 
         Args:
@@ -378,9 +487,10 @@ class ExpConfiguration(object):
         hh_list = self.get_setting("GENERAL#HH_LIST", mbr=mbr)
         ll_list = self.get_setting("GENERAL#LL_LIST", mbr=mbr)
         hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
+        logging.debug("hh_list: %s", hh_list)
         return hh_list
 
-    def get_ll_list(self, mbr=None):
+    def get_lead_time_list(self, mbr=None):
         """Get a list of forecast lead times.
 
         Args:
@@ -393,6 +503,7 @@ class ExpConfiguration(object):
         hh_list = self.get_setting("GENERAL#HH_LIST", mbr=mbr)
         ll_list = self.get_setting("GENERAL#LL_LIST", mbr=mbr)
         hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
+        logging.debug("ll_list: %s", ll_list)
         return ll_list
 
     @staticmethod
@@ -436,36 +547,37 @@ class ExpConfiguration(object):
                     p1 = element
 
                 start, end = p1.split(sep3)
-                for ll in range(int(start), int(end) + 1, int(step)):
+                for ltime in range(int(start), int(end) + 1, int(step)):
                     add = True
                     if maxval is not None:
-                        if ll > maxval:
+                        if ltime > maxval:
                             add = False
                     if add:
                         if tstep is not None:
-                            if (ll * 60) % tstep == 0:
-                                ll = int(ll * 60 / tstep)
+                            if (ltime * 60) % tstep == 0:
+                                ltime = int(ltime * 60 / tstep)
                             else:
-                                print(ll)
+                                logging.critical("Time step %s tstep=%s", str(ltime * tstep),
+                                                 str(tstep))
                                 raise Exception("Time step is not a minute!")
-                        this_ll = fmt.format(ll)
+                        this_ll = fmt.format(ltime)
                         expanded_list.append(this_ll)
             else:
                 # print(fmt, element)
                 # print(fmt.decode('ascii'))
                 add = True
-                ll = int(element)
+                ltime = int(element)
                 if maxval is not None:
-                    if ll > maxval:
+                    if ltime > maxval:
                         add = False
                 if add:
                     if tstep is not None:
-                        if (ll * 60) % tstep == 0:
-                            ll = int(ll * 60 / tstep)
+                        if (ltime * 60) % tstep == 0:
+                            ltime = int(ltime * 60 / tstep)
                         else:
-                            raise Exception("Time step is not a minute! " + str(ll))
-                    ll = fmt.format(ll)
-                    expanded_list.append(ll)
+                            raise Exception("Time step is not a minute! " + str(ltime))
+                    ltime = fmt.format(ltime)
+                    expanded_list.append(ltime)
 
         # Add last value if wanted and not existing
         if maxval is not None and add_last:
@@ -475,8 +587,8 @@ class ExpConfiguration(object):
                 else:
                     raise Exception("Time step is not a minute!")
             if str(maxval) not in expanded_list:
-                ll = fmt.format(maxval)
-                expanded_list.append(ll)
+                ltime = fmt.format(maxval)
+                expanded_list.append(ltime)
         return expanded_list
 
     def expand_hh_and_ll_list(self, hh_list, ll_list, sep=":"):
@@ -520,13 +632,13 @@ class ExpConfiguration(object):
             if hhs[i].find(sep) > 0:
                 p1, step = hhs[i].split(sep)
                 h1, h2 = p1.split("-")
-                for h in range(int(h1), int(h2) + 1, int(step)):
-                    hh = "{:02d}".format(h)
-                    expanded_hh_list.append(hh)
+                for hour in range(int(h1), int(h2) + 1, int(step)):
+                    hour = f"{hour:02d}"
+                    expanded_hh_list.append(hour)
                     expanded_ll_list.append(ll)
             else:
-                hh = "{:02d}".format(int(hhs[i]))
-                expanded_hh_list.append(hh)
+                hour = f"{int(hhs[i]):02d}"
+                expanded_hh_list.append(hour)
                 expanded_ll_list.append(ll)
 
         # print(expanded_hh_list, expanded_ll_list)

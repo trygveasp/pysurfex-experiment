@@ -9,6 +9,7 @@ import scheduler
 THIS_DIR = Path(__file__).parent
 MY_DATA_PATH = str(THIS_DIR.parent)
 
+
 class TestEcflowServerClients(unittest.TestCase):
     """Test the client programs to submit, check and kill jobs."""
 
@@ -19,9 +20,10 @@ class TestEcflowServerClients(unittest.TestCase):
         Create an experiment with a scheduler.json file to use for testing.
 
         """
-        config_files = experiment.ExpFromFiles.get_config_files_dict(MY_DATA_PATH, 
-                                                           pysurfex=f"{MY_DATA_PATH}/../pysurfex/",
-                                                           must_exists=True)
+        pysurfex = f"{MY_DATA_PATH}/../pysurfex/"
+        config_files = experiment.ExpFromFiles.get_config_files_dict(MY_DATA_PATH,
+                                                                     pysurfex=pysurfex,
+                                                                     must_exists=True)
         cls.default_config = experiment_setup.merge_toml_env_from_config_dicts(config_files)
 
         exp_name = "TestEcfClient"
@@ -62,8 +64,8 @@ class TestEcflowServerClients(unittest.TestCase):
         }
         submit_exceptions = {}
         exp = experiment.Exp(exp_dependencies, cls.default_config, {}, env_submit=env_submit,
-                       server=server, system=system,
-                       submit_exceptions=submit_exceptions)
+                             server=server, system=system,
+                             submit_exceptions=submit_exceptions)
         exp.write_scheduler_info("ECF.log", filename=cls.settings_file)
 
     def test_ecf_submit(self):
@@ -99,4 +101,3 @@ class TestEcflowServerClients(unittest.TestCase):
         ]
         kwargs = experiment_scheduler.parse_kill_cmd_exp(argv)
         experiment_scheduler.kill_cmd_exp(**kwargs)
-    

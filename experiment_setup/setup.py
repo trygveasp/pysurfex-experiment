@@ -4,13 +4,12 @@ from argparse import ArgumentParser
 import json
 import os
 import logging
-import tomlkit
-import toml
 import shutil
 import collections
 import copy
-import os
 import subprocess
+import toml
+import tomlkit
 
 # TODO make this a file general for all cli
 __version__ = "0.0.1-dev"
@@ -28,13 +27,13 @@ def toml_load(fname):
         _type_: _description_
 
     """
-    fh = open(fname, "r")
+    fh = open(fname, "r", encoding="utf-8")
     res = tomlkit.parse(fh.read())
     fh.close()
     return res
 
 
-def toml_dump(to_dump,  fname, mode="w"):
+def toml_dump(to_dump, fname):
     """Dump toml to file.
 
     Using tomlkit to preserve stucture
@@ -45,7 +44,7 @@ def toml_dump(to_dump,  fname, mode="w"):
         mode (str, optional): _description_. Defaults to "w".
 
     """
-    fh = open(fname, mode)
+    fh = open(fname, mode="w", encoding="utf-8")
     fh.write(tomlkit.dumps(to_dump))
     fh.close()
 
@@ -65,7 +64,7 @@ def flatten(d, sep="#"):
 
     def recurse(t, parent_key=""):
         if isinstance(t, list):
-            for i in range(len(t)):
+            for i in enumerate(t):
                 recurse(t[i], parent_key + sep + str(i) if parent_key else str(i))
         elif isinstance(t, dict):
             for k, v in t.items():
@@ -79,7 +78,7 @@ def flatten(d, sep="#"):
 
 def deep_update(source, overrides):
     """Update a nested dictionary or similar mapping.
-   
+
     Modify ``source`` in place.
 
     Args:
@@ -198,7 +197,7 @@ def merge_config_files_dict(config_files, configuration=None, testbed_configurat
                 block_config.update({block: hm_testbed})
 
             if user_settings is not None:
-                if type(user_settings) is not dict:
+                if not isinstance(user_settings, dict):
                     raise Exception("User settings should be a dict here!")
                 if block in user_settings:
                     logging.info("Merge user settings in block %s", block)
@@ -227,7 +226,8 @@ def get_config_files(wd):
     # Check existence of needed config files
     config_file = wd + "/config/config.toml"
     logging.debug("config_file: %s", config_file)
-    config = toml.load(open(config_file, "r"))
+    with open(config_file, mode="r", encoding="utf-8") as file_handler:
+        config = toml.load(file_handler)
     c_files = config["config_files"]
     config_files = {}
     for f in c_files:
@@ -310,9 +310,9 @@ def get_member_settings(d, member, sep="#"):
     for setting in settings:
         keys = setting.split(sep)
         if len(keys) == 1:
-            member3 = "{:03d}".format(int(member))
+            member3 = f"{int(member):03d}"
             val = settings[setting]
-            if type(val) is str:
+            if isinstance(val, str):
                 val = val.replace("@EEE@", member3)
 
             this_setting = {keys[0]: val}
@@ -332,7 +332,17 @@ def get_member_settings(d, member, sep="#"):
 def merge_to_toml_config_files(config_files, wd, configuration=None, testbed_configuration=None,
                                user_settings=None,
                                write_config_files=True):
+    """Merge to toml config files.
 
+    Args:
+        config_files (_type_): _description_
+        wd (_type_): _description_
+        configuration (_type_, optional): _description_. Defaults to None.
+        testbed_configuration (_type_, optional): _description_. Defaults to None.
+        user_settings (_type_, optional): _description_. Defaults to None.
+        write_config_files (bool, optional): _description_. Defaults to True.
+
+    """
     config_files = config_files.copy()
     config_files = merge_config_files_dict(config_files, configuration=configuration,
                                            testbed_configuration=testbed_configuration,
@@ -352,8 +362,9 @@ def merge_to_toml_config_files(config_files, wd, configuration=None, testbed_con
                     p = p + str(d)
                     os.makedirs(p, exist_ok=True)
                     p = p + "/"
-            f_out = open(f_out, "w")
+            f_out = open(f_out, mode="w", encoding="utf-8")
             f_out.write(tomlkit.dumps(block_config))
+            f_out.close()
 
 
 def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, offline_source=None,
@@ -410,23 +421,23 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
     })
 
     sfiles = []
-    for key in system_files:
-        sfiles.append(system_files[key])
+    for sfile in system_files.values():
+        sfiles.append(sfile)
     logging.info("Setting up for host %s:%s", host, sfiles)
     fetched = []
     revs = [revision]
     if os.path.abspath(revision) != os.path.abspath(pysurfex_experiment):
         revs = revs + [pysurfex_experiment]
-    for key in system_files:
+    for lname, fname in system_files.items():
         for rev in revs:
-            lfile = wd + "/" + system_files[key]
-            rfile = rev + "/" + system_files[key]
+            lfile = wd + "/" + fname
+            rfile = rev + "/" + fname
             dirname = os.path.dirname(lfile)
             logging.debug("rfile %s lfile %s dirname %s", rfile, lfile, dirname)
             os.makedirs(dirname, exist_ok=True)
             if os.path.exists(lfile):
                 if lfile not in fetched:
-                    logging.info("System file %s already exists, is not fetched again from %s", 
+                    logging.info("System file %s already exists, is not fetched again from %s",
                                  lfile, rev)
             else:
                 if os.path.exists(rfile) and lfile != rfile:
@@ -434,8 +445,8 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
                     shutil.copy2(rfile, lfile)
                     fetched.append(lfile)
 
-        target = wd + "/" + key
-        lfile = wd + "/" + system_files[key]
+        target = wd + "/" + lname
+        lfile = wd + "/" + fname
         if os.path.islink(target):
             if target not in fetched:
                 logging.info("System target file %s already exists", str(target))
@@ -445,7 +456,7 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
 
     # Set up pysurfex_experiment
     logging.info("Set up experiment from %s", str(revs))
-    config_dirs = ["experiment", "bin", "experiment_scheduler", "experiment_tasks", 
+    config_dirs = ["experiment", "bin", "experiment_scheduler", "experiment_tasks",
                    "experiment_setup"]
     for rev in revs:
         for cdir in config_dirs:
@@ -496,7 +507,8 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
             if lfile not in fetched:
                 logging.info("%s already exists, is not fetched again from %s", lfile, rev)
 
-    c_files = toml.load(open(config_file, "r"))["config_files"]
+    with open(config_file, mode="r", encoding="utf-8") as file_handler:
+        c_files = toml.load(file_handler)["config_files"]
     c_files = c_files + ["first_guess.yml", "config.yml"]
     logging.info("Check out config files %s", str(c_files))
     for rev in [pysurfex] + revs:
@@ -511,9 +523,10 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
             if rev == revision:
                 rfile = rev + "/config/" + f
             else:
-                if f == "config_exp.toml" or f == "config_exp_surfex.toml" \
-                                          or f == "first_guess.yml" \
-                                          or f == "config.yml":
+                if f == "config_exp.toml" or \
+                   f == "config_exp_surfex.toml" or \
+                   f == "first_guess.yml" or \
+                   f == "config.yml":
                     rfile = pysurfex + "/surfex/cfg/" + f
                 else:
                     rfile = rev + "/config/" + f
@@ -550,8 +563,8 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
         if not os.path.exists(conf):
             raise Exception("Can not find configuration " + configuration + " in: " + conf)
         configuration = toml_load(conf)
-        merge_to_toml_config_files(config_files, wd, configuration=configuration, 
-                                  write_config_files=True)
+        merge_to_toml_config_files(config_files, wd, configuration=configuration,
+                                   write_config_files=True)
 
     logging.info("Set up domains from %s", str(revs))
     dirs = ["config/domains"]
@@ -640,13 +653,14 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
             logging.debug("%s/%s %s/%s", rev, cdir, wd, cdir)
             if os.path.exists(rev + "/" + cdir):
                 if not os.path.exists(wd + "/" + cdir):
-                    logging.info("Copy source code " + rev + "/" + cdir + " -> " + wd + "/" + cdir)
+                    logging.info("Copy source code %s/%s -> %s/%s", rev, cdir, wd, cdir)
                     shutil.copytree(rev + "/" + cdir, wd + "/" + cdir)
                 else:
                     logging.info(wd + "/" + cdir + " already exists, is not fetched again from " +
-                                 rev)
+                                 + rev)
 
-    json.dump(paths_to_sync, open(wd + "/paths_to_sync.json", "w"), indent=2)
+    with open(wd + "/paths_to_sync.json", mode="w", encoding="utf-8") as file_handler:
+        json.dump(paths_to_sync, file_handler, indent=2)
 
 
 def parse_surfex_script_setup(argv):
@@ -701,7 +715,6 @@ def surfex_script_setup(**kwargs):
 
     """
     debug = kwargs.get("debug")
-    level = logging.INFO
     if debug is None:
         debug = False
     if debug:
@@ -722,7 +735,7 @@ def surfex_script_setup(**kwargs):
         raise Exception("You must set a host")
 
     config = kwargs.get("config")
-    config_file = kwargs.get("config_file")       
+    config_file = kwargs.get("config_file")
 
     # Find experiment
     if wd is None:
@@ -755,16 +768,17 @@ def surfex_script_setup(**kwargs):
     if offline_source is None:
         logging.warning("No offline soure code set. Assume existing binaries")
 
-    setup_files(wd, exp_name, host,  rev, pysurfex_experiment, pysurfex,
+    setup_files(wd, exp_name, host, rev, pysurfex_experiment, pysurfex,
                 offline_source=offline_source,
                 configuration=config, configuration_file=config_file)
+
 
 def init_run_from_file(system_file, exp_dependencies, stream_nr=None):
     """Call init_run from experiment files.
 
     Args:
         system_file (str): File with system
-        exp_dependencies (str): File with experiment paths 
+        exp_dependencies (str): File with experiment paths
         stream_nr (int, optional): stream. Defaults to None.
 
     Raises:
@@ -773,11 +787,13 @@ def init_run_from_file(system_file, exp_dependencies, stream_nr=None):
 
     """
     if os.path.exists(system_file):
-        system = json.load(open(system_file, "r"))
+        with open(system_file, mode="r", encoding="utf-8") as file_handler:
+            system = json.load(file_handler)
     else:
         raise FileNotFoundError(system_file)
     if os.path.exists(exp_dependencies):
-        paths_to_sync = json.load(open(exp_dependencies, "r"))
+        with open(exp_dependencies, mode="r", encoding="utf-8") as file_handler:
+            paths_to_sync = json.load(file_handler)
     else:
         raise FileNotFoundError(exp_dependencies)
     init_run(system, paths_to_sync, stream_nr=stream_nr)
@@ -827,7 +843,7 @@ def init_run(system, paths_to_sync, stream_nr=None):
                " --exclude=.cache --exclude=__pycache__ --exclude='*.pyc'"
     # Sync pysurfex_experiment to LIB0
     if not experiment_is_locked:
-        dirs = ["experiment", "nam", "toml", "config", "ecf", "experiment_tasks", 
+        dirs = ["experiment", "nam", "toml", "config", "ecf", "experiment_tasks",
                 "experiment_scheduler", "experiment_setup"]
         for d in dirs:
             os.makedirs(f"{lib0}/{d}", exist_ok=True)
@@ -837,7 +853,7 @@ def init_run(system, paths_to_sync, stream_nr=None):
             if ret != 0:
                 raise Exception(cmd + " failed!")
     else:
-        logging.info("Not resyncing " + pysurfex_experiment + " as experiment is locked")
+        logging.info("Not resyncing %s as experiment is locked", pysurfex_experiment)
 
     # Sync pysurfex to LIB0
     if not experiment_is_locked:
@@ -850,7 +866,7 @@ def init_run(system, paths_to_sync, stream_nr=None):
             if ret != 0:
                 raise Exception(cmd + " failed!")
     else:
-        logging.info("Not resyncing " + pysurfex_experiment + " as experiment is locked")
+        logging.info("Not resyncing %s as experiment is locked", pysurfex)
 
     # Sync REV to LIB0
     if not experiment_is_locked:
@@ -926,17 +942,15 @@ def init_run(system, paths_to_sync, stream_nr=None):
                 subprocess.call(cmd, shell=True)
                 if ret != 0:
                     raise Exception
-                cmd = rsync + " " + host_name0 + lib0 + "/ " + host_namen + libn + \
-                                " --exclude=.git --exclude=.vscode --exclude=.github --exclude=coverage --exclude=.cache --exclude=.idea --exclude=__pycache__ --exclude='*.pyc'"
+                cmd = f"{rsync} {host_name0}{lib0}/ {host_namen}{libn} {excludes}"
                 logging.info(cmd)
                 subprocess.call(cmd, shell=True)
                 if ret != 0:
                     raise Exception
             else:
-                logging.warn("Data sync to " + host_namen + " disabled")
+                logging.warning("Data sync to %s disabled", host_namen)
 
     logging.info("Lock experiment")
-    fh = open(experiment_is_locked_file, "w")
-    fh.write("Something from git?")
-    fh.close()
+    with open(experiment_is_locked_file, mode="w", encoding="utf-8") as file_handler:
+        file_handler.write("Something from git?")
     logging.info("Finished syncing")

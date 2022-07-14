@@ -48,9 +48,9 @@ class System(object):
 
         system = {}
         system.update({"HOSTS": self.hosts})
-        for host in range(0, len(self.hosts)):
+        for host, host_label in enumerate(self.hosts):
             systemn = system0.copy()
-            systemn.update({"HOST": self.hosts[host]})
+            systemn.update({"HOST": host_label})
             hostn = "HOST" + str(host)
             if hostn in host_system["HOST_SYSTEM"]:
                 for key in host_system["HOST_SYSTEM"][hostn]:
@@ -139,7 +139,7 @@ class SystemFromFile(System):
             FileNotFoundError: If system file not found.
 
         """
-        logging.debug("Env_system_file: %s",env_system_file)
+        logging.debug("Env_system_file: %s", env_system_file)
         if os.path.exists(env_system_file):
             host_system = toml.load(open(env_system_file, mode="r", encoding="utf-8"))
         else:
@@ -188,7 +188,6 @@ class SystemFilePathsFromSystem():
             default_extarch_dir = sfx_data + "/archive/extract/"
             default_forcing_dir = sfx_data + "/forcing/@YYYY@@MM@@DD@@HH@/@EEE@/"
             default_obs_dir = sfx_data + "/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@EEE@/"
-            first_guess_dir = default_archive_dir
             wrk_dir = sfx_data + "/@YYYY@@MM@@DD@_@HH@/@EEE@/"
             paths_host.update({
                 "sfx_exp_data": sfx_data,
@@ -202,8 +201,7 @@ class SystemFilePathsFromSystem():
                 "default_forcing_dir": default_forcing_dir,
                 "default_pgd_dir": default_clim_dir,
                 "default_prep_dir": default_archive_dir,
-                "default_obs_dir": default_obs_dir,
-                "default_first_guess_dir": first_guess_dir
+                "default_obs_dir": default_obs_dir
             })
             paths.update({host: paths_host})
         self.paths = paths

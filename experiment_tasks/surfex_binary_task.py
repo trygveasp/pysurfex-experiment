@@ -5,6 +5,7 @@ import logging
 import surfex
 from experiment_tasks import AbstractTask
 
+
 class SurfexBinaryTask(AbstractTask):
     """Main surfex binary task executing all tasks.
 
@@ -139,7 +140,7 @@ class SurfexBinaryTask(AbstractTask):
         self.namelist = surfex.BaseNamelist(self.mode, self.config, self.input_path,
                                             forc_zs=forc_zs,
                                             prep_file=prep_file, prep_filetype=prep_filetype,
-                                            prep_pgdfile=prep_pgdfile, 
+                                            prep_pgdfile=prep_pgdfile,
                                             prep_pgdfiletype=prep_pgdfiletype,
                                             dtg=self.dtg, fcint=fcint)
 
@@ -259,7 +260,7 @@ class Prep(SurfexBinaryTask):
     def execute(self):
         """Execute."""
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
-        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, 
+        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
                                                             default_dir="default_climdir")
         prep_file = self.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILE",
                                      validtime=self.dtg, basedtg=self.fg_dtg)
@@ -304,7 +305,7 @@ class Forecast(SurfexBinaryTask):
             progress (_type_): _description_
         """
         SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "offline",
-                                 **kwargs)
+                                  **kwargs)
 
     def execute(self):
         """Execute."""
@@ -346,25 +347,27 @@ class PerturbedRun(SurfexBinaryTask):
 
     Args:
         SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
+
     """
 
     def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
         """Construct a perturbed run task.
 
         Args:
-            task (_type_): _description_
-            config (_type_): _description_
-            system (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
+            task (scheduler.Task): _description_
+            config (dict): _description_
+            system (dict): _description_
+            exp_file_paths (dict): _description_
+            progress (dict): _description_
+
         """
         SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "perturbed",
-                                 **kwargs)
+                                  **kwargs)
 
     def execute(self):
         """Execute."""
         pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
-        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile, 
+        pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
                                                             default_dir="default_climdir")
         bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
         binary = bindir + "/OFFLINE" + self.xyz
@@ -381,15 +384,14 @@ class PerturbedRun(SurfexBinaryTask):
                                                              default_dir="default_archive_dir")
 
         output = self.archive + "/" + self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT" + \
-                                      str(self.pert) + self.suffix
+                                str(self.pert) + self.suffix
 
         # Forcing dir is for previous cycle
         # TODO If pertubed runs moved to pp it should be a diffenent dtg
-        self.exp_file_paths.add_system_file_path("forcing_dir",
-                                                 self.exp_file_paths.get_system_path("forcing_dir",
-                                                                mbr=self.mbr,
-                                                                basedtg=self.fg_dtg, 
-                                                                default_dir="default_forcing_dir"))
+        forcing_path = self.exp_file_paths.get_system_path("forcing_dir", mbr=self.mbr,
+                                                           basedtg=self.fg_dtg,
+                                                           default_dir="default_forcing_dir")
+        self.exp_file_paths.add_system_file_path("forcing_dir", forcing_path)
 
         if not os.path.exists(output) or self.force:
             SurfexBinaryTask.execute_binary(self, binary, output,
@@ -438,9 +440,9 @@ class Soda(SurfexBinaryTask):
         perturbed_file_pattern = None
         if self.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
             # TODO If pertubed runs moved to pp it should be a diffenent dtg
-            perturbed_run_dir = self.exp_file_paths.get_system_path("archive_dir",
-                                                                 default_dir="default_archive_dir")
-            self.exp_file_paths.add_system_file_path("perturbed_run_dir", perturbed_run_dir,
+            pert_run_dir = self.exp_file_paths.get_system_path("archive_dir",
+                                                               default_dir="default_archive_dir")
+            self.exp_file_paths.add_system_file_path("perturbed_run_dir", pert_run_dir,
                                                      mbr=self.mbr, basedtg=self.dtg)
             first_guess_dir = self.exp_file_paths.get_system_path("first_guess_dir",
                                                                   mbr=self.mbr,
@@ -448,8 +450,8 @@ class Soda(SurfexBinaryTask):
                                                                   basedtg=self.fg_dtg)
             self.exp_file_paths.add_system_file_path("first_guess_dir", first_guess_dir)
 
-            perturbed_file_pattern = self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT@PERT@" + \
-                                                      self.suffix
+            csurffile = self.get_setting("SURFEX#IO#CSURFFILE")
+            perturbed_file_pattern = csurffile + "_PERT@PERT@" + self.suffix
 
         if not os.path.exists(output) or self.force:
             SurfexBinaryTask.execute_binary(self, binary, output, pgd_file_path=pgd_file_path,

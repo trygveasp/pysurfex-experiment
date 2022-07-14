@@ -21,7 +21,7 @@ def parse_submit_cmd_exp(argv):
 
     parser.add_argument('-stream', type=str, nargs="?", help="Stream", required=False, default=None)
     parser.add_argument('-ecf_rid', nargs='?', type=str, default=None, required=False,
-                         help="ECF remote id")
+                        help="ECF remote id")
     parser.add_argument('-ensmbr', dest="ensmbr", nargs="?", type=int, help="Ensemble member",
                         required=False, default=None)
     parser.add_argument('--db', dest="dbfile", type=str, nargs="?", help="Database", required=False,
@@ -56,7 +56,7 @@ def submit_cmd_exp(**kwargs):
     with open(exp_settings_file, mode="r", encoding="utf-8") as file_handler:
         exp_settings = json.load(file_handler)
     if isinstance(exp_settings["submit_exceptions"], str):
-        submit_exceptions = json.load(open(exp_settings["submit_exceptions"], mode="r", 
+        submit_exceptions = json.load(open(exp_settings["submit_exceptions"], mode="r",
                                       encoding="UTF-8"))
         exp_settings["submit_exceptions"] = submit_exceptions
     kwargs.update({"submit_exceptions": exp_settings["submit_exceptions"]})
@@ -112,13 +112,12 @@ def status_cmd_exp(**kwargs):
         logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
     logging.info("************ ECF_status_exp ******************")
 
-
     exp_settings_file = kwargs.get("exp")
     with open(exp_settings_file, mode="r", encoding="utf-8") as file_handler:
         exp_settings = json.load(file_handler)
     if isinstance(exp_settings["submit_exceptions"], str):
         submit_exceptions = json.load(open(exp_settings["submit_exceptions"], mode="r",
-                            encoding="UTF-8"))
+                                           encoding="UTF-8"))
         exp_settings["submit_exceptions"] = submit_exceptions
     kwargs.update({"submit_exceptions": exp_settings["submit_exceptions"]})
     kwargs.update({"env_file": exp_settings["env_file"]})
@@ -174,7 +173,7 @@ def kill_cmd_exp(**kwargs):
 
     exp_settings = json.load(open(kwargs["exp"], mode="r", encoding="UTF-8"))
     if isinstance(exp_settings["submit_exceptions"], str):
-        submit_exceptions = json.load(open(exp_settings["submit_exceptions"], mode="r", 
+        submit_exceptions = json.load(open(exp_settings["submit_exceptions"], mode="r",
                                       encoding="UTF-8"))
         exp_settings["submit_exceptions"] = submit_exceptions
     kwargs.update({"submit_exceptions": exp_settings["submit_exceptions"]})

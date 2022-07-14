@@ -3,9 +3,9 @@ from datetime import timedelta, datetime
 import os
 import json
 import shutil
+import logging
 import numpy as np
 import yaml
-import logging
 import surfex
 
 
@@ -36,10 +36,11 @@ class AbstractTask(object):
         self.work_dir = self.exp_file_paths.get_system_path("exp_dir")
         self.lib = self.exp_file_paths.get_system_path("sfx_exp_lib")
         self.stream = config["GENERAL"].get("STREAM")
+        self.surfex_config = system.get("SURFEX_CONFIG")
         self.sfx_exp_vars = None
         logging.debug("        config: %s", json.dumps(config, sort_keys=True, indent=2))
         logging.debug("        system: %s", json.dumps(system, sort_keys=True, indent=2))
-        logging.debug("exp_file_paths: %s", json.dumps(self.exp_file_paths.system_file_paths, 
+        logging.debug("exp_file_paths: %s", json.dumps(self.exp_file_paths.system_file_paths,
                                                        sort_keys=True, indent=2))
 
         self.config = surfex.Configuration(config.copy())
@@ -75,7 +76,7 @@ class AbstractTask(object):
 
         self.wrk = self.get_system_path("wrk_dir", default_dir="default_wrk_dir", basedtg=self.dtg)
         self.archive = self.get_system_path("archive_dir", default_dir="default_archive_dir",
-                                            basedtg=self.dtg)                                         
+                                            basedtg=self.dtg)
         os.makedirs(self.archive, exist_ok=True)
         self.bindir = self.get_system_path("bin_dir", default_dir="default_bin_dir")
 
@@ -98,14 +99,14 @@ class AbstractTask(object):
         os.makedirs(self.wdir, exist_ok=True)
         os.chdir(self.wdir)
 
-        hour = self.dtg.strftime("%H")
-        self.fcint = self.get_fcint(hour)
-        self.fg_dtg = self.dtg - timedelta(hours=self.fcint)
-        self.next_dtg = self.dtg + timedelta(hours=self.fcint)
+        self.fcint = self.get_fcint(self.dtg)
+        self.fgint = self.get_fgint(self.dtg)
+        self.fg_dtg = self.dtg - timedelta(seconds=self.fgint)
+        self.next_dtg = self.dtg + timedelta(seconds=self.fcint)
         self.next_dtgpp = self.next_dtg
-        self.first_guess_dir = self.get_system_path("first_guess_dir", 
+        self.first_guess_dir = self.get_system_path("first_guess_dir",
                                                     default_dir="default_first_guess_dir",
-                                                    basedtg=self.fg_dtg)   
+                                                    basedtg=self.fg_dtg)
         self.input_path = self.lib + "/nam"
 
         self.fg_guess_sfx = self.wrk + "/first_guess_sfx"
@@ -120,7 +121,7 @@ class AbstractTask(object):
             "EXP": self.config.get_setting("GENERAL#EXP"),
             "SFX_EXP_LIB": self.exp_file_paths.get_system_path("sfx_exp_lib"),
             "SFX_EXP_DATA": self.exp_file_paths.get_system_path("sfx_exp_data"),
-            }
+        }
 
     def run(self):
         """Run task.
@@ -137,7 +138,7 @@ class AbstractTask(object):
 
     def postfix(self):
         """Do default postfix.
-        
+
         Default is to clean.
 
         """
@@ -163,11 +164,11 @@ class AbstractTask(object):
         """
         path = self.exp_file_paths.get_system_path(dname, default_dir=default_dir, mbr=self.mbr,
                                                    validtime=validtime, basedtg=basedtg)
-        
+
         if self.mbr is not None:
-            path = str(path).replace("@E@", "mbr{:d}".format(int(self.mbr)))
-            path = str(path).replace("@EE@", "mbr{:02d}".format(int(self.mbr)))
-            path = str(path).replace("@EEE@", "mbr{:03d}".format(int(self.mbr)))
+            path = str(path).replace("@E@", f"mbr{int(self.mbr):d}")
+            path = str(path).replace("@EE@", f"mbr{int(self.mbr):02d}")
+            path = str(path).replace("@EEE@", f"mbr{int(self.mbr):03d}")
         else:
             path = str(path).replace("@E@", "")
             path = str(path).replace("@EE@", "")
@@ -223,7 +224,7 @@ class AbstractTask(object):
         return this_setting
 
     def parse_setting(self, setting, check_parsing=True, validtime=None, basedtg=None, tstep=None,
-                     pert=None, var=None):
+                      pert=None, var=None):
         """Parse the setting.
 
         Args:
@@ -264,13 +265,13 @@ class AbstractTask(object):
                 lead_seconds = int(lead_time.total_seconds())
                 # lead_minutes = int(lead_seconds / 3600)
                 lead_hours = int(lead_seconds / 3600)
-                setting = str(setting).replace("@LL@", "{:02d}".format(lead_hours))
-                setting = str(setting).replace("@LLL@", "{:03d}".format(lead_hours))
-                setting = str(setting).replace("@LLLL@", "{:04d}".format(lead_hours))
+                setting = str(setting).replace("@LL@", f"{lead_hours:02d}")
+                setting = str(setting).replace("@LLL@", f"{lead_hours:03d}")
+                setting = str(setting).replace("@LLLL@", f"{lead_hours:04d}")
                 if tstep is not None:
                     lead_step = int(lead_seconds / tstep)
-                    setting = str(setting).replace("@TTT@", "{:03d}".format(lead_step))
-                    setting = str(setting).replace("@TTTT@", "{:04d}".format(lead_step))
+                    setting = str(setting).replace("@TTT@", f"{lead_step:03d}")
+                    setting = str(setting).replace("@TTTT@", f"{lead_step:04d}")
 
             if basedtg is not None:
                 setting = str(setting).replace("@YMD@", basedtg.strftime("%Y%m%d"))
@@ -282,9 +283,9 @@ class AbstractTask(object):
                 setting = str(setting).replace("@mm@", basedtg.strftime("%M"))
 
             if self.mbr is not None:
-                setting = str(setting).replace("@E@", "mbr{:d}".format(int(self.mbr)))
-                setting = str(setting).replace("@EE@", "mbr{:02d}".format(int(self.mbr)))
-                setting = str(setting).replace("@EEE@", "mbr{:03d}".format(int(self.mbr)))
+                setting = str(setting).replace("@E@", f"mbr{int(self.mbr):d}")
+                setting = str(setting).replace("@EE@", f"mbr{int(self.mbr):02d}")
+                setting = str(setting).replace("@EEE@", f"mbr{int(self.mbr):03d}")
             else:
                 setting = str(setting).replace("@E@", "")
                 setting = str(setting).replace("@EE@", "")
@@ -303,9 +304,9 @@ class AbstractTask(object):
                 for sfx_exp_var in self.sfx_exp_vars:
                     if isinstance(self.sfx_exp_vars[sfx_exp_var], str):
                         logging.debug("%s  <--> %s @%s@", str(setting), str(sfx_exp_var),
-                                                          str(self.sfx_exp_vars[sfx_exp_var]))
+                                      str(self.sfx_exp_vars[sfx_exp_var]))
                         setting = str(setting).replace("@" + sfx_exp_var + "@",
-                                  self.sfx_exp_vars[sfx_exp_var])
+                                                       self.sfx_exp_vars[sfx_exp_var])
 
         if check_parsing:
             if isinstance(setting, str) and setting.count("@") > 1:
@@ -313,195 +314,33 @@ class AbstractTask(object):
 
         return setting
 
-    # TODO remove this. Replace by previous and next DTG from ecflow
-    def get_fcint(self, cycle):
-        """To be removed.
+    def get_fcint(self, dtg):
+        """Get fcint from config for time stamp.
 
         Args:
-            cycle (_type_): _description_
+            dtg (datetime.datetime): The time stamp to use
 
         Returns:
-            _type_: _description_
+            int: fcint in seconds
 
         """
-        hh_list = self.get_hh_list()
-        fcint = None
-        if len(hh_list) > 1:
-            for hh in range(0, len(hh_list)):
-                h = int(hh_list[hh]) % 24
-                if h == int(cycle) % 24:
-                    if hh == 0:
-                        fcint = (int(hh_list[0]) - int(hh_list[len(hh_list) - 1])) % 24
-                    else:
-                        fcint = int(hh_list[hh]) - int(hh_list[hh - 1])
-        else:
-            fcint = 24
-        return fcint
+        time_stamp = dtg.strftime("%H%M")
+        fcint = self.get_setting("GENERAL#FCINT")
+        return fcint[time_stamp]
 
-    # TODO remove. Should get a prepared list as input in the configuration.
-    def get_hh_list(self):
-        """To be removed.
-
-        Returns:
-            _type_: _description_
-
-        """
-        hh_list = self.get_setting("GENERAL#HH_LIST")
-        ll_list = self.get_setting("GENERAL#LL_LIST")
-        # print(hh_list, ll_list)
-        hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
-        return hh_list
-
-    # TODO remove. Should get a prepared list as input in the configuration.
-    def get_ll_list(self):
-        """To be removed.
-
-        Returns:
-            _type_: _description_
-
-        """
-        hh_list = self.get_setting("GENERAL#HH_LIST")
-        ll_list = self.get_setting("GENERAL#LL_LIST")
-        hh_list, ll_list = self.expand_hh_and_ll_list(hh_list, ll_list)
-        return ll_list
-
-    # TODO remove. Should get a prepared list as input in the configuration.
-    @staticmethod
-    def expand_list(string, fmt="{:03d}", sep1=",", sep2=":", sep3="-", maxval=None,
-                    add_last=False, tstep=None):
-        """To be removed.
+    def get_fgint(self, dtg):
+        """Get fgint from config for time stamp.
 
         Args:
-            string (_type_): _description_
-            fmt (str, optional): _description_. Defaults to "{:03d}".
-            sep1 (str, optional): _description_. Defaults to ",".
-            sep2 (str, optional): _description_. Defaults to ":".
-            sep3 (str, optional): _description_. Defaults to "-".
-            maxval (_type_, optional): _description_. Defaults to None.
-            add_last (bool, optional): _description_. Defaults to False.
-            tstep (_type_, optional): _description_. Defaults to None.
-
-        Raises:
-            Exception: _description_
-            Exception: _description_
-            Exception: _description_
+            dtg (datetime.datetime): The time stamp to use
 
         Returns:
-            _type_: _description_
+            int: fgint in seconds
 
         """
-        elements = string.split(sep1)
-        expanded_list = []
-        if string.strip() == "":
-            return expanded_list
-
-        for i in range(0, len(elements)):
-            element = elements[i]
-            # print(element)
-            if element.find(sep2) > 0 or element.find(sep3) > 0:
-                step = 1
-                if element.find(sep2) > 0:
-                    p1, step = element.split(sep2)
-                else:
-                    p1 = element
-
-                start, end = p1.split(sep3)
-                for ll in range(int(start), int(end) + 1, int(step)):
-                    add = True
-                    if maxval is not None:
-                        if ll > maxval:
-                            add = False
-                    if add:
-                        if tstep is not None:
-                            if (ll * 60) % tstep == 0:
-                                ll = int(ll * 60 / tstep)
-                            else:
-                                print(ll)
-                                raise Exception("Time step is not a minute!")
-                        this_ll = fmt.format(ll)
-                        expanded_list.append(this_ll)
-            else:
-                # print(fmt, element)
-                # print(fmt.decode('ascii'))
-                add = True
-                ll = int(element)
-                if maxval is not None:
-                    if ll > maxval:
-                        add = False
-                if add:
-                    if tstep is not None:
-                        if (ll * 60) % tstep == 0:
-                            ll = int(ll * 60 / tstep)
-                        else:
-                            raise Exception("Time step is not a minute! " + str(ll))
-                    ll = fmt.format(ll)
-                    expanded_list.append(ll)
-
-        # Add last value if wanted and not existing
-        if maxval is not None and add_last:
-            if tstep is not None:
-                if (maxval * 60) % tstep == 0:
-                    maxval = int(maxval * 60 / tstep)
-                else:
-                    raise Exception("Time step is not a minute!")
-            if str(maxval) not in expanded_list:
-                ll = fmt.format(maxval)
-                expanded_list.append(ll)
-        return expanded_list
-
-    # TODO remove. Should get a prepared list as input in the configuration.
-    def expand_hh_and_ll_list(self, hh_list, ll_list, sep=":"):
-        """To be removed.
-
-        Args:
-            hh_list (_type_): _description_
-            ll_list (_type_): _description_
-            sep (str, optional): _description_. Defaults to ":".
-
-        Raises:
-            Exception: _description_
-
-        Returns:
-            _type_: _description_
-
-        """
-        # hhs = split_hh_and_ll(hh_list)
-        # lls = split_hh_and_ll(ll_list)
-        hhs = self.expand_list(hh_list, fmt="{:02d}")
-        lls_in = self.expand_list(ll_list, fmt="{:d}")
-        # print(hhs)
-        # print(lls_in)
-
-        lls = []
-        j = 0
-        for i in range(0, len(hhs)):
-            lls.append(lls_in[j])
-            j = j + 1
-            if j == len(lls_in):
-                j = 0
-
-        if len(hhs) != len(lls):
-            raise Exception
-
-        expanded_hh_list = []
-        expanded_ll_list = []
-        for i in range(0, len(hhs)):
-            ll = lls[i]
-            # print(i, hhs[i])
-            if hhs[i].find(sep) > 0:
-                p1, step = hhs[i].split(sep)
-                h1, h2 = p1.split("-")
-                for h in range(int(h1), int(h2) + 1, int(step)):
-                    hh = "{:02d}".format(h)
-                    expanded_hh_list.append(hh)
-                    expanded_ll_list.append(ll)
-            else:
-                hh = "{:02d}".format(int(hhs[i]))
-                expanded_hh_list.append(hh)
-                expanded_ll_list.append(ll)
-
-        # print(expanded_hh_list, expanded_ll_list)
-        return expanded_hh_list, expanded_ll_list
+        time_stamp = dtg.strftime("%H%M")
+        fcint = self.get_setting("GENERAL#FGINT")
+        return fcint[time_stamp]
 
 
 class Dummy(object):
@@ -763,8 +602,8 @@ class QualityControl(AbstractTask):
         uname = self.var_name.upper()
         try:
             tests = self.get_setting(f"OBSERVATIONS#QC#{uname}#TESTS")
-        except Exception as e:
-            logging.info("Use default test %s", str(e))
+        except KeyError:
+            logging.info("Use default test OBSERVATIONS#QC#TESTS")
             tests = self.get_setting("OBSERVATIONS#QC#TESTS")
 
         indent = 2
@@ -821,7 +660,8 @@ class OptimalInterpolation(AbstractTask):
         vlength = self.get_setting(f"OBSERVATIONS#OI#{uname}#VLENGTH", default=vlength)
         wlength = self.get_setting(f"OBSERVATIONS#OI#{uname}#WLENGTH", default=wlength)
         elev_gradient = self.get_setting(f"OBSERVATIONS#OI#{uname}#GRADIENT", default=elev_gradient)
-        max_locations = self.get_setting(f"OBSERVATIONS#OI#{uname}#MAX_LOCATIONS", default=max_locations)
+        max_locations = self.get_setting(f"OBSERVATIONS#OI#{uname}#MAX_LOCATIONS",
+                                         default=max_locations)
         epsilon = self.get_setting(f"OBSERVATIONS#OI#{uname}#EPSILON", default=epsilon)
         minvalue = self.get_setting(f"OBSERVATIONS#OI#{uname}#MINVALUE", default=None, abort=False)
         maxvalue = self.get_setting(f"OBSERVATIONS#OI#{uname}#MAXVALUE", default=None, abort=False)
@@ -830,11 +670,11 @@ class OptimalInterpolation(AbstractTask):
 
         # Get input fields
         geo, validtime, background, glafs, gelevs = \
-                                               surfex.read_first_guess_netcdf_file(input_file, var)
+            surfex.read_first_guess_netcdf_file(input_file, var)
 
         an_time = validtime
         # Read OK observations
-        obs_file = self.exp_file_paths.get_system_file("obs_dir", "qc_" + var + ".json", 
+        obs_file = self.exp_file_paths.get_system_file("obs_dir", "qc_" + var + ".json",
                                                        basedtg=self.dtg,
                                                        default_dir="default_obs_dir")
         observations = surfex.dataset_from_file(an_time, obs_file, qc_flag=0)
@@ -847,7 +687,7 @@ class OptimalInterpolation(AbstractTask):
         logging.debug("Write output file %s", output_file)
         if os.path.exists(output_file):
             os.unlink(output_file)
-        surfex.write_analysis_netcdf_file(output_file, field, var, validtime, gelevs, glafs, 
+        surfex.write_analysis_netcdf_file(output_file, field, var, validtime, gelevs, glafs,
                                           new_file=True, geo=geo)
 
 
@@ -944,7 +784,7 @@ class Oi2soda(AbstractTask):
         hh = self.dtg.strftime("%H")
         obfile = "OBSERVATIONS_" + yy + mm + dd + "H" + hh + ".DAT"
         output = self.get_system_file("obs_dir", obfile, basedtg=self.dtg,
-                                                 default_dir="default_obs_dir")
+                                      default_dir="default_obs_dir")
 
         t2m = None
         rh2m = None
@@ -961,7 +801,7 @@ class Oi2soda(AbstractTask):
                 if hh == int(sn):
                     snow_ass_done = True
 
-        for ivar in range(0, len(obs_types)):
+        for ivar, val in enumerate(obs_types):
             if nnco[ivar] == 1:
                 if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
                     an_variables.update({"t2m": True})
@@ -971,7 +811,7 @@ class Oi2soda(AbstractTask):
                     if snow_ass_done:
                         an_variables.update({"sd": True})
 
-        for var in an_variables:
+        for var, var_name in an_variables.items():
             if an_variables[var]:
                 var_name = self.translation[var]
                 if var == "t2m":
@@ -989,7 +829,7 @@ class Oi2soda(AbstractTask):
                         "file": self.archive + "/an_" + var_name + ".nc",
                         "var": var_name
                     }
-        logging.debug("t2m  %s ",t2m)
+        logging.debug("t2m  %s ", t2m)
         logging.debug("rh2m %s", rh2m)
         logging.debug("sd   %s", sd)
         logging.debug("Write to %s", output)
@@ -1003,7 +843,7 @@ class Qc2obsmon(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress,**kwargs):
+    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
         """Construct the QC2obsmon data."""
         AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
         self.var_name = task.family1
@@ -1019,8 +859,8 @@ class Qc2obsmon(AbstractTask):
             os.unlink(output)
         nnco = self.get_setting("SURFEX#ASSIM#OBS#NNCO")
         obs_types = self.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-        for ivar in range(0, len(nnco)):
-            if nnco[ivar] == 1:
+        for ivar, val in enumerate(nnco):
+            if val == 1:
                 if len(obs_types) > ivar:
                     if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
                         var_in = "t2m"
@@ -1036,7 +876,7 @@ class Qc2obsmon(AbstractTask):
                         qc = self.obsdir + "/qc_" + var_name + ".json"
                         fg_file = self.archive + "/raw_" + var_name + ".nc"
                         an_file = self.archive + "/an_" + var_name + ".nc"
-                        surfex.write_obsmon_sqlite_file(dtg=self.dtg, output=output, qc=qc, 
+                        surfex.write_obsmon_sqlite_file(dtg=self.dtg, output=output, qc=qc,
                                                         fg_file=fg_file,
                                                         an_file=an_file, varname=var_in,
                                                         file_var=var_name)
@@ -1064,13 +904,13 @@ class FirstGuess4OI(AbstractTask):
             var = self.translation[self.var_name]
             variables = [var]
             extra = "_" + var
-            symlink_files.update({self.archive + "/raw.nc":  "raw" + extra + ".nc"})
+            symlink_files.update({self.archive + "/raw.nc": "raw" + extra + ".nc"})
         else:
             var_in = []
             nnco = self.get_setting("SURFEX#ASSIM#OBS#NNCO")
 
-            for ivar in range(0, len(nnco)):
-                if nnco[ivar] == 1:
+            for ivar, val in enumerate(nnco):
+                if val == 1:
                     if ivar == 0:
                         var_in.append("t2m")
                     elif ivar == 1:
@@ -1083,9 +923,9 @@ class FirstGuess4OI(AbstractTask):
                 for var in var_in:
                     var_name = self.translation[var]
                     variables.append(var_name)
-                    symlink_files.update({self.archive + "/raw_" + var_name + ".nc":  "raw.nc"})
-            except ValueError:
-                raise Exception("Variables could not be translated")
+                    symlink_files.update({self.archive + "/raw_" + var_name + ".nc": "raw.nc"})
+            except ValueError as ex:
+                raise Exception("Variables could not be translated") from ex
 
         variables = variables + ["altitude", "land_area_fraction"]
 
@@ -1101,8 +941,7 @@ class FirstGuess4OI(AbstractTask):
             self.write_file(output, variables, self.geo, validtime, cache=cache)
 
         # Create symlinks
-        for target in symlink_files:
-            linkfile = symlink_files[target]
+        for target, linkfile in symlink_files.items():
             if os.path.lexists(target):
                 os.unlink(target)
             os.symlink(linkfile, target)
@@ -1125,59 +964,57 @@ class FirstGuess4OI(AbstractTask):
         for var in variables:
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                inputfile = self.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg, 
+                inputfile = self.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
                                              validtime=self.dtg)
-            except Exception as e:
+            except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 inputfile = self.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
                                              validtime=self.dtg)
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
                 fileformat = self.get_setting(identifier + "FILEFORMAT")
-            except Exception as e:
+            except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 fileformat = self.get_setting(identifier + "FILEFORMAT")
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
                 converter = self.get_setting(identifier + "CONVERTER")
-            except Exception as e:
+            except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 converter = self.get_setting(identifier + "CONVERTER")
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
                 input_geo_file = self.get_setting(identifier + "INPUT_GEO_FILE")
-            except Exception as e:
+            except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 input_geo_file = self.get_setting(identifier + "INPUT_GEO_FILE")
 
             print(inputfile, fileformat, converter, input_geo_file)
             config_file = self.lib + "/config/first_guess.yml"
-            config = yaml.safe_load(open(config_file, "r"))
+            with open(config_file, mode="r", encoding="utf-8") as file_handler:
+                config = yaml.safe_load(file_handler)
             defs = config[fileformat]
             geo_input = None
             if input_geo_file != "":
-                geo_iput = surfex.get_geo_object(open(input_geo_file, mode="r", encoding="utf-8"))
+                geo_input = surfex.get_geo_object(open(input_geo_file, mode="r", encoding="utf-8"))
             defs.update({
                 "filepattern": inputfile,
                 "geo_input": geo_input
-                })
+            })
 
             converter_conf = config[var][fileformat]["converter"]
             if converter not in config[var][fileformat]["converter"]:
                 raise Exception(f"No converter {converter} definition found in {config_file}!")
 
-            fcint_seconds = self.fcint * 3600.
-            defs.update({"fcint": fcint_seconds})
-            initial_basetime = validtime - timedelta(seconds=fcint_seconds)
+            defs.update({"fcint": self.fcint})
+            initial_basetime = validtime - timedelta(seconds=self.fgint)
             logging.debug("Converter=%s", str(converter))
             logging.debug("Converter_conf=%s", str(converter_conf))
             logging.debug("Defs=%s", defs)
-            logging.debug("valitime=%s fcint=%s initial_basetime=%s", str(validtime), 
-                          str(fcint_seconds), str(initial_basetime))
+            logging.debug("valitime=%s fcint=%s initial_basetime=%s", str(validtime),
+                          str(self.fcint), str(initial_basetime))
             logging.debug("Fileformat: %s", fileformat)
 
-            # converter = surfex.read.Converter(converter, validtime, defs, converter_conf,
-            #                                   fileformat, validtime)
             converter = surfex.read.Converter(converter, initial_basetime, defs, converter_conf,
                                               fileformat)
             field = surfex.read.ConvertedInput(geo, var, converter).read_time_step(validtime, cache)

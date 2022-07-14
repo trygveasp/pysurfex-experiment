@@ -1,46 +1,84 @@
-from experiment_tasks import AbstractTask
-import surfex
+"""Compilation."""
 import os
+import logging
+import surfex
+from experiment_tasks import AbstractTask
 
 
 class ConfigureOfflineBinaries(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress,**kwargs):
+    """Configure offline binaries.
+
+    Args:
+        AbstractTask (_type_): _description_
+    """
+
+    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+        """Construct ConfigureOfflineBinaries task.
+
+        Args:
+            task (_type_): _description_
+            config (_type_): _description_
+            system (_type_): _description_
+            exp_file_paths (_type_): _description_
+            progress (_type_): _description_
+
+        """
         AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
 
     def execute(self):
-
+        """Execute."""
         rte = os.environ
         sfx_lib = self.exp_file_paths.get_system_path("sfx_exp_lib")
-        flavour = self.system["SURFEX_CONFIG"]
-        surfex.BatchJob(rte, wrapper=self.wrapper).run("export HARMONIE_CONFIG=" + flavour + " && cd " + sfx_lib +
-                                                       "/offline/src && ./configure OfflineNWP ../conf//system." +
-                                                       flavour)
+        flavour = self.surfex_config
+        cmd = f"export HARMONIE_CONFIG={flavour} && cd {sfx_lib}/offline/src && " \
+              f"./configure OfflineNWP ../conf//system.{flavour}"
+        logging.debug(cmd)
+        surfex.BatchJob(rte, wrapper=self.wrapper).run(cmd)
 
         conf_file = sfx_lib + "/offline/conf/profile_surfex-" + flavour
         xyz_file = sfx_lib + "/xyz"
         cmd = ". " + conf_file + "; echo \"$XYZ\" > " + xyz_file
-        print(cmd)
+        logging.info(cmd)
         try:
             os.system(cmd)
         except Exception as ex:
-            raise Exception("Can not write XYZ " + str(ex))
+            raise Exception("Can not write XYZ ") from ex
 
 
 class MakeOfflineBinaries(AbstractTask):
+    """Make offline binaries.
+
+    Args:
+        AbstractTask (_type_): _description_
+    """
+
     def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+        """Construct MakeOfflineBinaries task.
+
+        Args:
+            task (_type_): _description_
+            config (_type_): _description_
+            system (_type_): _description_
+            exp_file_paths (_type_): _description_
+            progress (_type_): _description_
+
+        """
         AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
 
     def execute(self):
-
+        """Execute."""
         rte = os.environ
         wrapper = ""
         sfx_lib = self.exp_file_paths.get_system_path("sfx_exp_lib")
-        flavour = self.system["SURFEX_CONFIG"]
+        flavour = self.surfex_config
 
         system_file = sfx_lib + "/offline/conf/system." + flavour
         conf_file = sfx_lib + "/offline/conf/profile_surfex-" + flavour
 
-        surfex.BatchJob(rte, wrapper=wrapper).run(". " + system_file + "; . " + conf_file + 
-                                                  "; cd " + sfx_lib + "/offline/src && make -j 4")
-        surfex.BatchJob(rte, wrapper=wrapper).run(". " + system_file + "; . " + conf_file +
-                                                  "; cd " + sfx_lib + "/offline/src && make installmaster")
+        cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make -j 4"
+        logging.debug(cmd)
+        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+
+        cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make installmaster"
+        logging.debug(cmd)
+        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)

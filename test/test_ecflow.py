@@ -15,9 +15,11 @@ import experiment_setup
 import experiment_tasks
 import ecf
 
+
 TESTDATA = f"{str((Path(__file__).parent).parent)}/testdata"
 logging.basicConfig(format='%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s',
                     level=logging.DEBUG)
+
 
 class TestEcflow(unittest.TestCase):
     """Test ecflow tasks."""
@@ -52,23 +54,23 @@ class TestEcflow(unittest.TestCase):
             "/tmp/host0/testdata": "/tmp/host1/testdata",
         }
 
-        for d in rm_dirs:
-            if os.path.exists(d):
-                shutil.rmtree(d)
+        for dname in rm_dirs:
+            if os.path.exists(dname):
+                shutil.rmtree(dname)
 
-        for d in mk_dirs:
-            os.makedirs(d, exist_ok=True)
+        for dname in mk_dirs:
+            os.makedirs(dname, exist_ok=True)
 
-        for target in copy_dirs:
-            destination = copy_dirs[target] + "/"
+        for target, dest in copy_dirs.items():
+            destination = dest + "/"
             if os.path.exists(target):
                 # os.makedirs(destination, exist_ok=True)
                 shutil.copytree(target, destination)
 
-        for f in touch_files:
-            d = os.path.abspath(os.path.dirname(f))
-            os.makedirs(d, exist_ok=True)
-            os.system("touch " + f)
+        for fname in touch_files:
+            dname = os.path.abspath(os.path.dirname(fname))
+            os.makedirs(dname, exist_ok=True)
+            os.system("touch " + fname)
 
         conf_files = toml.load("pysurfex-experiment/config/config.toml")["config_files"]
         config_files = []
@@ -169,11 +171,11 @@ class TestEcflow(unittest.TestCase):
         cls.system = experiment.System(cls.system_dict, cls.exp_name)
         cls.env_submit = json.load(open(f"{cls.wdir}/Env_submit", mode="r", encoding="utf-8"))
 
-        domains =  {
+        domains = {
             "DRAMMEN": {
                 "GSIZE": 2500.0,
                 "LAT0": 60.0,
-                "LATC": 60.0 ,
+                "LATC": 60.0,
                 "LON0": 10.0,
                 "LONC": 10.0,
                 "NLAT": 60,
@@ -184,7 +186,7 @@ class TestEcflow(unittest.TestCase):
         }
         test_config = {
             "GENERAL": {
-                "HH_LIST": "0-21:3"
+                "HH_LIST": "0-12:3,18-23:1"
             },
             "GEOMETRY": {
                 "DOMAIN": "DRAMMEN",
@@ -196,11 +198,6 @@ class TestEcflow(unittest.TestCase):
             "DTG": "2022042806",
             "DTGBEG": "2022042803"
         }
-        #cls.climdir = TESTDATA + "/climate"
-        #cls.first_guess_dir = TESTDATA + "/archive/@YYYY@/@MM@/@DD@/@HH@/@EEE@"
-        #cls.archive_modifed =  TESTDATA + "/archive_modified/@YYYY@/@MM@/@DD@/@HH@/@EEE@"
-        #cls.obs_dir = TESTDATA + "/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@EEE@"
-        #cls.forcing_dir = TESTDATA + "/forcing/2022062305/"
         cls.task = scheduler.EcflowTask("/test/Task", 1, "ecf_pass", 11, None)
 
     def test_logprogress_pp_ecf_task(self):
@@ -214,7 +211,7 @@ class TestEcflow(unittest.TestCase):
             "ECF_NAME": "/suite/family/LogProgressPP"
         })
         lib = self.system_vars["0"]["SFX_EXP_LIB"]
-        server_settings = ecf.LogProgress.read_ecflow_server_file(lib)
+        server_settings = ecf.LogProgress.read_ecflow_server_file_logprogress(lib)
         ecf.log_progress_pp_main(server_settings, **ecflow_vars)
 
     def test_default_ecf_task(self):
@@ -238,12 +235,11 @@ class TestEcflow(unittest.TestCase):
 
     def test_init_run_ecf_task(self):
         """Test init run ecflow container."""
-        #with self.assertRaises(Exception):
         ecf.InitRun.parse_ecflow_vars_init_run()
         lib = self.system_vars["0"]["SFX_EXP_LIB"]
-        system_vars = ecf.InitRun.read_system_vars(lib)
-        server_settings = ecf.InitRun.read_ecflow_server_file(lib)
-        exp_dependencies = ecf.InitRun.read_paths_to_sync(lib)
+        system_vars = ecf.InitRun.read_system_vars_init_run(lib)
+        server_settings = ecf.InitRun.read_ecflow_server_file_init_run(lib)
+        exp_dependencies = ecf.InitRun.read_paths_to_sync_init_run(lib)
         ecf.init_run_main(system_vars, server_settings, exp_dependencies, **self.ecflow_vars)
 
     def test_logprogress_ecf_task(self):
@@ -257,7 +253,7 @@ class TestEcflow(unittest.TestCase):
             "ECF_NAME": "/suite/family/LogProgress"
         })
         lib = self.system_vars["0"]["SFX_EXP_LIB"]
-        server_settings = ecf.LogProgress.read_ecflow_server_file(lib)
+        server_settings = ecf.LogProgress.read_ecflow_server_file_logprogress(lib)
         ecf.log_progress_main(server_settings, **ecflow_vars)
 
     def test_task_from_inspect(self):
@@ -278,11 +274,11 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
-                                  progress=None)
+                                 progress=None)
 
             # task = scheduler.EcflowTask("/test/Prep", 1, "ecf_pass", 11, None)
             config = exp.config.settings
@@ -320,7 +316,7 @@ class TestEcflow(unittest.TestCase):
             bin_dir = f"{lib_dir}/test/bin"
             env_input.update({
                 "bin_dir": bin_dir
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -328,7 +324,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -363,7 +359,7 @@ class TestEcflow(unittest.TestCase):
                 "pgd_dir": clim_dir,
                 "prep_dir": prep_dir,
                 "bin_dir": bin_dir
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -371,7 +367,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -382,9 +378,8 @@ class TestEcflow(unittest.TestCase):
             exp_file_paths = exp.system_file_paths
             kwargs = {}
             experiment_tasks.Prep(self.task, config, system, exp_file_paths, self.progress,
-                                 **kwargs).run()
+                                  **kwargs).run()
             self.assertTrue(os.path.exists(output))
-
 
     def test_forcing(self):
         """Test task."""
@@ -398,7 +393,6 @@ class TestEcflow(unittest.TestCase):
 
             forcing_dir = f"{data_dir}/forcing/2022042806/"
             output = f"{forcing_dir}/FORCING.nc"
-            #os.makedirs(f"{data_dir}/forcing/2022042806/")
             if os.path.exists(output):
                 os.unlink(output)
 
@@ -407,11 +401,11 @@ class TestEcflow(unittest.TestCase):
             env_input.update({
                 "bin_dir": bin_dir,
                 "forcing_dir": forcing_dir
-                })
+            })
 
             test_config = {
-            "GENERAL": {
-                "HH_LIST": "0-23:1"
+                "GENERAL": {
+                    "HH_LIST": "0-23:1"
                 }
             }
             merged_config = experiment_setup.merge_toml_env(self.merged_config, test_config)
@@ -422,7 +416,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -464,7 +458,7 @@ class TestEcflow(unittest.TestCase):
                 "prep_dir": first_guess_dir,
                 "forcing_dir": forcing_dir,
                 "bin_dir": bin_dir
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -472,7 +466,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -483,9 +477,8 @@ class TestEcflow(unittest.TestCase):
             exp_file_paths = exp.system_file_paths
             kwargs = {}
             experiment_tasks.Forecast(self.task, config, system, exp_file_paths, self.progress,
-                                 **kwargs).run()
+                                      **kwargs).run()
             self.assertTrue(os.path.exists(output))
-
 
     def test_soda(self):
         """Test task."""
@@ -517,7 +510,7 @@ class TestEcflow(unittest.TestCase):
                 "assim_dir": first_guess_dir,
                 "obs_dir": obs_dir,
                 "bin_dir": bin_dir
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -536,7 +529,7 @@ class TestEcflow(unittest.TestCase):
             }
             merged_config = experiment_setup.merge_toml_env(self.merged_config, test_config)
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(merged_config)
+                experiment_setup.process_merged_settings(merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -547,7 +540,7 @@ class TestEcflow(unittest.TestCase):
             exp_file_paths = exp.system_file_paths
             kwargs = {}
             experiment_tasks.Soda(self.task, config, system, exp_file_paths, self.progress,
-                                 **kwargs).run()
+                                  **kwargs).run()
             self.assertTrue(os.path.exists(output))
 
     def test_first_guess4oi(self):
@@ -578,7 +571,7 @@ class TestEcflow(unittest.TestCase):
                 "first_guess_dir": first_guess_dir,
                 "assim_dir": first_guess_dir,
                 "bin_dir": bin_dir
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -586,7 +579,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -597,7 +590,7 @@ class TestEcflow(unittest.TestCase):
             exp_file_paths = exp.system_file_paths
             kwargs = {}
             experiment_tasks.FirstGuess4OI(self.task, config, system, exp_file_paths, self.progress,
-                                 **kwargs).run()
+                                           **kwargs).run()
             self.assertTrue(os.path.exists(output))
 
     def test_qualitycontrol(self):
@@ -628,7 +621,7 @@ class TestEcflow(unittest.TestCase):
                 "first_guess_dir": first_guess_dir_pattern,
                 "archive_dir": archive_dir_pattern,
                 "obs_dir": obs_dir_pattern
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -636,7 +629,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -660,8 +653,8 @@ class TestEcflow(unittest.TestCase):
                     os.unlink(output)
                 task = scheduler.EcflowTask(f"/test/{var}/Task", 1, "ecf_pass", 11, None)
                 experiment_tasks.QualityControl(task, config, system, exp_file_paths,
-                                            self.progress,
-                                            **kwargs).run()
+                                                self.progress,
+                                                **kwargs).run()
                 self.assertTrue(os.path.exists(output))
 
     def test_optimalinterpolation(self):
@@ -694,7 +687,7 @@ class TestEcflow(unittest.TestCase):
                 "first_guess_dir": first_guess_dir_pattern,
                 "archive_dir": archive_dir_pattern,
                 "obs_dir": obs_dir_pattern
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -702,7 +695,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -721,12 +714,12 @@ class TestEcflow(unittest.TestCase):
             for var, var_name in test_vars.items():
                 logging.debug("%s %s", var, var_name)
                 task = scheduler.EcflowTask("/test/" + var + "/Task", 1, "ecf_pass", 11, None)
-                output = f"{archive_dir}/an_" + var_name +".nc"
+                output = f"{archive_dir}/an_" + var_name + ".nc"
                 if os.path.exists(output):
                     os.unlink(output)
                 experiment_tasks.OptimalInterpolation(task, config, system, exp_file_paths,
-                                            self.progress,
-                                            **kwargs).run()
+                                                      self.progress,
+                                                      **kwargs).run()
                 logging.debug("output: %s", output)
                 self.assertTrue(os.path.exists(output))
 
@@ -760,7 +753,7 @@ class TestEcflow(unittest.TestCase):
             env_input.update({
                 "obs_dir": obs_dir_pattern,
                 "archive_dir": archive_dir_pattern
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -768,7 +761,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -805,7 +798,7 @@ class TestEcflow(unittest.TestCase):
                 "first_guess_dir": first_guess_dir,
                 "archive_dir": first_guess_dir,
                 "obs_dir": obs_dir
-                })
+            })
 
             system_file_paths = experiment.SystemFilePathsFromSystem(env_input, self.system,
                                                                      hosts=self.system.hosts,
@@ -813,7 +806,7 @@ class TestEcflow(unittest.TestCase):
                                                                      wdir=self.wdir).paths[host]
 
             merged_config, member_config = \
-                                       experiment_setup.process_merged_settings(self.merged_config)
+                experiment_setup.process_merged_settings(self.merged_config)
             exp = experiment.Exp(self.exp_dependencies, merged_config, member_config,
                                  submit_exceptions=None, system_file_paths=system_file_paths,
                                  system=self.system, server=None, env_submit=self.env_submit,
@@ -824,6 +817,5 @@ class TestEcflow(unittest.TestCase):
             exp_file_paths = exp.system_file_paths
             kwargs = {}
             experiment_tasks.Qc2obsmon(self.task, config, system, exp_file_paths,
-                                            self.progress,
-                                            **kwargs).run()
+                                       self.progress, **kwargs).run()
             self.assertTrue(os.path.exists(output))

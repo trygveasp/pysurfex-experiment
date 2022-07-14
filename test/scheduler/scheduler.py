@@ -4,6 +4,7 @@ import logging
 import json
 from abc import ABC, abstractmethod
 
+
 # Base Scheduler server class
 class Server(ABC):
     """Dummy base server."""
@@ -62,6 +63,7 @@ class Server(ABC):
     def force_aborted(self, task):
         """Force task aborted."""
 
+
 class EcflowTask(object):
     """Dummy ecflow task."""
 
@@ -76,9 +78,9 @@ class EcflowTask(object):
             submission_id (str, optional): _description_. Defaults to None.
             ecf_timeout (int, optional): _description_. Defaults to 20.
         """
-        logging.debug("EcflowTask: %s",ecf_name)
+        logging.debug("EcflowTask: %s", ecf_name)
         logging.debug("%s %s %s %s %s", str(ecf_tryno), ecf_pass, str(ecf_rid),
-                                        str(submission_id), str(ecf_timeout))
+                      str(submission_id), str(ecf_timeout))
         self.ecf_name = ecf_name
         # self.ecf_tryno = int(ecf_tryno)
         self.ecf_tryno = ecf_tryno
@@ -156,8 +158,8 @@ class EcflowNode():
             node_type (_type_): _description_
             parent (_type_): _description_
         """
-        logging.debug("Construct dummy ecflow node: %s %s %s Args: %s", name, node_type, 
-                                                                        str(parent), str(kwargs))
+        logging.debug("Construct dummy ecflow node: %s %s %s Args: %s", name, node_type,
+                      str(parent), str(kwargs))
         self.ecf_node = EcfNode()
 
     def add_variable(self, key, value):
@@ -423,7 +425,8 @@ class EcflowSubmitTask(object):
 
     def __init__(self, task, env_submit, server, joboutdir,
                  stream=None, dbfile=None, interpreter="#!/usr/bin/env python3",
-                 ensmbr=None, submit_exceptions=None, coldstart=False, env_file=None, communication=True):
+                 ensmbr=None, submit_exceptions=None, coldstart=False, env_file=None,
+                 communication=True):
         """Submit an ecflow task.
 
         Args:
@@ -448,8 +451,8 @@ class EcflowSubmitTask(object):
 class TaskSettings(object):
     """Dummy task specific setttings."""
 
-    def __init__(self, task, submission_defs, joboutdirs, submit_exceptions=None, interpreter="#!/usr/bin/env python3",
-                 complete=False, coldstart=False):
+    def __init__(self, task, submission_defs, joboutdirs, submit_exceptions=None,
+                 interpreter="#!/usr/bin/env python3", complete=False, coldstart=False):
         """Construct an object with task settings.
 
         Args:
@@ -472,8 +475,8 @@ class TaskSettings(object):
 class SubmissionBaseClass():
     """Dummy submission class."""
 
-    def __init__(self, task, task_settings, server, db=None, remote_submit_cmd=None, remote_kill_cmd=None,
-                 remote_status_cmd=None):
+    def __init__(self, task, task_settings, server, db=None, remote_submit_cmd=None,
+                 remote_kill_cmd=None, remote_status_cmd=None):
         """Constuct a submisssion object.
 
         Args:
@@ -513,7 +516,7 @@ def submit_cmd(**kwargs):
 
     Raises:
         e: _description_
-    """  
+    """
     try:
         ecf_name = kwargs["ecf_name"]
         ensmbr = kwargs["ensmbr"]
@@ -601,6 +604,7 @@ def kill_cmd(**kwargs):
     if not dry_run:
         sub.kill()
         server.force_aborted(task)
+
 
 def status_cmd(**kwargs):
     """Set status."""

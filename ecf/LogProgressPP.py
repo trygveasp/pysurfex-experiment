@@ -2,6 +2,7 @@
 import json
 import scheduler
 
+
 def parse_ecflow_vars_logprogress_pp():
     """Parse the ecflow variables."""
     return {
@@ -17,10 +18,12 @@ def parse_ecflow_vars_logprogress_pp():
         "SUBMISSION_ID": "%SUBMISSION_ID%"
     }
 
-def read_ecflow_server_file(lib):
+
+def read_ecflow_server_file_logprogress_pp(lib):
     """Read ecflow host settings."""
     with open(lib + "/Env_server", mode="r", encoding="UTF-8") as file_handler:
         return json.load(file_handler)
+
 
 def log_progress_pp_main(server_settings, **kwargs):
     """Log progress to file for PP family."""
@@ -31,7 +34,7 @@ def log_progress_pp_main(server_settings, **kwargs):
 
     ecf_name = kwargs["ECF_NAME"]
     ecf_pass = kwargs["ECF_PASS"]
-    ecf_tryno  = kwargs["ECF_TRYNO"]
+    ecf_tryno = kwargs["ECF_TRYNO"]
     ecf_rid = kwargs["ECF_RID"]
     submission_id = kwargs["SUBMISSION_ID"]
     task = scheduler.EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid, submission_id)
@@ -53,12 +56,13 @@ def log_progress_pp_main(server_settings, **kwargs):
         # Update progress
         progress.update({
             "DTGPP": next_dtg
-            })
+        })
         with open(progress_file, mode="w", encoding="UTF-8") as file_handler:
             json.dump(progress, file_handler, indent=2)
+
 
 if __name__ == "__main__":
     kwargs_main = parse_ecflow_vars_logprogress_pp()
     LIB = kwargs_main["LIB"]
-    server_settings_main = read_ecflow_server_file(LIB)
+    server_settings_main = read_ecflow_server_file_logprogress_pp(LIB)
     log_progress_pp_main(server_settings_main, **kwargs_main)

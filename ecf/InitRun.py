@@ -17,20 +17,24 @@ def parse_ecflow_vars_init_run():
         "SUBMISSION_ID": "%SUBMISSION_ID%"
     }
 
-def read_system_vars(lib):
+
+def read_system_vars_init_run(lib):
     """Read system dict from json file."""
     with open(lib + "/exp_system_vars.json", mode="r", encoding="UTF-8") as file_handler:
         return json.load(file_handler)
 
-def read_ecflow_server_file(lib):
+
+def read_ecflow_server_file_init_run(lib):
     """Read ecflow host settings."""
     with open(lib + "/Env_server", mode="r", encoding="UTF-8") as file_handler:
         return json.load(file_handler)
 
-def read_paths_to_sync(lib):
+
+def read_paths_to_sync_init_run(lib):
     """Read ecflow host settings."""
     with open(lib + "/paths_to_sync.json", mode="r", encoding="UTF-8") as file_handler:
         return json.load(file_handler)
+
 
 def init_run_main(system_vars, server_settings, paths_to_sync, **kwargs):
     """Run main method for InitRun."""
@@ -56,11 +60,12 @@ def init_run_main(system_vars, server_settings, paths_to_sync, **kwargs):
             stream = None
         experiment_setup.init_run(system_vars, paths_to_sync, stream_nr=stream)
 
+
 if __name__ == "__main__":
     kwargs_main = parse_ecflow_vars_init_run()
 
     LIB = kwargs_main["LIB"]
-    system_vars_main = read_system_vars(LIB)
-    server_settings_main = read_ecflow_server_file(LIB)
-    paths_to_sync_main = read_paths_to_sync(LIB)
+    system_vars_main = read_system_vars_init_run(LIB)
+    server_settings_main = read_ecflow_server_file_init_run(LIB)
+    paths_to_sync_main = read_paths_to_sync_init_run(LIB)
     init_run_main(system_vars_main, server_settings_main, paths_to_sync_main, **kwargs_main)

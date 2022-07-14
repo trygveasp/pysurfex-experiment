@@ -21,9 +21,9 @@ class SurfexSuite(scheduler.SuiteDefinition):
 
         """
         if dtgbeg is None:
-            dtgbeg_str = dtgs[0].strftime("%Y%m%d%H")
+            dtgbeg_str = dtgs[0].strftime("%Y%m%d%H%M")
         else:
-            dtgbeg_str = dtgbeg.strftime("%Y%m%d%H")
+            dtgbeg_str = dtgbeg.strftime("%Y%m%d%H%M")
 
         lib = exp.system.get_var("SFX_EXP_LIB", "0")
         pythonpath = exp.system.get_var("SCHEDULER_PYTHONPATH", "0")
@@ -130,8 +130,8 @@ class SurfexSuite(scheduler.SuiteDefinition):
         else:
             comp_complete = None
 
-        static = scheduler.EcflowSuiteFamily("StaticData", self.suite,
-                         triggers=scheduler.EcflowSuiteTriggers([init_run_complete, comp_complete]))
+        triggers = scheduler.EcflowSuiteTriggers([init_run_complete, comp_complete])
+        static = scheduler.EcflowSuiteFamily("StaticData", self.suite, triggers=triggers)
         scheduler.EcflowSuiteTask("Pgd", static, ecf_files=ecf_files)
 
         static_complete = scheduler.EcflowSuiteTrigger(static)
@@ -142,14 +142,13 @@ class SurfexSuite(scheduler.SuiteDefinition):
         prediction_dtg_node = {}
         post_processing_dtg_node = {}
         prev_dtg = None
-        for idtg in range(0, len(dtgs)):
-            dtg = dtgs[idtg]
+        for idtg, dtg in enumerate(dtgs):
             if idtg < (len(dtgs) - 1):
                 next_dtg = dtgs[idtg + 1]
             else:
                 next_dtg = next_start_dtg
-            next_dtg_str = next_dtg.strftime("%Y%m%d%H")
-            dtg_str = dtg.strftime("%Y%m%d%H")
+            next_dtg_str = next_dtg.strftime("%Y%m%d%H%M")
+            dtg_str = dtg.strftime("%Y%m%d%H%M")
             variables = [
                 scheduler.EcflowSuiteVariable("DTG", dtg_str),
                 scheduler.EcflowSuiteVariable("DTG_NEXT", next_dtg_str),
@@ -161,16 +160,16 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                                    triggers=triggers)
 
             ahead_trigger = None
-            for dtg_str2 in prediction_dtg_node:
-                validtime = datetime.strptime(dtg_str2, "%Y%m%d%H")
+            for dtg_str2, tname in prediction_dtg_node.items():
+                validtime = datetime.strptime(dtg_str2, "%Y%m%d%H%M")
                 if validtime < dtg:
                     if validtime + timedelta(hours=hours_ahead) <= dtg:
-                        ahead_trigger = scheduler.EcflowSuiteTrigger(prediction_dtg_node[dtg_str2])
+                        ahead_trigger = scheduler.EcflowSuiteTrigger(tname)
 
             if ahead_trigger is None:
                 triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete])
             else:
-                triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete, 
+                triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete,
                                                           ahead_trigger])
 
             prepare_cycle = scheduler.EcflowSuiteTask("PrepareCycle", dtg_node, triggers=triggers,
@@ -187,12 +186,12 @@ class SurfexSuite(scheduler.SuiteDefinition):
             triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete,
                                                      prepare_cycle_complete])
             if prev_dtg is not None:
-                prev_dtg_str = prev_dtg.strftime("%Y%m%d%H")
-                triggers.add_triggers(scheduler.EcflowSuiteTrigger(
-                                                                 prediction_dtg_node[prev_dtg_str]))
+                prev_dtg_str = prev_dtg.strftime("%Y%m%d%H%M")
+                trigger = scheduler.EcflowSuiteTrigger(prediction_dtg_node[prev_dtg_str])
+                triggers.add_triggers(trigger)
 
             ########################################################################################
-            initialization = scheduler.EcflowSuiteFamily("Initialization", dtg_node, 
+            initialization = scheduler.EcflowSuiteFamily("Initialization", dtg_node,
                                                          triggers=triggers)
 
             analysis = None
@@ -217,9 +216,9 @@ class SurfexSuite(scheduler.SuiteDefinition):
                     if len(obs_types) > ivar and obs_types[ivar] == "SWE":
                         snow_ass = exp.config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
                         if len(snow_ass) > 0:
-                            hh = int(dtg.strftime("%H"))
-                            for sn in snow_ass:
-                                if hh == int(sn):
+                            cycle_hour = int(dtg.strftime("%H"))
+                            for sn_cycle in snow_ass:
+                                if cycle_hour == int(sn_cycle):
                                     logging.debug("Do snow assimilation for %s", dtg)
                                     do_soda = True
                                     do_snow_ass = True
@@ -229,8 +228,9 @@ class SurfexSuite(scheduler.SuiteDefinition):
                     scheduler.EcflowSuiteTask("CycleFirstGuess", initialization, triggers=triggers,
                                               ecf_files=ecf_files)
                 else:
-                    fg = scheduler.EcflowSuiteTask("FirstGuess", initialization, triggers=triggers,
-                                                   ecf_files=ecf_files)
+                    fg_task = scheduler.EcflowSuiteTask("FirstGuess", initialization,
+                                                        triggers=triggers,
+                                                        ecf_files=ecf_files)
 
                     perturbations = None
                     if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
@@ -239,28 +239,28 @@ class SurfexSuite(scheduler.SuiteDefinition):
                         nncv = exp.config.get_setting("SURFEX#ASSIM#ISBA#EKF#NNCV")
                         names = exp.config.get_setting("SURFEX#ASSIM#ISBA#EKF#CVAR_M")
                         triggers = None
-                        hh = exp.progress.dtg.strftime("%H")
                         mbr = None
-                        fcint = exp.config.get_fcint(hh, mbr=mbr)
-                        fg_dtg = (exp.progress.dtg - timedelta(hours=fcint)).strftime("%Y%m%d%H")
+                        fgint = exp.config.get_fgint(exp.progress.dtg, mbr=mbr)
+                        fg_dtg = (exp.progress.dtg - timedelta(hours=fgint)).strftime("%Y%m%d%H%M")
                         if fg_dtg in cycle_input_dtg_node:
                             triggers = scheduler.EcflowSuiteTriggers(
                                 scheduler.EcflowSuiteTrigger(cycle_input_dtg_node[fg_dtg]))
 
                         nivar = 1
-                        for ivar in range(0, len(nncv)):
-                            logging.debug("ivar %s, nncv[ivar] %s", ivar, nncv[ivar])
+                        for ivar, val in enumerate(nncv):
+                            print(ivar, val)
+                            logging.debug("ivar %s, nncv[ivar] %s", str(ivar), str(val))
                             if ivar == 0:
                                 name = "REF"
                                 args = "pert=" + str(ivar) + ";name=" + name + ";ivar=0"
                                 logging.debug("args: %s", args)
                                 variables = scheduler.EcflowSuiteVariable("ARGS", args)
 
-                                pert = scheduler.EcflowSuiteFamily(name, perturbations, 
+                                pert = scheduler.EcflowSuiteFamily(name, perturbations,
                                                                    variables=variables)
                                 scheduler.EcflowSuiteTask("PerturbedRun", pert, ecf_files=ecf_files,
                                                           triggers=triggers)
-                            if nncv[ivar] == 1:
+                            if val == 1:
                                 name = names[ivar]
                                 args = f"pert={str(ivar + 1)};name={name};ivar={str(nivar)}"
                                 logging.debug("args: %s", args)
@@ -284,19 +284,19 @@ class SurfexSuite(scheduler.SuiteDefinition):
                     prepare_sst = None
                     if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#SEA", "INPUT"):
                         if exp.config.setting_is("SURFEX#ASSIM#SEA#CFILE_FORMAT_SST", "ASCII"):
-                            prepare_sst = scheduler.EcflowSuiteTask("PrepareSST", initialization, 
+                            prepare_sst = scheduler.EcflowSuiteTask("PrepareSST", initialization,
                                                                     ecf_files=ecf_files)
 
                     an_variables = {"t2m": False, "rh2m": False, "sd": False}
                     obs_types = exp.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
                     nnco = exp.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
-                    for t in range(0, len(obs_types)):
-                        if nnco[t] == 1:
-                            if obs_types[t] == "T2M" or obs_types[t] == "T2M_P":
+                    for t_ind, val in enumerate(obs_types):
+                        if nnco[t_ind] == 1:
+                            if obs_types[t_ind] == "T2M" or obs_types[t_ind] == "T2M_P":
                                 an_variables.update({"t2m": True})
-                            elif obs_types[t] == "HU2M" or obs_types[t] == "HU2M_P":
+                            elif obs_types[t_ind] == "HU2M" or obs_types[t_ind] == "HU2M_P":
                                 an_variables.update({"rh2m": True})
-                            elif obs_types[t] == "SWE":
+                            elif obs_types[t_ind] == "SWE":
                                 if do_snow_ass:
                                     an_variables.update({"sd": True})
 
@@ -306,22 +306,22 @@ class SurfexSuite(scheduler.SuiteDefinition):
                     fg4oi_complete = scheduler.EcflowSuiteTrigger(fg4oi)
 
                     triggers = []
-                    for var in an_variables:
-                        if an_variables[var]:
-                            v = scheduler.EcflowSuiteFamily(var, analysis)
+                    for var, active in an_variables.items():
+                        if active:
+                            an_var_fam = scheduler.EcflowSuiteFamily(var, analysis)
                             qc_triggers = None
                             if var == "sd":
                                 qc_triggers = scheduler.EcflowSuiteTriggers(fg4oi_complete)
-                            qc = scheduler.EcflowSuiteTask("QualityControl", v, 
-                                                           triggers=qc_triggers,
-                                                           ecf_files=ecf_files)
+                            qc_task = scheduler.EcflowSuiteTask("QualityControl", an_var_fam,
+                                                                triggers=qc_triggers,
+                                                                ecf_files=ecf_files)
                             oi_triggers = scheduler.EcflowSuiteTriggers([
-                                scheduler.EcflowSuiteTrigger(qc),
+                                scheduler.EcflowSuiteTrigger(qc_task),
                                 scheduler.EcflowSuiteTrigger(fg4oi)])
-                            scheduler.EcflowSuiteTask("OptimalInterpolation", v,
+                            scheduler.EcflowSuiteTask("OptimalInterpolation", an_var_fam,
                                                       triggers=oi_triggers,
                                                       ecf_files=ecf_files)
-                            triggers.append(scheduler.EcflowSuiteTrigger(v))
+                            triggers.append(scheduler.EcflowSuiteTrigger(an_var_fam))
 
                     oi2soda_complete = None
                     if len(triggers) > 0:
@@ -343,7 +343,7 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                                                 ecf_files=ecf_files,
                                                                 triggers=triggers)
 
-                    triggers = [scheduler.EcflowSuiteTrigger(fg), oi2soda_complete]
+                    triggers = [scheduler.EcflowSuiteTrigger(fg_task), oi2soda_complete]
                     if perturbations is not None:
                         triggers.append(scheduler.EcflowSuiteTrigger(perturbations))
                     if prepare_oi_soil_input is not None:
@@ -370,26 +370,25 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                       triggers=triggers,
                                       ecf_files=ecf_files)
 
-            pp = scheduler.EcflowSuiteFamily("PostProcessing", dtg_node,
-                                             triggers=scheduler.EcflowSuiteTriggers(
-                                                 scheduler.EcflowSuiteTrigger(prediction)))
-            post_processing_dtg_node.update({dtg_str: pp})
+            triggers = scheduler.EcflowSuiteTriggers(scheduler.EcflowSuiteTrigger(prediction))
+            pp_fam = scheduler.EcflowSuiteFamily("PostProcessing", dtg_node, triggers=triggers)
+            post_processing_dtg_node.update({dtg_str: pp_fam})
 
             log_pp_trigger = None
             if analysis is not None:
-                qc2obsmon = scheduler.EcflowSuiteTask("Qc2obsmon", pp, ecf_files=ecf_files)
-                log_pp_trigger = \
-                              scheduler.EcflowSuiteTriggers(scheduler.EcflowSuiteTrigger(qc2obsmon))
+                qc2obsmon = scheduler.EcflowSuiteTask("Qc2obsmon", pp_fam, ecf_files=ecf_files)
+                trigger = scheduler.EcflowSuiteTrigger(qc2obsmon)
+                log_pp_trigger = scheduler.EcflowSuiteTriggers(trigger)
 
-            scheduler.EcflowSuiteTask("LogProgressPP", pp, triggers=log_pp_trigger,
+            scheduler.EcflowSuiteTask("LogProgressPP", pp_fam, triggers=log_pp_trigger,
                                       ecf_files=ecf_files)
 
             prev_dtg = dtg
 
         hours_behind = 24
         for dtg in dtgs:
-            dtg_str = dtg.strftime("%Y%m%d%H")
-            pp_dtg_str = (dtg - timedelta(hours=hours_behind)).strftime("%Y%m%d%H")
+            dtg_str = dtg.strftime("%Y%m%d%H%M")
+            pp_dtg_str = (dtg - timedelta(hours=hours_behind)).strftime("%Y%m%d%H%M")
             if pp_dtg_str in post_processing_dtg_node:
                 triggers = scheduler.EcflowSuiteTriggers(
                     scheduler.EcflowSuiteTrigger(post_processing_dtg_node[pp_dtg_str]))
@@ -425,7 +424,7 @@ def get_defs(exp, system, progress, suite_type):
     logging.debug("Get defs for %s", suite_name)
     joboutdir = system.get_var("JOBOUTDIR", "0")
     env_submit = exp.work_dir + "/Env_submit"
-    hh_list = exp.config.get_total_unique_hh_list()
+    hh_list = exp.config.get_total_unique_cycle_list()
     dtgstart = progress.dtg
     dtgbeg = progress.dtgbeg
     dtgend = progress.dtgend
@@ -437,22 +436,22 @@ def get_defs(exp, system, progress, suite_type):
     logging.debug("Building list of DTGs")
     while dtg <= dtgend:
         dtgs.append(dtg)
-        hour = dtg.strftime("%H")
-        fcint = None
-        logging.debug("DTG: %s, unique HH_LIST: %s", str(dtg), str(hh_list))
-        if len(hh_list) > 1:
-            for h in range(0, len(hh_list)):
-                logging.debug("%s %s %s", h, hh_list[h], hour)
-                if int(hh_list[h]) == int(hour):
-                    if h == len(hh_list) - 1:
-                        fcint = ((int(hh_list[len(hh_list) - 1]) % 24) - int(hh_list[0])) % 24
-                    else:
-                        fcint = int(hh_list[h + 1]) - int(hh_list[h])
-        else:
-            fcint = 24
-        if fcint is None:
-            raise Exception
-        dtg = dtg + timedelta(hours=fcint)
+        # hour = dtg.strftime("%H")
+        fcint = exp.config.get_fcint(dtg)
+        logging.debug("DTG: %s, unique HH_LIST: %s. FCINT: %s", str(dtg), str(hh_list), fcint)
+        # if len(hh_list) > 1:
+        #    for h in range(0, len(hh_list)):
+        #        logging.debug("%s %s %s", h, hh_list[h], hour)
+        #        if int(hh_list[h]) == int(hour):
+        #            if h == len(hh_list) - 1:
+        #                fcint = ((int(hh_list[len(hh_list) - 1]) % 24) - int(hh_list[0])) % 24
+        #            else:
+        #                fcint = int(hh_list[h + 1]) - int(hh_list[h])
+        # else:
+        #    fcint = 24
+        # if fcint is None:
+        #    raise Exception
+        dtg = dtg + timedelta(seconds=fcint)
     if suite_type == "surfex":
         return SurfexSuite(suite_name, exp, joboutdir, env_submit, dtgs, dtg, dtgbeg=dtgbeg)
     raise NotImplementedError(f"Suite definition for {suite_type} is not implemented!")

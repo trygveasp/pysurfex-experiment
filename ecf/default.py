@@ -1,5 +1,4 @@
 """Default ecflow container."""
-from distutils.command.config import config
 import json
 import inspect
 import logging
@@ -32,24 +31,30 @@ def parse_ecflow_vars():
         "ECF_RID": "%ECF_RID%",
         "SUBMISSION_ID": "%SUBMISSION_ID%"
     }
+
+
 '''
 %nopp"
 '''
+
 
 def read_system_vars(lib, host="0"):
     """Read system dict from json file."""
     with open(lib + "/exp_system_vars.json", mode="r", encoding="utf-8") as file_handler:
         return json.load(file_handler)[host]
 
+
 def read_ecflow_server_file(lib):
     """Read ecflow host settings."""
     with open(lib + "/Env_server", mode="r", encoding="utf-8") as file_handler:
         return json.load(file_handler)
 
+
 def read_system_file_paths(lib, host="0"):
     """Read system file paths."""
     with open(lib + "/exp_system.json", mode="r", encoding="utf-8") as file_handler:
         return json.load(file_handler)[host]
+
 
 def read_exp_configuration(lib, ensmbr=None):
     """Read experiment configuration.
@@ -61,6 +66,7 @@ def read_exp_configuration(lib, ensmbr=None):
         if ensmbr is None:
             return json.load(file_handler)
         return json.load(file_handler)[ensmbr]
+
 
 def default_main(system, server_settings, task_config, system_file_paths, **kwargs):
     """Ecflow container default method."""
@@ -80,7 +86,7 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
 
     ecf_name = kwargs.get("ECF_NAME")
     ecf_pass = kwargs.get("ECF_PASS")
-    ecf_tryno  = kwargs.get("ECF_TRYNO")
+    ecf_tryno = kwargs.get("ECF_TRYNO")
     ecf_rid = kwargs.get("ECF_RID")
     submission_id = kwargs.get("SUBMISSION_ID")
     task = scheduler.EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid, submission_id)
@@ -121,11 +127,13 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
     # This will also handle call to sys.exit(), i.e. Client.__exit__ will still be called.
     with scheduler.EcflowClient(server, task):
 
-        #scheduler_pythonpath = system_variables["SCHEDULER_PYTHONPATH"]
-        # Dummy commands to try out your self
-        #print(f"PYTHONPATH={scheduler_pythonpath} && %EXP_DIR%/bin/ECF_status_exp %EXP_DIR%/scheduler.json " +
-        #    "%ECF_NAME% %ECF_TRYNO% %ECF_PASS% -ecf_rid  -submission_id ")
-        #print("PYTHONPATH={scheduler_pythonpath} && %EXP_DIR%/bin/ECF_kill_exp %EXP_DIR%/scheduler.json " +
+        # scheduler_pythonpath = system_variables["SCHEDULER_PYTHONPATH"]
+        #  Dummy commands to try out your self
+        # print(f"PYTHONPATH={scheduler_pythonpath} && %EXP_DIR%/bin/ECF_status_exp
+        # %EXP_DIR%/scheduler.json " +
+        #     "%ECF_NAME% %ECF_TRYNO% %ECF_PASS% -ecf_rid  -submission_id ")
+        # print("PYTHONPATH={scheduler_pythonpath} && %EXP_DIR%/bin/ECF_kill_exp
+        # %EXP_DIR%/scheduler.json " +
         #    "%ECF_NAME% %ECF_TRYNO% %ECF_PASS% -ecf_rid %ECF_RID% -submission_id ")
 
         logging.info("Running task %s", task_name)
@@ -142,6 +150,7 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
 
         logging.info(task_class.__name__)
         task_class(task, task_config, system, system_file_paths, progress, **task_kwargs).run()
+
 
 if __name__ == "__main__":
     # Get ecflow variables

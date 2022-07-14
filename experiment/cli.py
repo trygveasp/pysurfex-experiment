@@ -5,14 +5,15 @@ from datetime import datetime
 import os
 import shutil
 import logging
-import scheduler
 import experiment
+
 
 def parse_surfex_script(argv):
     """Parse the command line input arguments."""
     parser = ArgumentParser("Surfex offline run script")
     parser.add_argument('action', type=str, help="Action",
-                        choices=["start", "prod", "continue", "testbed","install", "climate", "co"])
+                        choices=["start", "prod", "continue", "testbed",
+                                 "install", "climate", "co"])
     parser.add_argument('-exp_name', dest="exp", help="Experiment name", type=str, default=None)
     parser.add_argument('--wd', help="Experiment working directory", type=str, default=None)
 
@@ -112,20 +113,19 @@ def surfex_script(**kwargs):
                 dtg = "2008061600"
             if suite is not None and suite != "climate":
                 raise Exception("Action was climate but you also specified a suite not being " +
-                                f"climate: {suite}")
+                                + f"climate: {suite}")
             suite = "climate"
         elif action == "testbed":
             if dtg is None:
-                dtg = "2008061600"
+                dtg = "200806160000"
             if suite is not None and suite != "testbed":
                 raise Exception("Action was climate but you also specified a suite not being " +
-                                f"testbed: {suite}")
+                                + f"testbed: {suite}")
             suite = "testbed"
         elif action == "install":
             if dtg is None:
-                dtg = "2008061600"
+                dtg = "200806160000"
             suite = "Makeup"
-
 
         progress_file = work_dir + "/progress.json"
         progress_pp_file = work_dir + "/progressPP.json"
@@ -134,7 +134,7 @@ def surfex_script(**kwargs):
         if action.lower() == "prod" or action.lower() == "continue":
             progress = experiment.ProgressFromFile(progress_file, progress_pp_file)
             if dtgend is not None:
-                progress.dtgend = datetime.strptime(dtgend, "%Y%m%d%H")
+                progress.dtgend = datetime.strptime(dtgend, "%Y%m%d%H%M")
         else:
             if action == "start":
                 if dtg is None:
@@ -142,10 +142,19 @@ def surfex_script(**kwargs):
 
                 # Convert dtg/dtgend to datetime
                 if isinstance(dtg, str):
-                    dtg = datetime.strptime(dtg, "%Y%m%d%H")
+                    if len(dtg) == 10:
+                        dtg = datetime.strptime(dtg, "%Y%m%d%H")
+                    elif len(dtg) == 12:
+                        dtg = datetime.strptime(dtg, "%Y%m%d%H%M")
+                    else:
+                        raise Exception("DTG must be YYYYMMDDHH or YYYYMMDDHHmm")
                 if isinstance(dtgend, str):
-                    dtgend = datetime.strptime(dtgend, "%Y%m%d%H")
-
+                    if len(dtgend) == 10:
+                        dtgend = datetime.strptime(dtgend, "%Y%m%d%H")
+                    elif len(dtgend) == 12:
+                        dtgend = datetime.strptime(dtgend, "%Y%m%d%H%M")
+                    else:
+                        raise Exception("DTGEND must be YYYYMMDDHH or YYYYMMDDHHmm")
                 # Read progress from file. Returns None if no file exists or not set.
                 progress = experiment.ProgressFromFile(progress_file, progress_pp_file)
 
