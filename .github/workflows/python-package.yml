@@ -87,7 +87,7 @@ jobs:
         ls -l /opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages
         python -c "import enum; print(enum.__file__)"
         python -c "import surfex; print(surfex.__file__)"
-        export PATH=$PWD/test/bin:/usr/bin/:$PATH; export CLIENTID=${{secrets.CLIENTID}};  nosetests test/test_tasks.py
+        export PATH=$PWD/test/bin:/usr/bin/:$PATH; export CLIENTID=${{secrets.CLIENTID}};  nosetests test/test_eps.py test/test_scheduler_client.py
     - name: Coveralls
       if: ${{ matrix.python-version == 3.6 }}
       run: |
