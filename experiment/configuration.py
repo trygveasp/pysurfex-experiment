@@ -49,16 +49,20 @@ class ExpConfiguration(object):
         # Update time information
         cycle_times = self.get_cycle_list()
         fcint = {}
-        fcint_members = {}
         fgint = {}
-        fgint_members = {}
         for cycle in cycle_times:
             cycle_delta = timedelta(hours=int(cycle))
             cycle_string = self.format_cycle_string(cycle_delta)
             fcint.update({cycle_string: int(self.set_fcint(cycle_delta).total_seconds())})
             fgint.update({cycle_string: int(self.set_fgint(cycle_delta).total_seconds())})
+        logging.debug("fcint %s", str(fcint))
+        logging.debug("fgint %s", str(fgint))
+        self.settings["GENERAL"].update({"FCINT": fcint})
+        self.settings["GENERAL"].update({"FGINT": fgint})
         if self.members is not None:
             for mbr in self.members:
+                fcint_members = {}
+                fgint_members = {}
                 cycle_times = self.get_cycle_list(mbr=mbr)
                 for cycle in cycle_times:
                     cycle_delta = timedelta(hours=int(cycle))
@@ -67,12 +71,11 @@ class ExpConfiguration(object):
                     fcint_members.update({cycle_string: secs})
                     secs = int(self.set_fgint(cycle_delta, mbr=mbr).total_seconds())
                     fgint_members.update({cycle_string: secs})
-        self.settings["GENERAL"].update({"FCINT": fcint})
-        self.settings["GENERAL"].update({"FGINT": fgint})
-        logging.debug("fcint %s", str(fcint))
-        logging.debug("fcint_members %s", str(fcint_members))
-        logging.debug("fgint %s", str(fgint))
-        logging.debug("fgint_members %s", str(fgint_members))
+                self.member_settings[str(mbr)]["GENERAL"].update({"FCINT": fcint_members})
+                self.member_settings[str(mbr)]["GENERAL"].update({"FGINT": fgint_members})
+                logging.debug("fcint_members %s", str(fcint_members))
+                logging.debug("fgint_members %s", str(fgint_members))
+
 
         # self.do_build = self.setting_is("COMPILE#BUILD", "yes")
         self.ecoclimap_sg = self.setting_is("SURFEX#COVER#SG", True)
@@ -115,17 +118,10 @@ class ExpConfiguration(object):
         if json is None:
             raise Exception("json module not loaded")
 
-        settings = self.settings.copy()
         if self.members is not None:
-            for member in self.members:
-                member_settings = {}
-                for setting in self.member_settings:
-                    member_setting = self.get_setting(setting, mbr=member)
-                    member_settings = experiment_setup.merge_toml_env(member_settings,
-                                                                      member_setting)
-
-                settings.update({member: experiment_setup.merge_toml_env(settings,
-                                                                         member_settings)})
+            settings = self.member_settings.copy()
+        else:
+            settings = self.settings.copy()
 
         logging.debug("Settings: %s", str(settings))
         with open(filename, mode="w", encoding="UTF-8") as file_handler:

@@ -250,24 +250,33 @@ def process_merged_settings(merged_settings):
     """Process the settings and split out member settings.
 
     Args:
-        merged_settings (_type_): _description_
+        merged_settings (dict): dict with all settings
 
     Returns:
-        _type_: _description_
+        (dict, dict): General config, member_config
 
     """
-    merged_member_settings = {}
     # Write member settings
     members = None
     if "FORECAST" in merged_settings:
         if "ENSMSEL" in merged_settings["FORECAST"]:
             members = list(merged_settings["FORECAST"]["ENSMSEL"])
 
+    logging.debug("Merged settings %s", merged_settings)
+    merged_member_settings = {}
+    if "EPS" in merged_settings:
+        if "MEMBER_SETTINGS" in merged_settings["EPS"]:
+            merged_member_settings = copy.deepcopy(merged_settings["EPS"]["MEMBER_SETTINGS"])
+            logging.debug("Found member settings %s", merged_member_settings)
+            del merged_settings["EPS"]["MEMBER_SETTINGS"]
+
     member_settings = {}
     if members is not None:
         for mbr in members:
             toml_settings = copy.deepcopy(merged_settings)
+            logging.debug("member: %s merged_member_dict: %s", str(mbr), merged_member_settings)
             member_dict = get_member_settings(merged_member_settings, mbr)
+            logging.debug("member_dict: %s", member_dict)
             toml_settings = merge_toml_env(toml_settings, member_dict)
             member_settings.update({str(mbr): toml_settings})
 
@@ -309,6 +318,7 @@ def get_member_settings(d, member, sep="#"):
     settings = flatten(d)
     for setting in settings:
         keys = setting.split(sep)
+        logging.debug("Keys: %s", str(keys))
         if len(keys) == 1:
             member3 = f"{int(member):03d}"
             val = settings[setting]
@@ -320,12 +330,17 @@ def get_member_settings(d, member, sep="#"):
         else:
             this_member = int(keys[-1])
             keys = keys[:-1]
-            if this_member == member:
+            logging.debug("This member: %s member=%s Keys=%s", str(this_member), str(member), keys)
+            if int(this_member) == int(member):
                 this_setting = settings[setting]
                 for key in reversed(keys):
                     this_setting = {key: this_setting}
 
+                logging.debug("This setting: %s", str(this_setting))
                 member_settings = merge_toml_env(member_settings, this_setting)
+                logging.debug("Merged member settings for member %s = %s",
+                              str(member), str(member_settings))
+    logging.debug("Finished member settings for member %s = %s", str(member), str(member_settings))
     return member_settings
 
 

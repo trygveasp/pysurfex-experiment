@@ -79,6 +79,7 @@ class TestEcflow(unittest.TestCase):
             if fname == "config_exp_surfex.toml":
                 dirname = "pysurfex/surfex/cfg"
             config_files.append(f"{dirname}/{fname}")
+        logging.debug("config_files: %s", str(config_files))
         default_config = experiment_setup.merge_toml_env_from_files(config_files)
 
         print("surfex module: ", surfex.__file__)

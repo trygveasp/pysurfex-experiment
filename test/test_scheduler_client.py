@@ -1,6 +1,7 @@
 """Unit testing."""
 import unittest
 from pathlib import Path
+import logging
 import experiment_scheduler
 import experiment_setup
 import experiment
@@ -9,6 +10,10 @@ import scheduler
 THIS_DIR = Path(__file__).parent
 MY_DATA_PATH = str(THIS_DIR.parent)
 
+
+TESTDATA = f"{str((Path(__file__).parent).parent)}/testdata"
+logging.basicConfig(format='%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s',
+                    level=logging.DEBUG)
 
 class TestEcflowServerClients(unittest.TestCase):
     """Test the client programs to submit, check and kill jobs."""
