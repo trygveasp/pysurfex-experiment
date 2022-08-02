@@ -57,10 +57,6 @@ jobs:
     - name: Clone pysurfex
       run: |
         git clone https://github.com/metno/pysurfex.git ../pysurfex
-    - name: Clone and install pysurfex-scheduler
-      run: |
-        git clone https://github.com/metno/pysurfex-scheduler.git ../pysurfex-scheduler
-        pip install -e $PWD/../pysurfex-scheduler
     - name: Install dependencies
       run: |
         sudo apt update && sudo apt install libudunits2-dev libboost-dev libproj-dev libeccodes0 libeccodes-dev \
@@ -94,10 +90,15 @@ jobs:
         ls -l /opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages
         python -c "import enum; print(enum.__file__)"
         python -c "import surfex; print(surfex.__file__)"
-        export PATH=$PWD/test/bin:/usr/bin/:$PATH; export CLIENTID=${{secrets.CLIENTID}};  nosetests test/test_eps.py test/test_scheduler_client.py
+        python -c "import surfex; print(scheduler.__file__)"
+        # export PATH=$PWD/test/bin:/usr/bin/:$PATH; export CLIENTID=${{secrets.CLIENTID}};  nosetests test/test_eps.py test/test_scheduler_client.py
+        export CLIENTID=${{secrets.CLIENTID}}
+        cd ${GITHUB_WORKSPACE}/..
+        python -m unittest discover pysurfex-experiment  -p 'test_*.py'
     - name: Coveralls
       if: ${{ matrix.python-version == 3.6 }}
       run: |
+        cd ${GITHUB_WORKSPACE}
         export PYTHONPATH="${GITHUB_WORKSPACE}:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
         python -c "import ecflow; print(ecflow.__file__)"
         export CLIENTID=${{secrets.CLIENTID}}; ./create_coverage.sh
