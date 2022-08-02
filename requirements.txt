@@ -4,7 +4,6 @@ numpy
 pyyaml
 tomlkit
 json; python_version < '3'
-pysurfex
 pysurfex-scheduler
 
 # requirements.txt

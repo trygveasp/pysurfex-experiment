@@ -59,8 +59,8 @@ jobs:
         git clone https://github.com/metno/pysurfex.git ../pysurfex
     - name: Install dependencies
       run: |
-        sudo apt update && sudo apt install libudunits2-dev libboost-dev libproj-dev libeccodes0 libeccodes-dev \
-        libarmadillo-dev libgsl-dev ecflow-server ecflow-client python3-ecflow python3-setuptools python3-nose
+        sudo apt update && sudo apt install libudunits2-dev libboost-dev libproj-dev libeccodes0 \
+        libeccodes-dev ecflow-server ecflow-client python3-ecflow python3-setuptools
 
         # Start the server manually
         ecflow_start
@@ -74,7 +74,7 @@ jobs:
         pip install sphinx
         pip install coveralls
         if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Test with nosetests
+    - name: Unit testing
       run: |
         python --version
         python -c "import eccodes"
