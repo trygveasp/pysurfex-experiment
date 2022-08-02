@@ -56,7 +56,10 @@ jobs:
         ssh -vvv -i ~/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $(whoami)@localhost
     - name: Clone pysurfex
       run: |
+        # Clone pysurfex
         git clone https://github.com/metno/pysurfex.git ../pysurfex
+        # Install the dependencies
+        pip install -r ${GITHUB_WORKSPACE}/../pysurfex/requirements.txt
     - name: Install dependencies
       run: |
         sudo apt update && sudo apt install libudunits2-dev libboost-dev libproj-dev libeccodes0 \
