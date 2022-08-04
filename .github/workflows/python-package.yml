@@ -108,7 +108,7 @@ jobs:
     - name: Coveralls
       if: ${{ matrix.python-version == 3.6 }}
       run: |
-        cd ${GITHUB_WORKSPACE
+        cd ${GITHUB_WORKSPACE}
         export COVERALLS_REPO_TOKEN=${{secrets.COVERALLS_REPO_TOKEN}}
         coveralls
     - name: Create documentation
