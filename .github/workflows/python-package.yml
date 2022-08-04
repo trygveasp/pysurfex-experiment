@@ -81,7 +81,7 @@ jobs:
         # Install the dependencies
         cd ${GITHUB_WORKSPACE}/../pysurfex/
         pip install -r requirements.txt
-    - name: Unit testing
+    - name: Unit testing and coverage
       run: |
         python --version
         python -c "import eccodes"
@@ -99,21 +99,18 @@ jobs:
         python -c "import enum; print(enum.__file__)"
         python -c "import surfex; print(surfex.__file__)"
         python -c "import scheduler; print(scheduler.__file__)"
-        # export PATH=$PWD/test/bin:/usr/bin/:$PATH; export CLIENTID=${{secrets.CLIENTID}};  nosetests test/test_eps.py test/test_scheduler_client.py
         export CLIENTID=${{secrets.CLIENTID}}
         cd ${GITHUB_WORKSPACE}/..
-        python -m unittest discover pysurfex-experiment  -p 'test_*.py'
-    - name: Coveralls
-      if: ${{ matrix.python-version == 3.6 }}
-      run: |
-        cd ${GITHUB_WORKSPACE}/..
-        export PYTHONPATH="${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}/test:${GITHUB_WORKSPACE}/../pysurfex:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
-        python -c "import ecflow; print(ecflow.__file__)"
-        export CLIENTID=${{secrets.CLIENTID}}
         coverage run --source=pysurfex-experiment -m unittest discover -s pysurfex-experiment -p 'test_*.py'
         coverage html -d pysurfex-experiment/coverage/html
         coverage xml -o pysurfex-experiment/coverage/coverage.xml
-        export COVERALLS_REPO_TOKEN=${{secrets.COVERALLS_REPO_TOKEN}}; coveralls
+        # python -m unittest discover pysurfex-experiment  -p 'test_*.py'
+    - name: Coveralls
+      if: ${{ matrix.python-version == 3.6 }}
+      run: |
+        cd ${GITHUB_WORKSPACE
+        export COVERALLS_REPO_TOKEN=${{secrets.COVERALLS_REPO_TOKEN}}
+        coveralls
     - name: Create documentation
       if: ${{ matrix.python-version == 3.6 }}
       run: |
