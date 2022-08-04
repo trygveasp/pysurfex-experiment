@@ -102,8 +102,9 @@ jobs:
         export CLIENTID=${{secrets.CLIENTID}}
         cd ${GITHUB_WORKSPACE}/..
         coverage run --source=pysurfex-experiment -m unittest discover -s pysurfex-experiment -p 'test_*.py'
-        coverage html -d pysurfex-experiment/coverage/html
-        coverage xml -o pysurfex-experiment/coverage/coverage.xml
+        mv .coverage pysurfex-experiment/.
+        # coverage html -d pysurfex-experiment/coverage/html
+        # coverage xml -o pysurfex-experiment/coverage/coverage.xml
         # python -m unittest discover pysurfex-experiment  -p 'test_*.py'
     - name: Coveralls
       if: ${{ matrix.python-version == 3.6 }}
