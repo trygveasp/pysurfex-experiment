@@ -2,10 +2,8 @@
 
 set -x
 
-export PATH=$PWD/test/bin:/usr/bin/:$PATH
-nosetests --with-coverage --cover-erase --cover-html --cover-html-dir=coverage \
---cover-package=experiment \
-test/test_eps.py \
-test/test_scheduler_client.py \
-|| exit 1
-
+cd ..
+export PYTHONPATH=$PWD/pysurfex-experiment/test:$PWD/pysurfex
+coverage run --source=pysurfex-experiment -m unittest discover -s pysurfex-experiment || exit 1
+coverage html -d pysurfex-experiment/coverage/html || exit 1
+coverage xml -o pysurfex-experiment/coverage/coverage.xml || exit 1
