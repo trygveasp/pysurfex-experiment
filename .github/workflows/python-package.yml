@@ -106,10 +106,13 @@ jobs:
     - name: Coveralls
       if: ${{ matrix.python-version == 3.6 }}
       run: |
-        cd ${GITHUB_WORKSPACE}
-        export PYTHONPATH="${GITHUB_WORKSPACE}:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
+        cd ${GITHUB_WORKSPACE}/..
+        export PYTHONPATH="${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}/test:${GITHUB_WORKSPACE}/../pysurfex:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
         python -c "import ecflow; print(ecflow.__file__)"
         export CLIENTID=${{secrets.CLIENTID}}; ./create_coverage.sh
+        coverage run --source=pysurfex-experiment -m unittest discover -s pysurfex-experiment -p test_*.py'
+        coverage html -d pysurfex-experiment/coverage/html
+        coverage xml -o pysurfex-experiment/coverage/coverage.xml
         export COVERALLS_REPO_TOKEN=${{secrets.COVERALLS_REPO_TOKEN}}; coveralls
     - name: Create documentation
       if: ${{ matrix.python-version == 3.6 }}
