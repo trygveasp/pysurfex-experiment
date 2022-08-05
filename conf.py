@@ -1,3 +1,4 @@
+"""Documentation config."""
 # Configuration file for the Sphinx documentation builder.
 #
 # This file only contains a selection of the most common options. For a full
@@ -27,11 +28,11 @@ author = 'Trygve Aspelien'
 # Add any Sphinx extension module names here, as strings. They can be
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
-#extensions = [
-#]
-#extensions = ['sphinx.ext.autodoc']
+#
+# extensions = []
+# extensions = ['sphinx.ext.autodoc']
 extensions = ['sphinx.ext.autodoc', 'sphinx.ext.doctest', 'sphinx.ext.intersphinx',
-              'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.imgmath', 
+              'sphinx.ext.todo', 'sphinx.ext.viewcode', 'sphinx.ext.imgmath',
               'sphinx.ext.ifconfig', 'sphinx.ext.imgconverter', 'sphinx.ext.napoleon']
 
 # Add any paths that contain templates here, relative to this directory.
@@ -48,7 +49,7 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-#html_theme = 'alabaster'
+# html_theme = 'alabaster'
 html_theme = 'default'
 
 # Add any paths that contain custom static files (such as style sheets) here,

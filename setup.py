@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+"""Setup for pip."""
 # -*- coding: utf-8 -*-
 
 from setuptools import setup, find_packages
@@ -15,11 +15,13 @@ with open(path.join(here, 'README.rst'), encoding='utf-8') as f:
 
 
 def read(rel_path):
+    """Read."""
     with open(path.join(here, rel_path), 'r') as fp:
         return fp.read()
 
 
 def get_version(rel_path):
+    """Get version."""
     for line in read(rel_path).splitlines():
         if line.startswith('__version__'):
             delim = '"' if '"' in line else "'"

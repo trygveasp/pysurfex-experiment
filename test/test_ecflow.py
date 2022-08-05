@@ -9,7 +9,6 @@ import shutil
 import logging
 import toml
 import scheduler
-import surfex
 import experiment
 import experiment_setup
 import experiment_tasks
@@ -17,6 +16,7 @@ import ecf
 
 
 TESTDATA = f"{str((Path(__file__).parent).parent)}/testdata"
+ROOT = f"{str((Path(__file__).parent).parent)}"
 logging.basicConfig(format='%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s',
                     level=logging.DEBUG)
 
@@ -82,15 +82,14 @@ class TestEcflow(unittest.TestCase):
         logging.debug("config_files: %s", str(config_files))
         default_config = experiment_setup.merge_toml_env_from_files(config_files)
 
-        print("surfex module: ", surfex.__file__)
         print("scheduler module: ", scheduler.__file__)
         print("experiment module: ", experiment.__file__)
         cls.exp_name = "TEST_ECFLOW"
 
         cls.wdir = f"/tmp/host0/sfx_home/{cls.exp_name}"
 
-        rev = experiment.__path__[0] + "/.."
-        pysurfex_path = surfex.__path__[0] + "/.."
+        rev = ROOT
+        pysurfex_path = f"{ROOT}/../pysurfex"
 
         os.makedirs(cls.wdir, exist_ok=True)
         argv = [
@@ -201,6 +200,13 @@ class TestEcflow(unittest.TestCase):
         }
         cls.task = scheduler.EcflowTask("/test/Task", 1, "ecf_pass", 11, None)
 
+        ecf.InitRun.parse_ecflow_vars_init_run()
+        lib = cls.wdir
+        system_vars = ecf.InitRun.read_system_vars_init_run(lib)
+        server_settings = ecf.InitRun.read_ecflow_server_file_init_run(lib)
+        exp_dependencies = ecf.InitRun.read_paths_to_sync_init_run(lib)
+        ecf.init_run_main(system_vars, server_settings, exp_dependencies, **cls.ecflow_vars)
+
     def test_logprogress_pp_ecf_task(self):
         """Test log progress ecflow container for pp family."""
         ecf.LogProgressPP.parse_ecflow_vars_logprogress_pp()
@@ -233,15 +239,6 @@ class TestEcflow(unittest.TestCase):
         exp_config = ecf.default.read_exp_configuration(lib, ensmbr=ensmbr)
         input_files = ecf.default.read_system_file_paths(lib, host=host)
         ecf.default_main(system_vars, server_settings, exp_config, input_files, **ecflow_vars)
-
-    def test_init_run_ecf_task(self):
-        """Test init run ecflow container."""
-        ecf.InitRun.parse_ecflow_vars_init_run()
-        lib = self.system_vars["0"]["SFX_EXP_LIB"]
-        system_vars = ecf.InitRun.read_system_vars_init_run(lib)
-        server_settings = ecf.InitRun.read_ecflow_server_file_init_run(lib)
-        exp_dependencies = ecf.InitRun.read_paths_to_sync_init_run(lib)
-        ecf.init_run_main(system_vars, server_settings, exp_dependencies, **self.ecflow_vars)
 
     def test_logprogress_ecf_task(self):
         """Test log progress ecflow container."""

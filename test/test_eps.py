@@ -2,11 +2,10 @@
 import unittest
 from pathlib import Path
 import logging
-import experiment_scheduler
+import json
 import experiment_setup
 import experiment
 import scheduler
-import json
 
 THIS_DIR = Path(__file__).parent
 MY_DATA_PATH = str(THIS_DIR.parent)
@@ -113,6 +112,7 @@ class TestEPS(unittest.TestCase):
         cls.task = scheduler.EcflowTask("/test/Task", 1, "ecf_pass", 11, None)
 
     def test_eps(self):
+        """Test eps."""
         merged_config = experiment_setup.merge_toml_env(self.default_config, self.eps_settings)
         merged_config, member_config = experiment_setup.process_merged_settings(merged_config)
         self.progress = {

@@ -15,6 +15,7 @@ TESTDATA = f"{str((Path(__file__).parent).parent)}/testdata"
 logging.basicConfig(format='%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s',
                     level=logging.DEBUG)
 
+
 class TestEcflowServerClients(unittest.TestCase):
     """Test the client programs to submit, check and kill jobs."""
 

@@ -76,7 +76,6 @@ class ExpConfiguration(object):
                 logging.debug("fcint_members %s", str(fcint_members))
                 logging.debug("fgint_members %s", str(fgint_members))
 
-
         # self.do_build = self.setting_is("COMPILE#BUILD", "yes")
         self.ecoclimap_sg = self.setting_is("SURFEX#COVER#SG", True)
         self.gmted = self.setting_is("SURFEX#ZS#YZS", "gmted2010.dir")
