@@ -12,7 +12,7 @@ class ConfigureOfflineBinaries(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct ConfigureOfflineBinaries task.
 
         Args:
@@ -23,14 +23,14 @@ class ConfigureOfflineBinaries(AbstractTask):
             progress (_type_): _description_
 
         """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+        AbstractTask.__init__(self, config)
 
     def execute(self):
         """Execute."""
         rte = os.environ
         sfx_lib = self.exp_file_paths.get_system_path("sfx_exp_lib")
         flavour = self.surfex_config
-        cmd = f"export HARMONIE_CONFIG={flavour} && cd {sfx_lib}/offline/src && " \
+        cmd = f"export OFFLINE_CONFIG={flavour} && cd {sfx_lib}/offline/src && " \
               f"./configure OfflineNWP ../conf//system.{flavour}"
         logging.debug(cmd)
         surfex.BatchJob(rte, wrapper=self.wrapper).run(cmd)
@@ -52,7 +52,7 @@ class MakeOfflineBinaries(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct MakeOfflineBinaries task.
 
         Args:
@@ -63,11 +63,14 @@ class MakeOfflineBinaries(AbstractTask):
             progress (_type_): _description_
 
         """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+        AbstractTask.__init__(self, config)
 
     def execute(self):
         """Execute."""
-        rte = os.environ
+
+        for key, value in os.environ.items():
+            print(f"in task0 : {key}={value}")
+        rte = {**os.environ}
         wrapper = ""
         sfx_lib = self.exp_file_paths.get_system_path("sfx_exp_lib")
         flavour = self.surfex_config

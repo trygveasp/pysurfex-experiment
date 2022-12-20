@@ -12,25 +12,29 @@ import surfex
 class AbstractTask(object):
     """General abstract task to be implemented by all tasks using default container."""
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Initialize a task run by the default ecflow container.
 
         All tasks implelementing this base class will work with the default ecflow container
 
         Args:
-            task: A scheduler.EcflowTask object
-            config(dict): Dict with configuration
-            system (dict): System variables for each host number.
-            exp_file_paths (dict): Paths to dependencies used in the experiment
-            progress (dict): Date/time information for the experiment
-            **kwargs: Arbitrary keyword arguments.
 
         """
         if surfex is None:
             raise Exception("Surfex module not properly loaded!")
 
-        self.dtg = datetime.strptime(progress["DTG"], "%Y%m%d%H")
-        self.dtgbeg = datetime.strptime(progress["DTGBEG"], "%Y%m%d%H")
+        exp_file_paths = config["SYSTEM_FILE_PATHS"]
+        system = config["SYSTEM_VARS"]
+        progress = config["PROGRESS"]
+        print(progress)
+        dtg = progress["DTG"]
+        dtgbeg = progress["DTGBEG"]
+        if dtg is not None and dtg != "":
+            dtg = datetime.strptime(dtg, "%Y%m%d%H%M")
+        if dtgbeg is not None and dtgbeg != "":
+            dtgbeg = datetime.strptime(progress["DTGBEG"], "%Y%m%d%H%M")
+        self.dtg = dtg
+        self.dtgbeg = dtgbeg
 
         self.exp_file_paths = surfex.SystemFilePaths(exp_file_paths)
         self.work_dir = self.exp_file_paths.get_system_path("exp_dir")
@@ -61,9 +65,9 @@ class AbstractTask(object):
         geo = surfex.get_geo_object(domain_json)
         self.geo = geo
 
-        self.task = task
+        # self.task = task
 
-        wrapper = kwargs.get("wrapper")
+        wrapper = self.get_setting("TASK#WRAPPER")
         if wrapper is None:
             wrapper = ""
         self.wrapper = wrapper
@@ -107,7 +111,7 @@ class AbstractTask(object):
         self.first_guess_dir = self.get_system_path("first_guess_dir",
                                                     default_dir="default_first_guess_dir",
                                                     basedtg=self.fg_dtg)
-        self.input_path = self.lib + "/nam"
+        self.input_path = self.work_dir + "/nam"
 
         self.fg_guess_sfx = self.wrk + "/first_guess_sfx"
         self.fc_start_sfx = self.wrk + "/fc_start_sfx"
@@ -196,7 +200,7 @@ class AbstractTask(object):
 
     def get_setting(self, setting, check_parsing=True, validtime=None, basedtg=None,
                     tstep=None, pert=None, var=None, default=None, abort=True):
-        """Get seting.
+        """Get setting.
 
         Args:
             setting (_type_): _description_
@@ -350,7 +354,7 @@ class Dummy(object):
         object (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct the Dummy task.
 
         Args:
@@ -361,9 +365,10 @@ class Dummy(object):
             progress (_type_): _description_
 
         """
-        self.task = task
-        logging.debug("Dummy task initialized: %s", task)
-        logging.debug("        kwargs: %s", kwargs)
+        exp_file_paths = config["SYSTEM_FILE_PATHS"]
+        system = config["SYSTEM_VARS"]
+        progress = config["PROGRESS"]
+        logging.debug("Dummy task initialized")
         logging.debug("        Config: %s", json.dumps(config, sort_keys=True, indent=2))
         logging.debug("        system: %s", json.dumps(system, sort_keys=True, indent=2))
         logging.debug("exp_file_paths: %s", json.dumps(exp_file_paths, sort_keys=True, indent=2))
@@ -371,7 +376,7 @@ class Dummy(object):
 
     def run(self):
         """Override run."""
-        logging.debug("Dummy task %s is run ", self.task)
+        logging.debug("Dummy task %s is run")
 
 
 class PrepareCycle(AbstractTask):
@@ -383,7 +388,7 @@ class PrepareCycle(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct the PrepareCycle task.
 
         Args:
@@ -394,7 +399,7 @@ class PrepareCycle(AbstractTask):
             progress (_type_): _description_
 
         """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+        AbstractTask.__init__(self, config)
 
     def run(self):
         """Override run."""
@@ -413,7 +418,7 @@ class QualityControl(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Constuct the QualityControl task.
 
         Args:
@@ -424,8 +429,8 @@ class QualityControl(AbstractTask):
             progress (_type_): _description_
 
         """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-        self.var_name = task.family1
+        AbstractTask.__init__(self, config)
+        self.var_name = self.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -627,7 +632,7 @@ class OptimalInterpolation(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct the OptimalInterpolation task.
 
         Args:
@@ -638,8 +643,8 @@ class OptimalInterpolation(AbstractTask):
             progress (_type_): _description_
 
         """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-        self.var_name = task.family1
+        AbstractTask.__init__(self, config)
+        self.var_name = self.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -698,18 +703,14 @@ class FirstGuess(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct a FistGuess task.
 
         Args:
-            task (_type_): _description_
             config (_type_): _description_
-            system (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
         """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-        self.var_name = task.family1
+        AbstractTask.__init__(self, config)
+        self.var_name = self.config.get_setting("TASK#VAR_NAME", default=None)
 
     def execute(self):
         """Execute."""
@@ -731,17 +732,13 @@ class CycleFirstGuess(FirstGuess):
         FirstGuess (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct the cycled first guess object.
 
         Args:
-            task (_type_): _description_
             config (_type_): _description_
-            system (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
         """
-        FirstGuess.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
+        FirstGuess.__init__(self, config)
 
     def execute(self):
         """Execute."""
@@ -763,18 +760,14 @@ class Oi2soda(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct the Oi2soda task.
 
         Args:
-            task (_type_): _description_
             config (_type_): _description_
-            system (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
         """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-        self.var_name = task.family1
+        AbstractTask.__init__(self, config)
+        self.var_name = self.config.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -825,15 +818,15 @@ class Oi2soda(AbstractTask):
                         "var": var_name
                     }
                 elif var == "sd":
-                    sd = {
+                    s_d = {
                         "file": self.archive + "/an_" + var_name + ".nc",
                         "var": var_name
                     }
         logging.debug("t2m  %s ", t2m)
         logging.debug("rh2m %s", rh2m)
-        logging.debug("sd   %s", sd)
+        logging.debug("sd   %s", s_d)
         logging.debug("Write to %s", output)
-        surfex.oi2soda(self.dtg, t2m=t2m, rh2m=rh2m, sd=sd, output=output)
+        surfex.oi2soda(self.dtg, t2m=t2m, rh2m=rh2m, s_d=s_d, output=output)
 
 
 class Qc2obsmon(AbstractTask):
@@ -843,10 +836,10 @@ class Qc2obsmon(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct the QC2obsmon data."""
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-        self.var_name = task.family1
+        AbstractTask.__init__(self, config)
+        self.var_name = self.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -889,10 +882,10 @@ class FirstGuess4OI(AbstractTask):
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct the FirstGuess4OI task."""
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-        self.var_name = task.family1
+        AbstractTask.__init__(self, config)
+        self.var_name = self.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -933,7 +926,7 @@ class FirstGuess4OI(AbstractTask):
         cache_time = 3600
         # if "cache_time" in kwargs:
         #     cache_time = kwargs["cache_time"]
-        cache = surfex.cache.Cache(True, cache_time)
+        cache = surfex.cache.Cache(cache_time)
         # cache = None
         if os.path.exists(output):
             print("Output already exists " + output)
@@ -990,7 +983,7 @@ class FirstGuess4OI(AbstractTask):
                 input_geo_file = self.get_setting(identifier + "INPUT_GEO_FILE")
 
             print(inputfile, fileformat, converter, input_geo_file)
-            config_file = self.lib + "/config/first_guess.yml"
+            config_file = self.work_dir + "/config/first_guess.yml"
             with open(config_file, mode="r", encoding="utf-8") as file_handler:
                 config = yaml.safe_load(file_handler)
             defs = config[fileformat]
@@ -1040,65 +1033,66 @@ class FirstGuess4OI(AbstractTask):
             fg.close()
 
 
-'''
-# Not used/tested tasks yet
-
-class PrepareOiSoilInput(AbstractTask):
-
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-
-    def execute(self):
-        # Create FG
-        raise NotImplementedError
-
-
-class PrepareOiClimate(AbstractTask):
-    def __init__(self, task,  config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-
-    def execute(self):
-        # Create CLIMATE.dat
-        raise NotImplementedError
-
-
-class PrepareSST(AbstractTask):
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-
-    def execute(self):
-        # Create CLIMATE.dat
-        raise NotImplementedError
-
-
-class PrepareLSM(AbstractTask):
-    """Prepare land-sea mask.
+class LogProgress(AbstractTask):
+    """Log progress for restart.
 
     Args:
         AbstractTask (_type_): _description_
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
-        """_summary_
-
-        Args:
-            task (_type_): _description_
-            config (_type_): _description_
-            system (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
-        """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress, **kwargs)
-
+    def __init__(self, config):
+        """Construct the LogProgress task."""
+        AbstractTask.__init__(self, config)
 
     def execute(self):
 
-        file = self.archive + "/raw_nc"
-        output = self.exp_file_paths.get_system_file("climdir", "LSM.DAT", check_existence=False,
-                                                     default_dir="default_climdir")
-        fileformat = "netcdf"
-        converter = "none"
+        stream_text = ""
+        if self.stream is not None and self.stream != "":
+            stream_text = "_stream_" + self.stream
+        progress_file = self.work_dir + "/progress" + stream_text + ".json"
 
-        surfex.lsm_file_assim(var="land_area_fraction", file=file, fileformat=fileformat,
-                              output=output, dtg=self.dtg, geo=self.geo, converter=converter)
-'''
+        if os.path.exists(progress_file):
+            with open(progress_file, mode="r", encoding="utf-8") as file_handler:
+                progress = json.load(file_handler)
+        else:
+            progress = {}
+
+        # Update progress
+        progress.update({
+            "DTG": self.next_dtg.strftime("%Y%m%d%H%M"),
+            "DTGBEG": self.dtgbeg.strftime("%Y%m%d%H%M")
+        })
+        with open(progress_file, mode="w", encoding="utf-8") as file_handler:
+            json.dump(progress, file_handler, indent=2)
+
+
+class LogProgressPP(AbstractTask):
+    """Log progress for PP restart.
+
+    Args:
+        AbstractTask (_type_): _description_
+    """
+
+    def __init__(self, config):
+        """Construct the LogProgressPP task."""
+        AbstractTask.__init__(self, config)
+
+    def execute(self):
+
+        stream_text = ""
+        if self.stream is not None and self.stream != "":
+            stream_text = "_stream_" + self.stream
+        progress_file = self.work_dir + "/progressPP" + stream_text + ".json"
+
+        if os.path.exists(progress_file):
+            with open(progress_file, mode="r", encoding="utf-8") as file_handler:
+                progress = json.load(file_handler)
+        else:
+            progress = {}
+
+        # Update progress
+        progress.update({
+            "DTGPP": self.next_dtg.strftime("%Y%m%d%H%M")
+        })
+        with open(progress_file, mode="w", encoding="utf-8") as file_handler:
+            json.dump(progress, file_handler, indent=2)

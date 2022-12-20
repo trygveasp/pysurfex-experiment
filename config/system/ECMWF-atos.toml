@@ -1,0 +1,23 @@
+[HOST_SYSTEM]
+
+# Define computer centre.
+COMPCENTRE="ECMWF"
+
+# Define hosts
+HOSTS = ["hpc-login"]
+
+# Location of working data, fast and large system
+# Experiment identifier and directories
+# EXP is defined when an experiment is started by "Harmonie start ..."
+SFX_EXP_DATA = "/scratch/@USER@/sfx_data/@EXP@"
+# directory for scripts, compiled objects, executables
+SFX_EXP_LIB = "/scratch/@USER@/sfx_data/@EXP@/lib@STREAM@"
+JOBOUTDIR = "/perm/@USER@/sfx_data/"
+LOGIN_HOST = "hpc-login"
+HM_CS = "gfortran"
+PARCH = ""
+MKDIR = "mkdir -p"
+RSYNC = "rsync  -rltoDvhL"
+SCHEDULER_PYTHONPATH = "/perm/sbu/offline_modules/apps/pysurfex-scheduler/:/usr/local/apps/ecflow/5.8.1/lib/python3.8/site-packages/"
+SURFEX_CONFIG = "atos-gnu"
+

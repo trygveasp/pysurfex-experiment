@@ -23,6 +23,7 @@ class ExpConfiguration(object):
 
         """
         self.settings = conf_dict
+        self.config_file = None
 
         # Find EPS information
         self.members = None
@@ -670,3 +671,4 @@ class ConfigurationFromJsonFile(ExpConfigurationFromDict):
         with open(filename, mode="r", encoding="utf-8") as file_handler:
             all_settings = json.load(file_handler)
         ExpConfigurationFromDict.__init__(self, all_settings)
+        self.config_file = filename

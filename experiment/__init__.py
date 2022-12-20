@@ -2,7 +2,8 @@
 __version__ = "0.0.1a5"
 
 from .suites import get_defs, SurfexSuite
-from .cli import parse_surfex_script, surfex_script, parse_update_config, update_config
+from .cli import parse_surfex_script, surfex_script, parse_update_config, update_config, surfex_exp, \
+                 surfex_exp_config
 from .experiment import Exp, ExpFromFiles
 from .configuration import ExpConfiguration, ExpConfigurationFromDict
 from .progress import Progress, ProgressFromFile

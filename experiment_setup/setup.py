@@ -1,18 +1,25 @@
 """PySurfexExpSetup functionality."""
 import sys
 from argparse import ArgumentParser
-import json
 import os
+import json
 import logging
-import shutil
 import collections
 import copy
-import subprocess
-import toml
 import tomlkit
+import toml
+try:
+    import surfex
+except:
+    surfex = None
 
 # TODO make this a file general for all cli
 __version__ = "0.0.1-dev"
+
+
+def surfex_exp_setup():
+    kwargs = parse_surfex_script_setup(sys.argv[1:])
+    surfex_script_setup(**kwargs)
 
 
 def toml_load(fname):
@@ -382,7 +389,8 @@ def merge_to_toml_config_files(config_files, wd, configuration=None, testbed_con
             f_out.close()
 
 
-def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, offline_source=None,
+def setup_files(wd, exp_name, host, pysurfex, pysurfex_experiment,
+                offline_source=None,
                 configuration=None,
                 configuration_file=None):
     """Set up the files for an experiment.
@@ -391,9 +399,6 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
         wd (_type_): _description_
         exp_name (_type_): _description_
         host (_type_): _description_
-        revision (_type_): _description_
-        pysurfex_experiment (_type_): _description_
-        pysurfex (_type_): _description_
         offline_source (_type_, optional): _description_. Defaults to None.
         configuration (_type_, optional): _description_. Defaults to None.
         configuration_file (_type_, optional): _description_. Defaults to None.
@@ -403,15 +408,6 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
         Exception: _description_
 
     """
-    paths_to_sync = {
-        "revision": revision,
-        "pysurfex_experiment": pysurfex_experiment,
-        "offline_source": offline_source,
-        "pysurfex": pysurfex,
-        "experiment_is_locked": wd + "/experiment_is_locked@STREAM@",
-        "exp_dir": wd,
-        "exp_name": exp_name
-    }
 
     env_system = "Env_system"
     env = "Env"
@@ -440,25 +436,7 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
         sfiles.append(sfile)
     logging.info("Setting up for host %s:%s", host, sfiles)
     fetched = []
-    revs = [revision]
-    if os.path.abspath(revision) != os.path.abspath(pysurfex_experiment):
-        revs = revs + [pysurfex_experiment]
     for lname, fname in system_files.items():
-        for rev in revs:
-            lfile = wd + "/" + fname
-            rfile = rev + "/" + fname
-            dirname = os.path.dirname(lfile)
-            logging.debug("rfile %s lfile %s dirname %s", rfile, lfile, dirname)
-            os.makedirs(dirname, exist_ok=True)
-            if os.path.exists(lfile):
-                if lfile not in fetched:
-                    logging.info("System file %s already exists, is not fetched again from %s",
-                                 lfile, rev)
-            else:
-                if os.path.exists(rfile) and lfile != rfile:
-                    logging.debug("Copy %s to %s", rfile, lfile)
-                    shutil.copy2(rfile, lfile)
-                    fetched.append(lfile)
 
         target = wd + "/" + lname
         lfile = wd + "/" + fname
@@ -469,105 +447,33 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
             os.symlink(lfile, target)
             fetched.append(target)
 
-    # Set up pysurfex_experiment
-    logging.info("Set up experiment from %s", str(revs))
-    config_dirs = ["experiment", "bin", "experiment_scheduler", "experiment_tasks",
-                   "experiment_setup"]
-    for rev in revs:
-        for cdir in config_dirs:
-            os.makedirs(wd + "/" + cdir, exist_ok=True)
-            files = [f for f in os.listdir(rev + "/" + cdir)
-                     if os.path.isfile(os.path.join(rev + "/" + cdir, f))]
-            for f in files:
-                lfile = wd + "/" + cdir + "/" + f
-                rfile = rev + "/" + cdir + "/" + f
-                dirname = os.path.dirname(lfile)
-                os.makedirs(dirname, exist_ok=True)
-                if not os.path.exists(lfile):
-                    if os.path.exists(rfile) and lfile != rfile:
-                        shutil.copy2(rfile, lfile)
-                        fetched.append(lfile)
-                else:
-                    if lfile not in fetched:
-                        logging.info("%s already exists, is not fetched again from %s", lfile, rev)
-
-    '''
-    print("Fetch configuration from pysurfex from ", pysurfex)
-    files = ["configuration.py"]
-    for f in files:
-        lfile = wd + "/experiment/" + f
-        rfile = pysurfex + "/surfex/" + f
-        if not os.path.exists(lfile):
-            if os.path.exists(rfile) and lfile != rfile:
-                # print("Copy " + rfile + " to " + lfile)
-                shutil.copy2(rfile, lfile)
-                fetched.append(lfile)
-        else:
-            if lfile not in fetched:
-                print(lfile + " already exists, is not fetched again from " + pysurfex)
-    '''
-
     # Check existence of needed config files
     config_file = wd + "/config/config.toml"
-    os.makedirs(wd + "/config/", exist_ok=True)
-    for rev in revs:
-        lfile = config_file
-        rfile = rev + "/config/config.toml"
-        if not os.path.exists(lfile):
-            if os.path.exists(rfile) and lfile != rfile:
-                logging.debug("Copy %s to %s", rfile, lfile)
-                shutil.copy2(rfile, lfile)
-                fetched.append(lfile)
-        else:
-            if lfile not in fetched:
-                logging.info("%s already exists, is not fetched again from %s", lfile, rev)
-
     with open(config_file, mode="r", encoding="utf-8") as file_handler:
         c_files = toml.load(file_handler)["config_files"]
-    c_files = c_files + ["first_guess.yml", "config.yml"]
+    pysurfex_files = ["config_exp_surfex.toml", "first_guess.yml",\
+                      "config.yml"]
+    c_files = c_files + pysurfex_files
     logging.info("Check out config files %s", str(c_files))
-    for rev in [pysurfex] + revs:
-        config_files = []
-        os.makedirs(wd + "/config/", exist_ok=True)
-        for f in c_files:
-            lfile = wd + "/config/" + f
-            config_files.append(lfile)
-            os.makedirs(wd + "/config", exist_ok=True)
-            logging.debug("rev %s", rev)
-            logging.debug("self.pysurfex %s", pysurfex)
-            if rev == revision:
-                rfile = rev + "/config/" + f
+    for c_f in c_files:
+        if c_f in pysurfex_files:
+            c_f_p = "config/" + c_f
+            if os.path.exists(c_f_p):
+                logging.info("file %s exists", c_f_p)
             else:
-                if f == "config_exp.toml" or \
-                   f == "config_exp_surfex.toml" or \
-                   f == "first_guess.yml" or \
-                   f == "config.yml":
-                    rfile = pysurfex + "/surfex/cfg/" + f
+                c_f_s_p = pysurfex + "surfex/cfg/" + c_f
+                if os.path.exists(c_f_s_p):
+                    os.symlink(c_f_s_p, c_f_p)
                 else:
-                    rfile = rev + "/config/" + f
-
-            if not os.path.exists(lfile):
-                logging.debug("rfile=%s lfile=%s", rfile, lfile)
-                if os.path.exists(rfile) and lfile != rfile:
-                    logging.debug("Copy " + rfile + " -> " + lfile)
-                    shutil.copy2(rfile, lfile)
-                    fetched.append(lfile)
-            else:
-                if lfile not in fetched:
-                    logging.info("Config file %s already exists, is not fetched again from %s",
-                                 lfile, rev)
-
-    for f in c_files:
-        lfile = wd + "/config/" + f
-        if not os.path.exists(lfile):
-            raise Exception("Config file not found ", lfile)
+                    raise Exception(f"Missing surfex file {c_f_s_p}")
 
     conf = None
     if configuration is not None:
         logging.info("Using configuration %s", configuration)
         conf = wd + "/config/configurations/" + configuration.lower() + ".toml"
         if not os.path.exists(conf):
-            conf = pysurfex_experiment + "/config/configurations/" + configuration.lower() + ".toml"
+            conf = "config/configurations/" +\
+            configuration.lower() + ".toml"
         logging.info("Configuration file %s", configuration_file)
     elif configuration_file is not None:
         logging.info("Using configuration from file %s", configuration_file)
@@ -581,101 +487,15 @@ def setup_files(wd, exp_name, host, revision, pysurfex_experiment, pysurfex, off
         merge_to_toml_config_files(config_files, wd, configuration=configuration,
                                    write_config_files=True)
 
-    logging.info("Set up domains from %s", str(revs))
-    dirs = ["config/domains"]
-    # Copy dirs
-    for dir_path in dirs:
-        os.makedirs(wd + "/" + dir_path, exist_ok=True)
-        for rev in revs:
-            files = [f for f in os.listdir(rev + "/" + dir_path)
-                     if os.path.isfile(os.path.join(rev + "/" + dir_path, f))]
-
-            for f in files:
-                lfile = wd + "/" + dir_path + "/" + f
-                rfile = rev + "/" + dir_path + "/" + f
-                if not os.path.exists(lfile):
-                    logging.debug("rfile=%s, lfile=%s", rfile, lfile)
-                    if os.path.exists(rfile) and lfile != rfile:
-                        logging.debug("Copy %s -> %s", rfile, lfile)
-                        shutil.copy2(rfile, lfile)
-                        fetched.append(lfile)
-                else:
-                    if lfile not in fetched:
-                        logging.info("%s already exists, is not fetched again from %s", lfile, rev)
-
-    logging.info("Set up submission exceptions from %s", str(revs))
-    for rev in revs:
-        # ECF_submit exceptions
-        f = "config/submit/submission.json"
-        lfile = wd + "/" + f
-        rfile = rev + "/" + f
-        if not os.path.exists(lfile):
-            if os.path.exists(rfile) and lfile != rfile:
-                logging.info("Copy %s -> %s", rfile, lfile)
-                shutil.copy2(rfile, lfile)
-                fetched.append(lfile)
-        else:
-            if lfile not in fetched:
-                logging.info("%s already exists, is not fetched again from %s", lfile, rev)
-
-    logging.info("Set up ecflow default containers from %s", str(revs))
-    # Init run
-    files = ["ecf/InitRun.py", "ecf/default.py"]
-    os.makedirs(wd + "/ecf", exist_ok=True)
-    for rev in revs:
-        for f in files:
-            lfile = wd + "/" + f
-            rfile = rev + "/" + f
-            if not os.path.exists(lfile):
-                logging.debug("rfile=%s lfile=%s", rfile, lfile)
-                if os.path.exists(rfile) and lfile != rfile:
-                    logging.debug("Copy %s -> %s", rfile, lfile)
-                    shutil.copy2(rfile, lfile)
-                    fetched.append(lfile)
-            else:
-                if lfile not in fetched:
-                    logging.info("%s already exists, is not fetched again from %s", lfile, rev)
-
-    logging.info("Copy namelists from %s", revs)
-    exp_dirs = ["nam"]
-    for rev in revs:
-        for exp_dir in exp_dirs:
-            os.makedirs(wd + "/" + exp_dir, exist_ok=True)
-            rdir = rev + "/" + exp_dir
-            ldir = wd + "/" + exp_dir
-            files = [f for f in os.listdir(rev + "/" + exp_dir)
-                     if os.path.isfile(os.path.join(rev + "/" + exp_dir, f))]
-            for f in files:
-                lfile = ldir + "/" + f
-                rfile = rdir + "/" + f
-                dirname = os.path.dirname(lfile)
-                os.makedirs(dirname, exist_ok=True)
-                if not os.path.exists(lfile):
-                    if os.path.exists(rfile) and lfile != rfile:
-                        logging.debug("Copy %s -> %s", rfile, lfile)
-                        # shutil.copytree(rdir, ldir)
-                        shutil.copy2(rfile, lfile)
-                        fetched.append(lfile)
-                else:
-                    if lfile not in fetched:
-                        logging.info("%s already exists, is not fetched again from %s", lfile, rev)
-
-    # Set up offline
-    revs = [revision]
-    config_dirs = ["offline"]
-    for rev in revs:
-        for cdir in config_dirs:
-            logging.debug("%s/%s %s/%s", rev, cdir, wd, cdir)
-            if os.path.exists(rev + "/" + cdir):
-                if not os.path.exists(wd + "/" + cdir):
-                    logging.info("Copy source code %s/%s -> %s/%s", rev, cdir, wd, cdir)
-                    shutil.copytree(rev + "/" + cdir, wd + "/" + cdir)
-                else:
-                    logging.info(wd + "/" + cdir + " already exists, is not fetched again from " +
-                                 + rev)
-
-    with open(wd + "/paths_to_sync.json", mode="w", encoding="utf-8") as file_handler:
-        json.dump(paths_to_sync, file_handler, indent=2)
+    exp_dependencies = {
+        "exp_dir": wd,
+        "exp_name": exp_name,
+        "pysurfex_experiment": pysurfex_experiment,
+        "pysurfex": pysurfex,
+        "offline_source": offline_source
+    }
+    exp_dependencies_file = wd + "/exp_dependencies.json"
+    json.dump(exp_dependencies, open(exp_dependencies_file, mode="w", encoding="UTF-8"))
 
 
 def parse_surfex_script_setup(argv):
@@ -684,21 +504,11 @@ def parse_surfex_script_setup(argv):
     parser.add_argument('-exp_name', dest="exp", help="Experiment name", type=str, default=None)
     parser.add_argument('--wd', help="Experiment working directory", type=str, default=None)
 
-    parser.add_argument('-dtg', help="DateTimeGroup (YYYYMMDDHH)", type=str, required=False,
-                        default=None)
-    parser.add_argument('-dtgend', help="DateTimeGroup (YYYYMMDDHH)", type=str, required=False,
-                        default=None)
-    parser.add_argument('--suite', type=str, default="surfex", required=False,
-                        help="Type of suite definition")
-    parser.add_argument('--stream', type=str, default=None, required=False, help="Stream")
-
     # Setup variables
     parser.add_argument('-rev', dest="rev", help="Surfex experiement source revison", type=str,
                         required=False, default=None)
-    parser.add_argument('-surfex', dest="pysurfex", help="Pysurfex library", type=str,
-                        required=False, default=None)
     parser.add_argument('-experiment', dest="pysurfex_experiment",
-                        help="Pysurfex-experiment library", type=str, required=False, default=None)
+                        help="Pysurfex-experiment library", type=str, required=True, default=None)
     parser.add_argument('-offline', dest="offline_source", help="Offline source code", type=str,
                         required=False, default=None)
     parser.add_argument('-host', dest="host", help="Host label for setup files", type=str,
@@ -741,8 +551,7 @@ def surfex_script_setup(**kwargs):
     # Setup
     exp_name = kwargs.get("exp")
     wd = kwargs.get("wd")
-    rev = kwargs.get("rev")
-    pysurfex = kwargs.get("pysurfex")
+    pysurfex = f"{os.path.dirname(surfex.__file__)}/../"
     pysurfex_experiment = kwargs.get("pysurfex_experiment")
     offline_source = kwargs.get("offline_source")
     host = kwargs.get("host")
@@ -761,211 +570,15 @@ def surfex_script_setup(**kwargs):
         exp_name = wd.split("/")[-1]
         logging.info("EXP = %s", exp_name)
 
-    # Copy files to WD from REV
-    if rev is None:
-        if pysurfex_experiment is None:
-            raise Exception("You must set REV or pysurfex_experiment")
-        else:
-            logging.info("Using %s as rev", pysurfex_experiment)
-            rev = pysurfex_experiment
-    if pysurfex is None:
-        if rev is not None:
-            logging.info("Using %s as pysurfex", rev)
-            pysurfex = rev
-        else:
-            raise Exception("pysurfex must be set when rev is not set")
-    if pysurfex_experiment is None:
-        if rev is not None:
-            logging.info("Using %s as pysurfex_experiment", rev)
-            pysurfex_experiment = rev
-        else:
-            raise Exception("pysurfex_experiment must be set when rev is not set")
     if offline_source is None:
         logging.warning("No offline soure code set. Assume existing binaries")
 
-    setup_files(wd, exp_name, host, rev, pysurfex_experiment, pysurfex,
+    setup_files(wd, exp_name, host, pysurfex, pysurfex_experiment,
                 offline_source=offline_source,
                 configuration=config, configuration_file=config_file)
 
 
-def init_run_from_file(system_file, exp_dependencies, stream_nr=None):
-    """Call init_run from experiment files.
-
-    Args:
-        system_file (str): File with system
-        exp_dependencies (str): File with experiment paths
-        stream_nr (int, optional): stream. Defaults to None.
-
-    Raises:
-        FileNotFoundError: _description_
-        FileNotFoundError: _description_
-
-    """
-    if os.path.exists(system_file):
-        with open(system_file, mode="r", encoding="utf-8") as file_handler:
-            system = json.load(file_handler)
-    else:
-        raise FileNotFoundError(system_file)
-    if os.path.exists(exp_dependencies):
-        with open(exp_dependencies, mode="r", encoding="utf-8") as file_handler:
-            paths_to_sync = json.load(file_handler)
-    else:
-        raise FileNotFoundError(exp_dependencies)
-    init_run(system, paths_to_sync, stream_nr=stream_nr)
-
-
-def init_run(system, paths_to_sync, stream_nr=None):
-    """Sync experiment to scratch and between machines.
-
-    Args:
-        system (dict): System dictionary with all hosts.
-        paths_to_sync (dict): Paths to needed components.
-        stream_nr (int, optional): stream. Defaults to None.
-
-    Raises:
-        Exception: _description_
-        Exception: _description_
-        Exception: _description_
-        Exception: _description_
-        Exception: _description_
-        Exception: _description_
-        Exception: _description_
-
-    """
-    rev = paths_to_sync["revision"]
-    pysurfex_experiment = paths_to_sync["pysurfex_experiment"]
-    offline_source = paths_to_sync["offline_source"]
-    pysurfex = paths_to_sync["pysurfex"]
-    experiment_is_locked_file = paths_to_sync["experiment_is_locked"]
-    wd = paths_to_sync["exp_dir"]
-
-    if stream_nr is None:
-        stream_nr = ""
-    else:
-        stream_nr = str(stream_nr)
-
-    experiment_is_locked_file = experiment_is_locked_file.replace("@STREAM@", stream_nr)
-    if os.path.exists(experiment_is_locked_file):
-        experiment_is_locked = True
-    else:
-        experiment_is_locked = False
-
-    rsync = system["0"]["RSYNC"].replace("@STREAM@", stream_nr)
-    lib0 = system["0"]["SFX_EXP_LIB"].replace("@STREAM@", stream_nr)
-    host_name0 = ""
-
-    excludes = " --exclude=.git --exclude=.vscode --exclude=.github --exclude=coverage" + \
-               " --exclude=.cache --exclude=__pycache__ --exclude='*.pyc'"
-    # Sync pysurfex_experiment to LIB0
-    if not experiment_is_locked:
-        dirs = ["experiment", "nam", "toml", "config", "ecf", "experiment_tasks",
-                "experiment_scheduler", "experiment_setup"]
-        for d in dirs:
-            os.makedirs(f"{lib0}/{d}", exist_ok=True)
-            cmd = f"{rsync} {pysurfex_experiment}/{d} {host_name0}{lib0}/{d} {excludes}"
-            logging.info(cmd)
-            ret = subprocess.call(cmd, shell=True)
-            if ret != 0:
-                raise Exception(cmd + " failed!")
-    else:
-        logging.info("Not resyncing %s as experiment is locked", pysurfex_experiment)
-
-    # Sync pysurfex to LIB0
-    if not experiment_is_locked:
-        dirs = ["surfex"]
-        for d in dirs:
-            os.makedirs(lib0 + "/" + d, exist_ok=True)
-            cmd = f"{rsync} {pysurfex}/{d} {host_name0}{lib0}/{d} {excludes}"
-            logging.info(cmd)
-            ret = subprocess.call(cmd, shell=True)
-            if ret != 0:
-                raise Exception(cmd + " failed!")
-    else:
-        logging.info("Not resyncing %s as experiment is locked", pysurfex)
-
-    # Sync REV to LIB0
-    if not experiment_is_locked:
-        if rev != wd:
-            cmd = f"{rsync} {rev}/* {host_name0}{lib0}/. {excludes}"
-            logging.info(cmd)
-            ret = subprocess.call(cmd, shell=True)
-            if ret != 0:
-                raise Exception(cmd + " failed!")
-        else:
-            logging.info("REV == WD. No syncing needed")
-    else:
-        logging.info("Not resyncing REV as experiment is locked")
-
-    # Sync offline source code to LIB0
-    if not experiment_is_locked:
-        if offline_source is not None:
-            if rev != wd:
-                cmd = f"{rsync} {offline_source} {host_name0}{lib0}/offline {excludes}"
-                logging.info(cmd)
-                ret = subprocess.call(cmd, shell=True)
-                if ret != 0:
-                    raise Exception(cmd + " failed!")
-            else:
-                logging.info("REV == WD. No syncing needed")
-    else:
-        logging.info("Not resyncing REV as experiment is locked")
-
-    # Sync WD to LIB
-    # Always sync WD unless it is not same as SFX_EXP_LIB
-    if wd != lib0:
-        cmd = f"{rsync} {wd}/* {host_name0}{lib0}/. {excludes}"
-        logging.info(cmd)
-        ret = subprocess.call(cmd, shell=True)
-        if ret != 0:
-            raise Exception
-
-    # TODO sync LIB to stream
-
-    host_label = []
-    for h in system:
-        host_label.append(system[h]["HOSTNAME"])
-
-    # Sync HM_LIB beween hosts
-    # TODO sync streams
-    if len(host_label) > 1:
-        for host in range(1, len(host_label)):
-            host = str(host)
-            print("Syncing to HOST" + host + " with label " + host_label[int(host)])
-            rsync = system[host]["RSYNC"].replace("@STREAM@", stream_nr)
-            libn = system[host]["SFX_EXP_LIB"].replace("@STREAM@", stream_nr)
-            datan = system[host]["SFX_EXP_DATA"].replace("@STREAM@", stream_nr)
-            mkdirn = system[host]["MKDIR"].replace("@STREAM@", stream_nr)
-            host_namen = system[host]["LOGIN_HOST"].replace("@STREAM@", stream_nr)
-            sync_data = system[host]["SYNC_DATA"]
-
-            if sync_data:
-                # libn = system.get_var("SFX_EXP_LIB", host, stream=stream)
-                # datan = system.get_var("SFX_EXP_DATA", host, stream=stream)
-                # mkdirn = system.get_var("MKDIR", host, stream=stream)
-                # host_namen = system.get_var("HOST_NAME", host, stream=stream)
-                ssh = ""
-                if host_namen != "":
-                    ssh = "ssh " + os.environ["USER"] + "@" + host_namen
-                    host_namen = os.environ["USER"] + "@" + host_namen + ":"
-
-                cmd = mkdirn + " " + datan
-                logging.info(cmd)
-                cmd = mkdirn + " " + libn
-                if ssh != "":
-                    cmd = ssh + " \"" + mkdirn + " " + libn + "\""
-                logging.info(cmd)
-                subprocess.call(cmd, shell=True)
-                if ret != 0:
-                    raise Exception
-                cmd = f"{rsync} {host_name0}{lib0}/ {host_namen}{libn} {excludes}"
-                logging.info(cmd)
-                subprocess.call(cmd, shell=True)
-                if ret != 0:
-                    raise Exception
-            else:
-                logging.warning("Data sync to %s disabled", host_namen)
-
-    logging.info("Lock experiment")
-    with open(experiment_is_locked_file, mode="w", encoding="utf-8") as file_handler:
-        file_handler.write("Something from git?")
-    logging.info("Finished syncing")
+def surfex_exp_setup():
+    """Surfex exp setup entry point."""
+    kwargs = parse_surfex_script_setup(sys.argv[1:])
+    surfex_script_setup(**kwargs)

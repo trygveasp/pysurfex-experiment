@@ -1,0 +1,18 @@
+{
+  "sand_dir": "/ec/res4/hpcperm/hlam/data/climate/PGD/",
+  "clay_dir": "/ec/res4/hpcperm/hlam/data/climate/PGD/",
+  "soilgrid_dir": "/scratch/sbu/sfx_data/test_default/climate/",
+  "soc_top_dir": "/ec/res4/hpcperm/hlam/data/climate/PGD/",
+  "soc_sub_dir": "/ec/res4/hpcperm/hlam/data/climate/PGD/",
+  "ecoclimap_cover_dir": "/ec/res4/hpcperm/hlam/data/climate/PGD/",
+  "ecoclimap_bin_dir": "/scratch/sbu/sfx_data/test_default/lib/offline/MY_RUN/ECOCLIMAP",
+  "flake_dir": "/ec/res4/hpcperm/hlam/data/climate/PGD/",
+  "ecoclimap_sg_cover_dir": "/ec/res4/hpcperm/hlam/data/climate/ECOCLIMAP-SG/COVER/",
+  "albnir_soil_dir": "/ec/res4/hpcperm/hlam/data/climate/ECOCLIMAP-SG/ALBNIR_SNOWFREE/",
+  "albvis_soil_dir": "/ec/res4/hpcperm/hlam/data/climate/ECOCLIMAP-SG/ALBVIS_SNOWFREE/",
+  "albnir_veg_dir": "/ec/res4/hpcperm/hlam/data/climate/ECOCLIMAP-SG/ALBNIR_SNOWFREE",
+  "albvis_veg_dir": "/ec/res4/hpcperm/hlam/data/climate/ECOCLIMAP-SG/ALBVIS_SNOWFREE/",
+  "tree_height_dir": "/ec/res4/hpcperm/hlam/data/climate/ECOCLIMAP-SG/HT/",
+  "lai_dir": "/ec/res4/hpcperm/hlam/data/climate/ECOCLIMAP-SG/LAI/300M/",
+  "oro_dir": "/scratch/sbu/sfx_data/test_default/climate/"
+}

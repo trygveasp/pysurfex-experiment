@@ -14,18 +14,19 @@ LL_LIST="48,3,3,3,3,3,3,3"              # Forecast lengths for the cycles [h], r
 ####################################################################################################
 # Compilation settings
 #####################################################################################################
-BUILD = false                           # Turn on or off the compilation and binary build (true/false)
+BUILD = false                         # Turn on or off the compilation and binary build (true/false)
 
 [GEOMETRY]
 #####################################################################################################
 # Geometry
 #####################################################################################################
-DOMAIN = "DKCOEXP"                  # See definitions in config/Harmonie_domains.json
+DOMAIN = "DRAMMEN"                  # See definitions in config/Harmonie_domains.json
 
 [INITIAL_CONDITIONS]
 ANASURF = "gridpp"
 # "/nobackup/prod2/cooper/BD_archive/2020/09/16/00/fc20200916_00+003
-PREP_INPUT_FILE = "@SFX_EXP_LIB@/nam/prep_from_namelist_values.json"
+# PREP_INPUT_FILE = "@SFX_EXP_DATA@/nam/prep_from_namelist_values.json"
+PREP_INPUT_FILE = "/home/sbu/sfx_home/pysurfex-experiment/nam/prep_from_namelist_values.json"
 PREP_INPUT_FILETYPE = "json"
 PREP_PGDFILE = ""
 PREP_PGDFILETYPE = ""

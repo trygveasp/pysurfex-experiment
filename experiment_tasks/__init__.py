@@ -4,8 +4,9 @@ from .tasks import AbstractTask, Dummy, Oi2soda, Qc2obsmon, QualityControl, Opti
 from .surfex_binary_task import SurfexBinaryTask, Pgd, Prep, Soda, Forecast, PerturbedRun
 from .forcing import Forcing
 from .compilation import MakeOfflineBinaries, ConfigureOfflineBinaries
+from .discover_tasks import get_task
 
 __all__ = ["MakeOfflineBinaries", "ConfigureOfflineBinaries", "Forcing", "SurfexBinaryTask",
            "Pgd", "Prep", "Soda", "Forecast", "PerturbedRun", "AbstractTask", "Dummy", "Oi2soda",
            "Qc2obsmon", "QualityControl", "OptimalInterpolation", "FirstGuess", "FirstGuess4OI",
-           "CycleFirstGuess", "PrepareCycle"]
+           "CycleFirstGuess", "PrepareCycle", "get_task"]

@@ -1,23 +1,23 @@
 """Default ecflow container."""
+# @ENV_SUB1@
 import json
-import inspect
 import logging
 import scheduler
-import experiment_tasks
-
+from experiment_tasks import get_task
+# @ENV_SUB2@
 
 def parse_ecflow_vars():
     """Parse the ecflow variables."""
     return {
         "LIB": "%LIB%",
-        "HOST": "@HOST_TO_BE_SUBSTITUTED@",
-        "SERVER_LOGFILE": "%SERVER_LOGFILE%",
-        "WRAPPER": "@WRAPPER_TO_BE_SUBSTITUTED@",
+        # "HOST": "@HOST_TO_BE_SUBSTITUTED@",
+        "WRAPPER": "%WRAPPER%",
         "ENSMBR": "%ENSMBR%",
         "DTG": "%DTG%",
         "DTGBEG": "%DTGBEG%",
         "stream": "%STREAM%",
         "TASK_NAME": "%TASK%",
+        "VAR_NAME": "%VAR_NAME%",
         # TODO from ecflow
         "DEBUG": True,
         "FORCE": False,
@@ -28,8 +28,7 @@ def parse_ecflow_vars():
         "ECF_NAME": "%ECF_NAME%",
         "ECF_PASS": "%ECF_PASS%",
         "ECF_TRYNO": "%ECF_TRYNO%",
-        "ECF_RID": "%ECF_RID%",
-        "SUBMISSION_ID": "%SUBMISSION_ID%"
+        "ECF_RID": "%ECF_RID%"
     }
 
 
@@ -81,26 +80,26 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
 
     ecf_host = server_settings.get("ECF_HOST")
     ecf_port = server_settings.get("ECF_PORT")
-    server_logfile = kwargs.get("SERVER_LOGFILE")
-    server = scheduler.EcflowServer(ecf_host, ecf_port, server_logfile)
+    # server_logfile = kwargs.get("SERVER_LOGFILE")
+    server = scheduler.EcflowServer(ecf_host, ecf_port)
 
     ecf_name = kwargs.get("ECF_NAME")
     ecf_pass = kwargs.get("ECF_PASS")
     ecf_tryno = kwargs.get("ECF_TRYNO")
     ecf_rid = kwargs.get("ECF_RID")
-    submission_id = kwargs.get("SUBMISSION_ID")
-    task = scheduler.EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid, submission_id)
+    # submission_id = kwargs.get("SUBMISSION_ID")
+    task = scheduler.EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid)
 
     stream = kwargs.get("STREAM")
     task_config["GENERAL"].update({"STREAM": stream})
-    args = kwargs["ARGS"]
+    args = kwargs.get("ARGS")
 
     task_name = kwargs.get("TASK_NAME")
     # debug = kwargs["DEBUG"]
 
     wrapper = kwargs.get("WRAPPER")
 
-    task_kwargs = {
+    args_dict = {
         "wrapper": wrapper,
         "force": kwargs["FORCE"],
         "check_existence": kwargs["CHECK_EXISTENCE"],
@@ -115,7 +114,7 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
             print(parts)
             print(len(parts))
             if len(parts) == 2:
-                task_kwargs.update({parts[0]: parts[1]})
+                args_dict.update({parts[0]: parts[1]})
 
     dtg = kwargs["DTG"]
     dtgbeg = kwargs["DTGBEG"]
@@ -124,6 +123,19 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
         "DTGBEG": dtgbeg,
         "DTGPP": dtg
     }
+
+    task_config.update({"SYSTEM_FILE_PATHS": system_file_paths})
+    task_config.update({"SYSTEM_VARS": system})
+    task_config.update({"PROGRESS": progress})
+    if "TASK" not in task_config:
+        task_config.update({"TASK":
+            {
+                "WRAPPER": wrapper,
+                "VAR_NAME": kwargs.get("VAR_NAME"),
+                "ARGS": args_dict,
+                }
+            })
+
     # This will also handle call to sys.exit(), i.e. Client.__exit__ will still be called.
     with scheduler.EcflowClient(server, task):
 
@@ -137,19 +149,8 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
         #    "%ECF_NAME% %ECF_TRYNO% %ECF_PASS% -ecf_rid %ECF_RID% -submission_id ")
 
         logging.info("Running task %s", task_name)
-        classes = inspect.getmembers(experiment_tasks, inspect.isclass)
-        task_class = None
-        for cclass in classes:
-            cname = cclass[0]
-            ctask = cclass[1]
-            if cname == task_name:
-                task_class = ctask
-
-        if task_class is None:
-            raise Exception("Class not found for task " + task_name)
-
-        logging.info(task_class.__name__)
-        task_class(task, task_config, system, system_file_paths, progress, **task_kwargs).run()
+        get_task(task.ecf_task, task_config).run()
+        logging.info("Finished task %s", task_name)
 
 
 if __name__ == "__main__":
@@ -158,7 +159,8 @@ if __name__ == "__main__":
 
     # Set system vars for host
     LIB = kwargs_main["LIB"]
-    HOST = kwargs_main["HOST"]
+    # HOST = kwargs_main["HOST"]
+    HOST = "0"
     system_vars_main = read_system_vars(LIB, host=HOST)
 
     # Server settings

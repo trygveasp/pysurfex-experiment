@@ -1,0 +1,53 @@
+{
+  "submit_types": ["background", "serial", "parallel"],
+  "default_submit_type": "serial",
+  "background": {
+    "SCHOST": "localhost",
+    "ENV": {
+       "MODULE_UDUNITS": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'udunits'); os.environ['LD_LIBRARY_PATH']=os.environ.get('UDUNITS_DIR') + '/lib/'",
+       "MODULE_PROJ": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'proj/7.2.1')"
+    },
+    "tasks": [
+      "Background", "Dummy"
+    ]
+  },
+  "serial": {
+    "SCHOST": "hpc",
+    "ENV": {
+       "MODULE_UDUNITS": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'udunits'); os.environ['LD_LIBRARY_PATH']=os.environ.get('UDUNITS_DIR') + '/lib/'",
+       "MODULE_PROJ": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'proj/7.2.1')"
+    },
+    "HOST": "0",
+    "BATCH": {
+       "WALLTIME": "#SBATCH --time=00:05:00"
+    }
+  },
+  "parallel": {
+    "SCHOST": "hpc",
+    "ENV": {
+       "MODULE_UDUNITS": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'udunits'); os.environ['LD_LIBRARY_PATH']=os.environ.get('UDUNITS_DIR') + '/lib/'",
+       "MODULE_PROJ": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'proj/7.2.1')"
+    },
+    "BATCH": {
+       "WALLTIME": "#SBATCH --time=00:10:00"
+    },
+    "tasks": [
+      "Offline"
+    ]
+  },
+  "task_exceptions": {
+    "MakeOfflineBinaries": {
+      "ENV": {
+        "OPENMPI": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'openmpi')"
+      } 
+    },
+    "Offline": {
+       "BATCH": {
+          "WALLTIME": "#SBATCH --time=00:15:00"
+       },
+       "ENV": {
+          "MODULE": "print('My beautiful module')"
+       }
+    }
+  }
+}

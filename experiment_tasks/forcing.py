@@ -4,33 +4,26 @@ from datetime import timedelta
 import json
 import logging
 import yaml
-from experiment_tasks import AbstractTask
 import surfex
+from experiment_tasks import AbstractTask
 
 
 class Forcing(AbstractTask):
     """Create forcing task."""
 
-    def __init__(self, task, config, system, exp_file_paths, progress, stream=None,
-                 debug=False, **kwargs):
+    def __init__(self, config):
         """Construct forcing task.
 
         Args:
-            task (scheduler.task): The task
             config (dict): Actual configuration dict
-            system (dict): System dict
-            exp_file_paths (dict): Exp file paths dict
-            progress (dict): Date time information
-            stream (int, optional): Stream. Defaults to None.
-            debug (bool, optional): _description_. Defaults to False.
-        """
-        AbstractTask.__init__(self, task, config, system, exp_file_paths, progress,
-                              stream=stream, debug=debug, **kwargs)
-        self.var_name = task.family1
 
+        """
+        AbstractTask.__init__(self, config)
+        self.var_name = self.get_setting("TASK#VAR_NAME")
         user_config = None
-        if "user_config" in kwargs:
-            user_config = kwargs["user_config"]
+        # TODO fix this test
+        if "FORCING_USER_CONFIG" in self.config.settings:
+            user_config = self.get_setting("TASK#FORCING_USER_CONFIG", default=None)
         self.user_config = user_config
 
     def execute(self):
@@ -50,7 +43,7 @@ class Forcing(AbstractTask):
         with open(self.wdir + "/domain.json", mode="w", encoding="utf-8") as file_handler:
             json.dump(self.geo.json, file_handler, indent=2)
         kwargs.update({"domain": self.wdir + "/domain.json"})
-        global_config = self.lib + "/config/config.yml"
+        global_config = self.work_dir + "/config/config.yml"
         with open(global_config, mode="r", encoding="utf-8") as file_handler:
             global_config = yaml.safe_load(file_handler)
         kwargs.update({"config": global_config})

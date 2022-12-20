@@ -80,21 +80,15 @@ def surfex_script(**kwargs):
         begin = True
 
     work_dir = kwargs.get("wd")
+    if work_dir is None:
+        work_dir = f"{os.getcwd()}"
+        logging.info("Setting working directory from current directory: %s", work_dir)
 
     # Find experiment
-    if work_dir is None:
-        work_dir = os.getcwd()
-        logging.info("Setting current working directory as WD: %s", work_dir)
     if exp is None:
         logging.info("Setting EXP from WD: %s", work_dir)
         exp = work_dir.split("/")[-1]
         logging.info("EXP = %s", exp)
-
-    libs = ["surfex", "scheduler", "experiment"]
-    for lib in libs:
-        if os.path.exists(work_dir + "/" + lib):
-            sys.path.insert(0, work_dir + "/" + lib)
-            logging.debug("Set first in system path: %s/%s", work_dir, lib)
 
     if "action" == "mon":
         # TODO
@@ -168,36 +162,38 @@ def surfex_script(**kwargs):
             progress.save(progress_file, progress_pp_file, indent=2)
 
         # Set experiment from files. Should be existing now after setup
-        exp_dependencies_file = work_dir + "/paths_to_sync.json"
+        exp_dependencies_file = work_dir + "/exp_dependencies.json"
+        print(exp_dependencies_file)
         sfx_exp = experiment.ExpFromFiles(exp_dependencies_file)
         system = sfx_exp.system
 
         data0 = system.get_var("SFX_EXP_DATA", "0")
-        lib0 = system.get_var("SFX_EXP_LIB", "0")
-        logfile = data0 + "/ECF.log"
+        # lib0 = system.get_var("SFX_EXP_LIB", "0")
+        # logfile = data0 + "/ECF.log"
 
         # Create exp scheduler json file
-        sfx_exp.write_scheduler_info(logfile)
+        # sfx_exp.write_scheduler_info(logfile)
 
         # Create LIB0 and copy init run if WD != lib0
-        if work_dir.rstrip("/") != lib0.rstrip("/"):
-            ecf_init_run = lib0 + "/ecf/InitRun.py"
-            dirname = os.path.dirname(ecf_init_run)
-            dirs = dirname.split("/")
-            if len(dirs) > 1:
-                fpath = "/"
-                for dname in dirs[1:]:
-                    fpath = fpath + str(dname)
-                    # print(p)
-                    os.makedirs(fpath, exist_ok=True)
-                    fpath = fpath + "/"
-            shutil.copy2(work_dir + "/ecf/InitRun.py", ecf_init_run)
+        #if work_dir.rstrip("/") != lib0.rstrip("/"):
+        #    ecf_init_run = lib0 + "/ecf/InitRun.py"
+        #    dirname = os.path.dirname(ecf_init_run)
+        #    dirs = dirname.split("/")
+        #    if len(dirs) > 1:
+        #        fpath = "/"
+        #        for dname in dirs[1:]:
+        #            fpath = fpath + str(dname)
+        #            # print(p)
+        #            os.makedirs(fpath, exist_ok=True)
+        #            fpath = fpath + "/"
+        #    shutil.copy2(work_dir + "/ecf/InitRun.py", ecf_init_run)
 
         # Create and start the suite
-        def_file = f"{data0}/{suite}.def"
+        def_file = f"{work_dir}/{suite}.def"
 
         defs = experiment.get_defs(sfx_exp, system, progress, suite)
         defs.save_as_defs(def_file)
+        print(def_file)
         sfx_exp.server.start_suite(defs.suite_name, def_file, begin=begin)
 
 
@@ -241,7 +237,7 @@ def update_config(**kwargs):
         logging.info("EXP = %s", exp)
 
     # Set experiment from files. Should be existing now after setup
-    exp_dependencies_file = f"{work_dir}/paths_to_sync.json"
+    exp_dependencies_file = f"{work_dir}/exp_dependencies.json"
     sfx_exp = experiment.ExpFromFiles(exp_dependencies_file)
     system = sfx_exp.system
 
@@ -251,3 +247,15 @@ def update_config(**kwargs):
     # Create exp scheduler json file
     sfx_exp.write_scheduler_info(logfile)
     logging.info("Configuration was updated!")
+
+
+def surfex_exp():
+    """Surfex exp script entry point."""
+    kwargs = parse_surfex_script(sys.argv[1:])
+    surfex_script(**kwargs)
+
+
+def surfex_exp_config():
+    """Surfex exp config entry point."""
+    kwargs = parse_update_config(sys.argv[1:])
+    update_config(**kwargs)

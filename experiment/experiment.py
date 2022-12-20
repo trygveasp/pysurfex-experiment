@@ -1,10 +1,9 @@
 """Experiment classes and methods."""
 import os
 import json
-import shutil
 import logging
-import toml
 import scheduler
+import toml
 import experiment
 import experiment_setup
 
@@ -30,19 +29,15 @@ class Exp():
 
         """
         logging.debug("Construct Exp")
-        rev = exp_dependencies["revision"]
-        pysurfex_experiment = exp_dependencies.get("pysurfex_experiment")
         offline_source = exp_dependencies.get("offline_source")
-        pysurfex = exp_dependencies.get("pysurfex")
         wdir = exp_dependencies.get("exp_dir")
         exp_name = exp_dependencies.get("exp_name")
 
         self.name = exp_name
         merged_config["GENERAL"].update({"EXP": exp_name})
         self.work_dir = wdir
-        self.rev = rev
-        self.pysurfex = pysurfex
-        self.pysurfex_experiment = pysurfex_experiment
+        self.scripts = exp_dependencies.get("pysurfex_experiment")
+        self.pysurfex = exp_dependencies.get("pysurfex")
         self.offline_source = offline_source
         self.system = system
         self.server = server
@@ -54,51 +49,7 @@ class Exp():
         self.config_dict = merged_config
         self.member_config = member_merged_config
         self.config = experiment.ExpConfiguration(merged_config, member_merged_config)
-
-        if env_submit is not None:
-            submit_types = env_submit["submit_types"]
-            for submit_type in submit_types:
-                key_to_update = "SUBMIT_VARIABLES"
-                if "HOST" in env_submit[submit_type]:
-                    host = env_submit[submit_type]["HOST"]
-                else:
-                    raise Exception(f"The submission type {submit_type} need a HOST")
-                scheduler_pythonpath = self.system.get_var("SCHEDULER_PYTHONPATH", host)
-                exp_lib = self.system.get_var("SFX_EXP_LIB", host)
-                update_vars = {}
-                pythonpath = ""
-                if key_to_update in env_submit[submit_type]:
-                    update_vars = env_submit[submit_type][key_to_update]
-                    if "PYTHONPATH" in update_vars:
-                        pythonpath = update_vars["PYTHONPATH"]
-
-                update_vars.update({"PYTHONPATH": f"{scheduler_pythonpath}:{exp_lib}:{pythonpath}"})
-                env_submit[submit_type][key_to_update] = update_vars
-
-    def checkout(self, file):
-        """Check out a file to the experiment.
-
-        Not very smart checkout.
-
-        Args:
-            file (str): relative path to rev to check out
-
-        Raises:
-            Exception: _description_
-
-        """
-        if file is None:
-            raise Exception("File must be set")
-        if os.path.exists(file):
-            print("File is aleady checked out " + file)
-        else:
-            if os.path.exists(self.rev + "/" + file):
-                dirname = os.path.dirname(self.work_dir + "/" + file)
-                os.makedirs(dirname, exist_ok=True)
-                shutil.copy2(self.rev + "/" + file, self.work_dir + "/" + file)
-                print("Checked out file: " + file)
-            else:
-                print("File was not found: " + self.rev + "/" + file)
+        self.config_file = None
 
     def write_scheduler_info(self, logfile, filename=None):
         """Write scheduler info.
@@ -145,11 +96,12 @@ class Exp():
             "config": self.config_dict,
             "member_config": self.member_config
         }
+        self.config_file = filename
         json.dump(config, open(filename, mode="w", encoding="UTF-8"), indent=indent)
 
 
 class ExpFromFiles(Exp):
-    """Generate Exp object from existing files."""
+    """Generate Exp object from existing files. Use config files from a setup."""
 
     def __init__(self, exp_dependencies_file, stream=None, progress=None):
         """Construct an Exp object from files.
@@ -166,11 +118,9 @@ class ExpFromFiles(Exp):
         """
         logging.debug("Construct ExpFromFiles")
         exp_dependencies = json.load(open(exp_dependencies_file, mode="r", encoding="UTF-8"))
-        pysurfex_experiment = exp_dependencies.get("pysurfex_experiment")
         wdir = exp_dependencies.get("exp_dir")
         self.work_dir = wdir
         exp_name = exp_dependencies["exp_name"]
-        pysurfex = exp_dependencies.get("pysurfex")
 
         # Check existence of needed system files
         system_files = {
@@ -205,17 +155,15 @@ class ExpFromFiles(Exp):
 
         env_submit = json.load(open(wdir + "/Env_submit", mode="r", encoding="UTF-8"))
 
-        logfile = system.get_var("SFX_EXP_DATA", "0") + "/ECF.log"
-        server = scheduler.EcflowServerFromFile(wdir + "/Env_server", logfile)
+        # logfile = system.get_var("SFX_EXP_DATA", "0") + "/ECF.log"
+        server = scheduler.EcflowServerFromFile(wdir + "/Env_server")
 
         if progress is None:
             progress = experiment.ProgressFromFile(wdir + "/progress.json",
                                                    wdir + "/progressPP.json")
 
         # Configuration
-        config_files_dict = self.get_config_files_dict(wdir,
-                                                       pysurfex_experiment=pysurfex_experiment,
-                                                       pysurfex=pysurfex)
+        config_files_dict = self.get_config_files_dict(wdir)
         all_merged_settings = experiment_setup.merge_toml_env_from_config_dicts(config_files_dict)
 
         # Geometry
@@ -258,7 +206,7 @@ class ExpFromFiles(Exp):
                     lfile = pysurfex + "/surfex/cfg/" + fname
 
             if os.path.exists(lfile):
-                # print("lfile", lfile)
+                print("lfile", lfile)
                 toml_dict = toml.load(open(lfile, mode="r", encoding="UTF-8"))
             else:
                 raise FileNotFoundError("No config file found for " + lfile)
@@ -302,3 +250,26 @@ class ExpFromFiles(Exp):
             raise Exception(f"No config found in {str(search_configs)}")
 
         return c_files
+
+
+class ExpFromSetupFiles(Exp):
+    """Experiment class."""
+
+    def __init__(self, exp_dependencies_file):
+
+        with open(exp_dependencies_file, mode="r", encoding="utf-8") as exp_dep:
+            exp_dependencies = json.load(exp_dep)
+            exp_configuration = exp_dependencies["exp_configuration"]
+
+        with open(exp_configuration, mode="r", encoding="utf-8") as exp_conf:
+            config_file = exp_config["config_file"]
+
+            config = json.load(open(config_file, mode="r", encoding="utf-8"))
+            member_config_file = exp_dependencies["member_config_file"]
+            member_config = json.load(open(member_config_file, mode="r", encoding="utf-8"))
+            submit_exceptions = exp_dependencies_file["submit_exceptions"]
+
+        Exp.__init__(self, exp_dependencies, config, member_config,
+                     submit_exceptions=submit_exceptions,
+                     system_file_paths=system_file_paths, system=system,
+                     server=server, env_submit=env_submit, progress=progress)

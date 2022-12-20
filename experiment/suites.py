@@ -1,20 +1,22 @@
 """Suite for experiment."""
 from datetime import datetime, timedelta
 import logging
+import os
 import scheduler
 
 
-class SurfexSuite(scheduler.SuiteDefinition):
+class SurfexSuite():
     """Surfex suite."""
 
-    def __init__(self, suite_name, exp, joboutdir, env_submit, dtgs, next_start_dtg, dtgbeg=None):
+    def __init__(self, suite_name, exp, joboutdir, task_settings, dtgs, next_start_dtg, dtgbeg=None, ecf_micro="%",
+                 dry_run=False):
         """Initialize a SurfexSuite object.
 
         Args:
             suite_name (str): Name of the suite
             exp (experiment.Experiment): Experiment you want to run
             joboutdir (str): Directory for job and log files
-            env_submit (dict): Submission environment for jobs
+            TaskSettings (TaskSettings): Submission environment for jobs
             dtgs (list): The DTGs you want to run
             next_start_dtg (datetime): Next DTG to run after this DTG
             dtgbeg (datetime, optional): First DTG the experiment run. Defaults to None.
@@ -26,113 +28,104 @@ class SurfexSuite(scheduler.SuiteDefinition):
             dtgbeg_str = dtgbeg.strftime("%Y%m%d%H%M")
 
         lib = exp.system.get_var("SFX_EXP_LIB", "0")
-        pythonpath = exp.system.get_var("SCHEDULER_PYTHONPATH", "0")
+        scratch = exp.system.get_var("SFX_EXP_DATA", "0")
         exp_dir = exp.work_dir + ""
-        pythonpath = exp_dir + ":" + pythonpath
 
-        ecf_include = lib + "/ecf"
-        ecf_files = lib + "/ecf"
+        ecf_include = exp_dir + "/ecf"
+        ecf_files = joboutdir
+        os.makedirs(ecf_files, exist_ok=True)
+        template = exp.scripts + "/ecf/default.py"
         ecf_home = joboutdir
         ecf_out = joboutdir
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
-        # server_log = exp.get_file_name(lib, "server_log", full_path=True)
+        os.makedirs(ecf_out, exist_ok=True)
+        print(ecf_home)
 
-        logging.debug("PYTHONPATH: %s", pythonpath)
-        ecf_job_cmd = f"export PYTHONPATH={pythonpath} && " \
-                      f"{exp_dir}/bin/ECF_submit_exp " \
-                      "-ensmbr %ENSMBR% " \
-                      "-dtg %DTG% " + \
-                      "-exp " + exp_dir + "/scheduler.json " \
-                      "-ecf_name %ECF_NAME% " \
-                      "-ecf_tryno %ECF_TRYNO% " \
-                      "-ecf_pass %ECF_PASS% " \
-                      "-ecf_rid %ECF_RID%"
-        ecf_kill_cmd = f"export PYTHONPATH={pythonpath} && " \
-                       f"{exp_dir}/bin/ECF_kill_exp " \
-                       "-exp " + exp_dir + "/scheduler.json " \
-                       "-ecf_name %ECF_NAME% " \
-                       "-ecf_tryno %ECF_TRYNO% " \
-                       "-ecf_pass %ECF_PASS% " \
-                       "-ecf_rid %ECF_RID% " \
-                       "-submission_id %SUBMISSION_ID%"
-        ecf_status_cmd = f"export PYTHONPATH={pythonpath} && " \
-                         f"{exp_dir}/bin/ECF_status_exp " \
-                         "-exp " + exp_dir + "/scheduler.json " \
-                         "-ecf_name %ECF_NAME% " \
-                         "-ecf_tryno %ECF_TRYNO% "\
-                         "-ecf_pass %ECF_PASS% " \
-                         "-ecf_rid %ECF_RID% " \
-                         "-submission_id %SUBMISSION_ID%"
+        # Commands started from the scheduler does not have full environment
+        ecf_job_cmd = (
+            f"{ecf_micro}TROIKA{ecf_micro} "
+            f"-c {ecf_micro}TROIKA_CONFIG{ecf_micro} submit "
+            f"-o {ecf_micro}ECF_JOBOUT{ecf_micro} "
+            f"{ecf_micro}SCHOST{ecf_micro} "
+            f"{ecf_micro}ECF_JOB{ecf_micro}"
+        )
+        # %ECF_JOB%"
+        ecf_status_cmd = (
+            f"{ecf_micro}TROIKA{ecf_micro} "
+            f"-c {ecf_micro}TROIKA_CONFIG{ecf_micro} monitor "
+            f"{ecf_micro}SCHOST{ecf_micro} "
+            f"{ecf_micro}ECF_JOB{ecf_micro}"
+        )
+        ecf_kill_cmd = (
+            f"{ecf_micro}TROIKA{ecf_micro} "
+            f"-c {ecf_micro}TROIKA_CONFIG{ecf_micro} kill "
+            f"{ecf_micro}SCHOST{ecf_micro} "
+            f"{ecf_micro}ECF_JOB{ecf_micro}"
+        )
+
+        troika = "/opt/troika/bin/troika"
+        troika_config = "/opt/troika/etc/troika.yml"
+        config_file = exp.config_file
+        config = exp.config
+        # task_config = config["env_submit"]
+        loglevel = "DEBUG"
+        variables = {
+            "ECF_EXTN": ".py",
+            "ECF_FILES": ecf_files,
+            "ECF_INCLUDE": ecf_include,
+            "ECF_TRIES": 1,
+            "ECF_HOME": ecf_home,
+            "ECF_KILL_CMD": ecf_kill_cmd,
+            "ECF_JOB_CMD": ecf_job_cmd,
+            "ECF_STATUS_CMD": ecf_status_cmd,
+            "ECF_OUT": ecf_out,
+            "ECF_JOBOUT": ecf_jobout,
+            "ECF_TIMEOUT": 20,
+            "LOGLEVEL": loglevel,
+            "WRAPPER": "",
+            "VAR_NAME": "",
+            "CONFIG": str(config_file),
+            "TROIKA": troika,
+            "TROIKA_CONFIG": troika_config,
+        }
 
         self.suite_name = suite_name
-        scheduler.SuiteDefinition.__init__(self, suite_name, joboutdir, ecf_files, env_submit,
-                                           ecf_home=ecf_home, ecf_include=ecf_include,
-                                           ecf_out=ecf_out,
-                                           ecf_jobout=ecf_jobout,
-                                           ecf_job_cmd=ecf_job_cmd,
-                                           ecf_status_cmd=ecf_status_cmd,
-                                           ecf_kill_cmd=ecf_kill_cmd,
-                                           pythonpath="", path="")
+        # scheduler.SuiteDefinition.__init__(self, suite_name, joboutdir, ecf_files, exp.config,
+        #                                   task_settings, loglevel,
+        #                                   ecf_home=ecf_home, ecf_include=ecf_include,
+        #                                   ecf_out=ecf_out,
+        #                                   ecf_jobout=ecf_jobout,
+        #                                   ecf_job_cmd=ecf_job_cmd,
+        #                                   ecf_status_cmd=ecf_status_cmd,
+        #                                   ecf_kill_cmd=ecf_kill_cmd,
+        #                                   ecf_micro=ecf_micro, dry_run=dry_run)
 
+        print(variables)
+        self.suite = scheduler.EcflowSuite(self.suite_name, ecf_files, variables=variables, dry_run=False)
         self.suite.ecf_node.add_variable("EXP_DIR", exp_dir)
-        self.suite.ecf_node.add_variable("LIB", lib)
-        self.suite.ecf_node.add_variable("SERVER_LOGFILE", exp.server.logfile)
         self.suite.ecf_node.add_variable("EXP", exp.name)
+        self.suite.ecf_node.add_variable("LIB", exp_dir)
         self.suite.ecf_node.add_variable("DTG", dtgbeg_str)
         self.suite.ecf_node.add_variable("DTGBEG", dtgbeg_str)
-        # self.suite.ecf_node.add_variable("STREAM", "")
-        # self.suite.ecf_node.add_variable("ENSMBR", "")
+        self.suite.ecf_node.add_variable("STREAM", "")
+        self.suite.ecf_node.add_variable("ENSMBR", "")
         self.suite.ecf_node.add_variable("ARGS", "")
 
-        # self.suite = EcflowSuite(self.suite_name, def_file=def_file, variables=variables)
-
-        init_run = scheduler.EcflowSuiteTask("InitRun", self.suite)
-        init_run.ecf_node.add_variable("LIB", exp_dir)
-        init_run_ecf_job_cmd = f"export PYTHONPATH={pythonpath} && " \
-                               f"{exp_dir}/bin/ECF_submit_exp " \
-                               "-ensmbr %ENSMBR% " \
-                               "-dtg %DTG% " + \
-                               "-exp %LIB%/scheduler.json " \
-                               "-ecf_name %ECF_NAME% " \
-                               "-ecf_tryno %ECF_TRYNO% " \
-                               "-ecf_pass %ECF_PASS% " \
-                               "-ecf_rid %ECF_RID%"
-        init_run_ecf_kill_cmd = f"export PYTHONPATH={pythonpath} && " \
-                                f"{exp_dir}/bin/ECF_kill_exp " \
-                                "-exp %EXP%/scheduler.json " \
-                                "-ecf_name %ECF_NAME% " \
-                                "-ecf_tryno %ECF_TRYNO% " \
-                                "-ecf_pass %ECF_PASS% " \
-                                "-ecf_rid %ECF_RID% " \
-                                "-submission_id %SUBMISSION_ID%"
-        init_run_ecf_status_cmd = f"export PYTHONPATH={pythonpath} && " \
-                                  f"{exp_dir}/bin/ECF_status_exp " \
-                                  "-exp %EXP%/scheduler.json " \
-                                  "-ecf_name %ECF_NAME% " \
-                                  "-ecf_tryno %ECF_TRYNO% "\
-                                  "-ecf_pass %ECF_PASS% " \
-                                  "-ecf_rid %ECF_RID% " \
-                                  "-submission_id %SUBMISSION_ID%"
-        init_run.ecf_node.add_variable("ECF_JOB_CMD", init_run_ecf_job_cmd)
-        init_run.ecf_node.add_variable("ECF_KILL_CMD", init_run_ecf_kill_cmd)
-        init_run.ecf_node.add_variable("ECF_STATUS_CMD", init_run_ecf_status_cmd)
-        init_run_complete = scheduler.EcflowSuiteTrigger(init_run)
-
         if exp.config.get_setting("COMPILE#BUILD"):
-            comp_trigger = scheduler.EcflowSuiteTriggers(init_run_complete)
-            comp = scheduler.EcflowSuiteFamily("Compilation", self.suite, triggers=comp_trigger)
+            comp = scheduler.EcflowSuiteFamily("Compilation", self.suite, ecf_files)
             configure = scheduler.EcflowSuiteTask("ConfigureOfflineBinaries", comp,
-                                                  ecf_files=ecf_files)
+                                                  config, task_settings, ecf_files, input_template=template)
             configure_complete = scheduler.EcflowSuiteTrigger(configure, mode="complete")
-            scheduler.EcflowSuiteTask("MakeOfflineBinaries", comp, ecf_files=ecf_files,
+            scheduler.EcflowSuiteTask("MakeOfflineBinaries", comp, config, task_settings, ecf_files,
+                                      input_template=template,
                                       triggers=scheduler.EcflowSuiteTriggers([configure_complete]))
             comp_complete = scheduler.EcflowSuiteTrigger(comp, mode="complete")
         else:
             comp_complete = None
 
-        triggers = scheduler.EcflowSuiteTriggers([init_run_complete, comp_complete])
-        static = scheduler.EcflowSuiteFamily("StaticData", self.suite, triggers=triggers)
-        scheduler.EcflowSuiteTask("Pgd", static, ecf_files=ecf_files)
+        triggers = scheduler.EcflowSuiteTriggers([comp_complete])
+        static = scheduler.EcflowSuiteFamily("StaticData", self.suite, ecf_files, triggers=triggers)
+        scheduler.EcflowSuiteTask("Pgd", static, config, task_settings, ecf_files, input_template=template)
 
         static_complete = scheduler.EcflowSuiteTrigger(static)
 
@@ -149,14 +142,14 @@ class SurfexSuite(scheduler.SuiteDefinition):
                 next_dtg = next_start_dtg
             next_dtg_str = next_dtg.strftime("%Y%m%d%H%M")
             dtg_str = dtg.strftime("%Y%m%d%H%M")
-            variables = [
-                scheduler.EcflowSuiteVariable("DTG", dtg_str),
-                scheduler.EcflowSuiteVariable("DTG_NEXT", next_dtg_str),
-                scheduler.EcflowSuiteVariable("DTGBEG", dtgbeg_str)
-            ]
-            triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete])
+            variables = {
+                "DTG": dtg_str,
+                "DTG_NEXT": next_dtg_str,
+                "DTGBEG": dtgbeg_str
+            }
+            triggers = scheduler.EcflowSuiteTriggers([static_complete])
 
-            dtg_node = scheduler.EcflowSuiteFamily(dtg_str, self.suite, variables=variables,
+            dtg_node = scheduler.EcflowSuiteFamily(dtg_str, self.suite, ecf_files, variables=variables,
                                                    triggers=triggers)
 
             ahead_trigger = None
@@ -167,37 +160,38 @@ class SurfexSuite(scheduler.SuiteDefinition):
                         ahead_trigger = scheduler.EcflowSuiteTrigger(tname)
 
             if ahead_trigger is None:
-                triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete])
+                triggers = scheduler.EcflowSuiteTriggers([static_complete])
             else:
-                triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete,
+                triggers = scheduler.EcflowSuiteTriggers([static_complete,
                                                           ahead_trigger])
 
-            prepare_cycle = scheduler.EcflowSuiteTask("PrepareCycle", dtg_node, triggers=triggers,
-                                                      ecf_files=ecf_files)
+            prepare_cycle = scheduler.EcflowSuiteTask("PrepareCycle", dtg_node, config,
+                                                      task_settings, ecf_files,
+                                                      triggers=triggers, input_template=template)
             prepare_cycle_complete = scheduler.EcflowSuiteTrigger(prepare_cycle)
 
-            triggers.add_triggers(scheduler.EcflowSuiteTrigger(prepare_cycle))
+            triggers.add_triggers([scheduler.EcflowSuiteTrigger(prepare_cycle)])
 
-            cycle_input = scheduler.EcflowSuiteFamily("CycleInput", dtg_node, triggers=triggers)
+            cycle_input = scheduler.EcflowSuiteFamily("CycleInput", dtg_node, ecf_files, triggers=triggers)
             cycle_input_dtg_node.update({dtg_str: cycle_input})
 
-            scheduler.EcflowSuiteTask("Forcing", cycle_input, ecf_files=ecf_files)
+            scheduler.EcflowSuiteTask("Forcing", cycle_input, config, task_settings, ecf_files, input_template=template)
 
-            triggers = scheduler.EcflowSuiteTriggers([init_run_complete, static_complete,
+            triggers = scheduler.EcflowSuiteTriggers([static_complete,
                                                      prepare_cycle_complete])
             if prev_dtg is not None:
                 prev_dtg_str = prev_dtg.strftime("%Y%m%d%H%M")
                 trigger = scheduler.EcflowSuiteTrigger(prediction_dtg_node[prev_dtg_str])
-                triggers.add_triggers(trigger)
+                triggers.add_triggers([trigger])
 
             ########################################################################################
-            initialization = scheduler.EcflowSuiteFamily("Initialization", dtg_node,
-                                                         triggers=triggers)
+            initialization = scheduler.EcflowSuiteFamily("Initialization", dtg_node, ecf_files, triggers=triggers)
 
             analysis = None
             if dtg == dtgbeg:
 
-                prep = scheduler.EcflowSuiteTask("Prep", initialization, ecf_files=ecf_files)
+                prep = scheduler.EcflowSuiteTask("Prep", initialization, config, task_settings, ecf_files,
+                                                 input_template=template)
                 prep_complete = scheduler.EcflowSuiteTrigger(prep)
                 # Might need an extra trigger for input
 
@@ -225,17 +219,17 @@ class SurfexSuite(scheduler.SuiteDefinition):
 
                 triggers = scheduler.EcflowSuiteTriggers(prep_complete)
                 if not do_soda:
-                    scheduler.EcflowSuiteTask("CycleFirstGuess", initialization, triggers=triggers,
-                                              ecf_files=ecf_files)
+                    scheduler.EcflowSuiteTask("CycleFirstGuess", initialization, config, task_settings, ecf_files,
+                                              triggers=triggers, input_template=template)
                 else:
                     fg_task = scheduler.EcflowSuiteTask("FirstGuess", initialization,
-                                                        triggers=triggers,
-                                                        ecf_files=ecf_files)
+                                                        config, task_settings, ecf_files,
+                                                        triggers=triggers, input_template=template)
 
                     perturbations = None
                     if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
 
-                        perturbations = scheduler.EcflowSuiteFamily("Perturbations", initialization)
+                        perturbations = scheduler.EcflowSuiteFamily("Perturbations", initialization, ecf_files)
                         nncv = exp.config.get_setting("SURFEX#ASSIM#ISBA#EKF#NNCV")
                         names = exp.config.get_setting("SURFEX#ASSIM#ISBA#EKF#CVAR_M")
                         triggers = None
@@ -254,21 +248,21 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                 name = "REF"
                                 args = "pert=" + str(ivar) + ";name=" + name + ";ivar=0"
                                 logging.debug("args: %s", args)
-                                variables = scheduler.EcflowSuiteVariable("ARGS", args)
+                                variables = {"ARGS": args}
 
-                                pert = scheduler.EcflowSuiteFamily(name, perturbations,
+                                pert = scheduler.EcflowSuiteFamily(name, perturbations, ecf_files,
                                                                    variables=variables)
-                                scheduler.EcflowSuiteTask("PerturbedRun", pert, ecf_files=ecf_files,
-                                                          triggers=triggers)
+                                scheduler.EcflowSuiteTask("PerturbedRun", pert, config, task_settings, ecf_files,
+                                                          triggers=triggers, input_template=template)
                             if val == 1:
                                 name = names[ivar]
                                 args = f"pert={str(ivar + 1)};name={name};ivar={str(nivar)}"
                                 logging.debug("args: %s", args)
-                                variables = scheduler.EcflowSuiteVariable("ARGS", args)
-                                pert = scheduler.EcflowSuiteFamily(name, perturbations,
+                                variables = {"ARGS": args}
+                                pert = scheduler.EcflowSuiteFamily(name, perturbations, ecf_files,
                                                                    variables=variables)
-                                scheduler.EcflowSuiteTask("PerturbedRun", pert, ecf_files=ecf_files,
-                                                          triggers=triggers)
+                                scheduler.EcflowSuiteTask("PerturbedRun", pert, config, task_settings, ecf_files,
+                                                          triggers=triggers, input_template=template)
                                 nivar = nivar + 1
 
                     prepare_oi_soil_input = None
@@ -276,16 +270,19 @@ class SurfexSuite(scheduler.SuiteDefinition):
                     if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "OI"):
                         prepare_oi_soil_input = scheduler.EcflowSuiteTask("PrepareOiSoilInput",
                                                                           initialization,
-                                                                          ecf_files=ecf_files)
+                                                                          config, task_settings, ecf_files,
+                                                                          input_template=template)
                         prepare_oi_climate = scheduler.EcflowSuiteTask("PrepareOiClimate",
                                                                        initialization,
-                                                                       ecf_files=ecf_files)
+                                                                       config, task_settings, ecf_files,
+                                                                       input_template=template)
 
                     prepare_sst = None
                     if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#SEA", "INPUT"):
                         if exp.config.setting_is("SURFEX#ASSIM#SEA#CFILE_FORMAT_SST", "ASCII"):
                             prepare_sst = scheduler.EcflowSuiteTask("PrepareSST", initialization,
-                                                                    ecf_files=ecf_files)
+                                                                    config, task_settings, ecf_files,
+                                                                    input_template=template)
 
                     an_variables = {"t2m": False, "rh2m": False, "sd": False}
                     obs_types = exp.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
@@ -300,34 +297,35 @@ class SurfexSuite(scheduler.SuiteDefinition):
                                 if do_snow_ass:
                                     an_variables.update({"sd": True})
 
-                    analysis = scheduler.EcflowSuiteFamily("Analysis", initialization)
+                    analysis = scheduler.EcflowSuiteFamily("Analysis", initialization, ecf_files)
                     fg4oi = scheduler.EcflowSuiteTask("FirstGuess4OI", analysis,
-                                                      ecf_files=ecf_files)
+                                                      config, task_settings, ecf_files, input_template=template)
                     fg4oi_complete = scheduler.EcflowSuiteTrigger(fg4oi)
 
                     triggers = []
                     for var, active in an_variables.items():
                         if active:
-                            an_var_fam = scheduler.EcflowSuiteFamily(var, analysis)
+                            variables = {"VAR_NAME": var}
+                            an_var_fam = scheduler.EcflowSuiteFamily(var, analysis, ecf_files, variables=variables)
                             qc_triggers = None
                             if var == "sd":
                                 qc_triggers = scheduler.EcflowSuiteTriggers(fg4oi_complete)
                             qc_task = scheduler.EcflowSuiteTask("QualityControl", an_var_fam,
-                                                                triggers=qc_triggers,
-                                                                ecf_files=ecf_files)
+                                                                config, task_settings, ecf_files, triggers=qc_triggers,
+                                                                input_template=template)
                             oi_triggers = scheduler.EcflowSuiteTriggers([
                                 scheduler.EcflowSuiteTrigger(qc_task),
                                 scheduler.EcflowSuiteTrigger(fg4oi)])
                             scheduler.EcflowSuiteTask("OptimalInterpolation", an_var_fam,
-                                                      triggers=oi_triggers,
-                                                      ecf_files=ecf_files)
+                                                      config, task_settings, ecf_files, triggers=oi_triggers,
+                                                      input_template=template)
                             triggers.append(scheduler.EcflowSuiteTrigger(an_var_fam))
 
                     oi2soda_complete = None
                     if len(triggers) > 0:
                         triggers = scheduler.EcflowSuiteTriggers(triggers)
-                        oi2soda = scheduler.EcflowSuiteTask("Oi2soda", analysis, triggers=triggers,
-                                                            ecf_files=ecf_files)
+                        oi2soda = scheduler.EcflowSuiteTask("Oi2soda", analysis, config, task_settings, ecf_files,
+                                                            triggers=triggers, input_template=template)
                         oi2soda_complete = scheduler.EcflowSuiteTrigger(oi2soda)
 
                     prepare_lsm = None
@@ -340,8 +338,8 @@ class SurfexSuite(scheduler.SuiteDefinition):
                     if need_lsm:
                         triggers = scheduler.EcflowSuiteTriggers(fg4oi_complete)
                         prepare_lsm = scheduler.EcflowSuiteTask("PrepareLSM", initialization,
-                                                                ecf_files=ecf_files,
-                                                                triggers=triggers)
+                                                                config, task_settings, ecf_files,
+                                                                triggers=triggers, input_template=template)
 
                     triggers = [scheduler.EcflowSuiteTrigger(fg_task), oi2soda_complete]
                     if perturbations is not None:
@@ -356,32 +354,33 @@ class SurfexSuite(scheduler.SuiteDefinition):
                         triggers.append(scheduler.EcflowSuiteTrigger(prepare_lsm))
 
                     triggers = scheduler.EcflowSuiteTriggers(triggers)
-                    scheduler.EcflowSuiteTask("Soda", analysis, triggers=triggers,
-                                              ecf_files=ecf_files)
+                    scheduler.EcflowSuiteTask("Soda", analysis, config, task_settings, ecf_files, triggers=triggers,
+                                              input_template=template)
 
             triggers = scheduler.EcflowSuiteTriggers([scheduler.EcflowSuiteTrigger(cycle_input),
                                                       scheduler.EcflowSuiteTrigger(initialization)])
-            prediction = scheduler.EcflowSuiteFamily("Prediction", dtg_node, triggers=triggers)
+            prediction = scheduler.EcflowSuiteFamily("Prediction", dtg_node, ecf_files, triggers=triggers)
             prediction_dtg_node.update({dtg_str: prediction})
 
-            forecast = scheduler.EcflowSuiteTask("Forecast", prediction, ecf_files=ecf_files)
+            forecast = scheduler.EcflowSuiteTask("Forecast", prediction, config, task_settings, ecf_files,
+                                                 input_template=template)
             triggers = scheduler.EcflowSuiteTriggers(scheduler.EcflowSuiteTrigger(forecast))
             scheduler.EcflowSuiteTask("LogProgress", prediction,
-                                      triggers=triggers,
-                                      ecf_files=ecf_files)
+                                      config, task_settings, ecf_files, triggers=triggers, input_template=template)
 
             triggers = scheduler.EcflowSuiteTriggers(scheduler.EcflowSuiteTrigger(prediction))
-            pp_fam = scheduler.EcflowSuiteFamily("PostProcessing", dtg_node, triggers=triggers)
+            pp_fam = scheduler.EcflowSuiteFamily("PostProcessing", dtg_node, ecf_files, triggers=triggers)
             post_processing_dtg_node.update({dtg_str: pp_fam})
 
             log_pp_trigger = None
             if analysis is not None:
-                qc2obsmon = scheduler.EcflowSuiteTask("Qc2obsmon", pp_fam, ecf_files=ecf_files)
+                qc2obsmon = scheduler.EcflowSuiteTask("Qc2obsmon", pp_fam, config, task_settings, ecf_files,
+                                                      input_template=template)
                 trigger = scheduler.EcflowSuiteTrigger(qc2obsmon)
                 log_pp_trigger = scheduler.EcflowSuiteTriggers(trigger)
 
-            scheduler.EcflowSuiteTask("LogProgressPP", pp_fam, triggers=log_pp_trigger,
-                                      ecf_files=ecf_files)
+            scheduler.EcflowSuiteTask("LogProgressPP", pp_fam, config, task_settings, ecf_files,
+                                      triggers=log_pp_trigger, input_template=template)
 
             prev_dtg = dtg
 
@@ -420,10 +419,13 @@ def get_defs(exp, system, progress, suite_type):
     Returns:
         scheduler.SuiteDefinition: A suite definitition
     """
-    suite_name = exp.name
+    suite_name = exp.name.replace("-", "_")
+    suite_name = suite_name.replace(".", "_")
+    print(exp.name)
     logging.debug("Get defs for %s", suite_name)
     joboutdir = system.get_var("JOBOUTDIR", "0")
     env_submit = exp.work_dir + "/Env_submit"
+    task_settings = scheduler.TaskSettingsJson(env_submit)
     hh_list = exp.config.get_total_unique_cycle_list()
     dtgstart = progress.dtg
     dtgbeg = progress.dtgbeg
@@ -453,5 +455,5 @@ def get_defs(exp, system, progress, suite_type):
         #    raise Exception
         dtg = dtg + timedelta(seconds=fcint)
     if suite_type == "surfex":
-        return SurfexSuite(suite_name, exp, joboutdir, env_submit, dtgs, dtg, dtgbeg=dtgbeg)
+        return SurfexSuite(suite_name, exp, joboutdir, task_settings, dtgs, dtg, dtgbeg=dtgbeg)
     raise NotImplementedError(f"Suite definition for {suite_type} is not implemented!")

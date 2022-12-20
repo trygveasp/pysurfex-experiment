@@ -13,21 +13,15 @@ class SurfexBinaryTask(AbstractTask):
         AbstractTask (object): Inheritance of base task class
     """
 
-    def __init__(self, task, system, config, exp_file_paths, progress, mode, **kwargs):
+    def __init__(self, config, mode):
         """Construct a surfex binary task.
 
         Args:
-            task (_type_): _description_
-            system (_type_): _description_
             config (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
             mode (_type_): _description_
-            mbr (_type_, optional): _description_. Defaults to None.
-            stream (_type_, optional): _description_. Defaults to None.
-            debug (bool, optional): _description_. Defaults to False.
+
         """
-        AbstractTask.__init__(self, task, system, config, exp_file_paths, progress, **kwargs)
+        AbstractTask.__init__(self, config)
 
         self.mode = mode
         self.need_pgd = True
@@ -38,6 +32,7 @@ class SurfexBinaryTask(AbstractTask):
         self.soda = False
         self.namelist = None
 
+        kwargs = self.config.get_setting("TASK#ARGS")
         logging.debug("kwargs: %s", kwargs)
         print_namelist = kwargs.get("print_namelist")
         if print_namelist is None:
@@ -65,7 +60,8 @@ class SurfexBinaryTask(AbstractTask):
         libdir = self.sfx_exp_vars["SFX_EXP_LIB"]
         xyz_file = libdir + "/xyz"
         if os.path.exists(xyz_file):
-            xyz = open(xyz_file, "r", mode="r", encoding="utf-8").read().rstrip()
+            with open(xyz_file, mode="r", encoding="utf-8") as zyz_fh:
+                xyz = zyz_fh.read().rstrip()
         else:
             logging.info("%s not found. Assume XYZ=%s", xyz_file, xyz)
         self.xyz = xyz
@@ -162,15 +158,15 @@ class SurfexBinaryTask(AbstractTask):
             lfagmap = settings["NAM_IO_OFFLINE"]["LFAGMAP"]
 
         if self.need_pgd:
-            pgdfile = surfex.file.PGDFile(filetype, pgdfile, self.geo, input_file=pgd_file_path,
+            pgdfile = surfex.file.PGDFile(filetype, pgdfile, input_file=pgd_file_path,
                                           lfagmap=lfagmap)
 
         if self.need_prep:
-            prepfile = surfex.PREPFile(filetype, prepfile, self.geo, input_file=prep_file_path,
+            prepfile = surfex.PREPFile(filetype, prepfile, input_file=prep_file_path,
                                        lfagmap=lfagmap)
 
         if self.need_prep and self.need_pgd:
-            surffile = surfex.SURFFile(filetype, surffile, self.geo, archive_file=output,
+            surffile = surfex.SURFFile(filetype, surffile, archive_file=output,
                                        lfagmap=lfagmap)
         else:
             surffile = None
@@ -188,13 +184,13 @@ class SurfexBinaryTask(AbstractTask):
                                     archive_data=archive_data,
                                     print_namelist=self.print_namelist)
         elif self.pgd:
-            pgdfile = surfex.file.PGDFile(filetype, pgdfile, self.geo, input_file=pgd_file_path,
+            pgdfile = surfex.file.PGDFile(filetype, pgdfile, input_file=pgd_file_path,
                                           archive_file=output, lfagmap=lfagmap)
             # print(input_data.data)
             surfex.SURFEXBinary(binary, batch, pgdfile, settings, input_data,
                                 archive_data=archive_data, print_namelist=self.print_namelist)
         elif self.prep:
-            prepfile = surfex.PREPFile(filetype, prepfile, self.geo, archive_file=output,
+            prepfile = surfex.PREPFile(filetype, prepfile, archive_file=output,
                                        lfagmap=lfagmap)
             surfex.SURFEXBinary(binary, batch, prepfile, settings, input_data, pgdfile=pgdfile,
                                 archive_data=archive_data, print_namelist=self.print_namelist)
@@ -211,7 +207,7 @@ class Pgd(SurfexBinaryTask):
         SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config, **kwargs):
         """Construct a Pgd task object.
 
         Args:
@@ -221,7 +217,7 @@ class Pgd(SurfexBinaryTask):
             exp_file_paths (_type_): _description_
             progress (_type_): _description_
         """
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "pgd",
+        SurfexBinaryTask.__init__(self, config, "pgd",
                                   **kwargs)
 
     def execute(self):
@@ -244,18 +240,14 @@ class Prep(SurfexBinaryTask):
         SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct Prep task.
 
         Args:
-            task (_type_): _description_
             config (_type_): _description_
-            system (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
+
         """
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "prep",
-                                  **kwargs)
+        SurfexBinaryTask.__init__(self, config, "prep")
 
     def execute(self):
         """Execute."""
@@ -294,18 +286,13 @@ class Forecast(SurfexBinaryTask):
         SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct the forecast task.
 
         Args:
-            task (_type_): _description_
             config (_type_): _description_
-            system (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
         """
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "offline",
-                                  **kwargs)
+        SurfexBinaryTask.__init__(self, config, "offline")
 
     def execute(self):
         """Execute."""
@@ -350,19 +337,14 @@ class PerturbedRun(SurfexBinaryTask):
 
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct a perturbed run task.
 
         Args:
-            task (scheduler.Task): _description_
             config (dict): _description_
-            system (dict): _description_
-            exp_file_paths (dict): _description_
-            progress (dict): _description_
 
         """
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "perturbed",
-                                  **kwargs)
+        SurfexBinaryTask.__init__(self, config, "perturbed")
 
     def execute(self):
         """Execute."""
@@ -413,18 +395,13 @@ class Soda(SurfexBinaryTask):
         SurfexBinaryTask(AbstractTask): Inheritance of surfex binary task class
     """
 
-    def __init__(self, task, config, system, exp_file_paths, progress, **kwargs):
+    def __init__(self, config):
         """Construct a Soda task.
 
         Args:
-            task (_type_): _description_
             config (_type_): _description_
-            system (_type_): _description_
-            exp_file_paths (_type_): _description_
-            progress (_type_): _description_
         """
-        SurfexBinaryTask.__init__(self, task, config, system, exp_file_paths, progress, "soda",
-                                  **kwargs)
+        SurfexBinaryTask.__init__(self, config, "soda")
 
     def execute(self):
         """Execute."""
@@ -444,7 +421,7 @@ class Soda(SurfexBinaryTask):
                                                                default_dir="default_archive_dir")
             self.exp_file_paths.add_system_file_path("perturbed_run_dir", pert_run_dir,
                                                      mbr=self.mbr, basedtg=self.dtg)
-            first_guess_dir = self.exp_file_paths.get_system_path("first_guess_dir",
+            first_guess_dir = self.exp_file_paths.get_system_path("default_first_guess_dir",
                                                                   mbr=self.mbr,
                                                                   validtime=self.dtg,
                                                                   basedtg=self.fg_dtg)
