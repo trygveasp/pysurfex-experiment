@@ -111,6 +111,7 @@ class ProgressFromDict(Progress):
             dtgpp = datetime.strptime(dtgpp, "%Y%m%d%H%M")
         Progress.__init__(self, dtg, dtgbeg, dtgend=dtgend, dtgpp=dtgpp)
 
+
 class ProgressFromFile(Progress):
     """Create progress object from a json file."""
 

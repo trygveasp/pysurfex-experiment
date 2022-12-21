@@ -4,15 +4,14 @@ __version__ = "0.0.1a5"
 from .suites import get_defs, SurfexSuite
 from .cli import parse_surfex_script, surfex_script, parse_update_config, update_config, surfex_exp, \
                  surfex_exp_config
-from .experiment import Exp, ExpFromFiles
-from .configuration import ExpConfiguration, ExpConfigurationFromDict
+from .experiment import Exp, ExpFromFiles, ExpConfiguration, ConfigurationFromJsonFile
 from .progress import Progress, ProgressFromFile, ProgressFromDict
 from .system import System, SystemFilePathsFromSystem, SystemFilePathsFromSystemFile, SystemFromFile
 
-__all__ = ["get_defs", "SurfexSuite",
+__all__ = ["get_defs", "SurfexSuite", "surfex_exp", "surfex_exp_config",
            "parse_surfex_script", "surfex_script", "parse_update_config", "update_config",
            "Exp", "ExpFromFiles",
-           "ExpConfiguration", "ExpConfigurationFromDict",
+           "ExpConfiguration", "ConfigurationFromJsonFile",
            "Progress", "ProgressFromFile", "ProgressFromDict",
            "System", "SystemFilePathsFromSystem", "SystemFilePathsFromSystemFile", "SystemFromFile"
            ]

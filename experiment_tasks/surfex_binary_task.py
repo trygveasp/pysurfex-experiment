@@ -32,7 +32,7 @@ class SurfexBinaryTask(AbstractTask):
         self.soda = False
         self.namelist = None
 
-        kwargs = self.config.get_setting("TASK#ARGS")
+        kwargs = self.get_setting("TASK#ARGS")
         logging.debug("kwargs: %s", kwargs)
         print_namelist = kwargs.get("print_namelist")
         if print_namelist is None:
@@ -105,27 +105,27 @@ class SurfexBinaryTask(AbstractTask):
             self.pgd = True
             self.need_pgd = False
             self.need_prep = False
-            input_data = surfex.PgdInputData(self.config, self.exp_file_paths,
+            input_data = surfex.PgdInputData(self.sfx_config, self.exp_file_paths,
                                              check_existence=self.check_existence)
         elif self.mode == "prep":
             self.prep = True
             self.need_prep = False
-            input_data = surfex.PrepInputData(self.config, self.exp_file_paths,
+            input_data = surfex.PrepInputData(self.sfx_config, self.exp_file_paths,
                                               check_existence=self.check_existence,
                                               prep_file=prep_file, prep_pgdfile=prep_pgdfile)
         elif self.mode == "offline":
-            input_data = surfex.OfflineInputData(self.config, self.exp_file_paths,
+            input_data = surfex.OfflineInputData(self.sfx_config, self.exp_file_paths,
                                                  check_existence=self.check_existence)
         elif self.mode == "soda":
             self.soda = True
             # print(kwargs)
-            input_data = surfex.SodaInputData(self.config, self.exp_file_paths,
+            input_data = surfex.SodaInputData(self.sfx_config, self.exp_file_paths,
                                               check_existence=self.check_existence,
                                               dtg=self.dtg, masterodb=masterodb,
                                               perturbed_file_pattern=perturbed_file_pattern)
         elif self.mode == "perturbed":
             self.perturbed = True
-            input_data = surfex.OfflineInputData(self.config, self.exp_file_paths,
+            input_data = surfex.OfflineInputData(self.sfx_config, self.exp_file_paths,
                                                  check_existence=self.check_existence)
         else:
             raise NotImplementedError(self.mode + " is not implemented!")
@@ -133,7 +133,7 @@ class SurfexBinaryTask(AbstractTask):
         logging.debug("pgd %s", pgd_file_path)
         logging.debug("self.perturbed %s, self.pert %s", self.perturbed, self.pert)
 
-        self.namelist = surfex.BaseNamelist(self.mode, self.config, self.input_path,
+        self.namelist = surfex.BaseNamelist(self.mode, self.sfx_config, self.input_path,
                                             forc_zs=forc_zs,
                                             prep_file=prep_file, prep_filetype=prep_filetype,
                                             prep_pgdfile=prep_pgdfile,
@@ -415,7 +415,7 @@ class Soda(SurfexBinaryTask):
         prep_file_path = self.fg_guess_sfx
         output = self.archive + "/ANALYSIS" + self.suffix
         perturbed_file_pattern = None
-        if self.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
+        if self.sfx_config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
             # TODO If pertubed runs moved to pp it should be a diffenent dtg
             pert_run_dir = self.exp_file_paths.get_system_path("archive_dir",
                                                                default_dir="default_archive_dir")

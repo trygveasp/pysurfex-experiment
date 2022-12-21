@@ -24,34 +24,31 @@ class AbstractTask(object):
             raise Exception("Surfex module not properly loaded!")
 
         # print(config)
-        exp_file_paths = config["EXP_SYSTEM_FILE_PATHS"]
+        exp_file_paths = config.exp_file_paths
         print(exp_file_paths)
-        system = config["SYSTEM_VARS"]
-        progress = config["PROGRESS"]
+        system = config.system
+        progress = config.progress
         print(progress)
-        dtg = progress["DTG"]
-        dtgbeg = progress["DTGBEG"]
-        if dtg is not None and dtg != "":
-            dtg = datetime.strptime(dtg, "%Y%m%d%H%M")
-        if dtgbeg is not None and dtgbeg != "":
-            dtgbeg = datetime.strptime(progress["DTGBEG"], "%Y%m%d%H%M")
+        dtg = config.progress.dtg
+        dtgbeg = config.progress.dtgbeg
         self.dtg = dtg
         self.dtgbeg = dtgbeg
 
+        host = "0"
         self.exp_file_paths = surfex.SystemFilePaths(exp_file_paths)
         self.work_dir = self.exp_file_paths.get_system_path("exp_dir")
         self.lib = self.exp_file_paths.get_system_path("sfx_exp_lib")
-        self.stream = config["GENERAL"].get("STREAM")
-        self.surfex_config = system.get("SURFEX_CONFIG")
+        self.stream = config.get_setting("GENERAL#STREAM")
+        self.surfex_config = system.get_var("SURFEX_CONFIG", host)
         self.sfx_exp_vars = None
-        logging.debug("        config: %s", json.dumps(config, sort_keys=True, indent=2))
-        logging.debug("        system: %s", json.dumps(system, sort_keys=True, indent=2))
+        logging.debug("        config: %s", json.dumps(config.settings, sort_keys=True, indent=2))
+        logging.debug("        system: %s", json.dumps(system.system, sort_keys=True, indent=2))
         logging.debug("exp_file_paths: %s", json.dumps(self.exp_file_paths.system_file_paths,
                                                        sort_keys=True, indent=2))
 
-        self.config = surfex.Configuration(config.copy())
+        self.sfx_config = surfex.Configuration(config.settings.copy())
 
-        settings = config
+        settings = config.settings
         self.mbr = None
         self.members = None
         if "FORECAST" in settings:
@@ -124,7 +121,7 @@ class AbstractTask(object):
             "sd": "surface_snow_thickness"
         }
         self.sfx_exp_vars = {
-            "EXP": self.config.get_setting("GENERAL#EXP"),
+            "EXP": self.get_setting("GENERAL#EXP"),
             "SFX_EXP_LIB": self.exp_file_paths.get_system_path("sfx_exp_lib"),
             "SFX_EXP_DATA": self.exp_file_paths.get_system_path("sfx_exp_data"),
         }
@@ -219,9 +216,9 @@ class AbstractTask(object):
             _type_: _description_
 
         """
-        this_setting = self.config.get_setting(setting, check_parsing=False, validtime=validtime,
-                                               basedtg=basedtg, tstep=tstep, pert=pert, var=var,
-                                               default=default, abort=abort)
+        this_setting = self.sfx_config.get_setting(setting, check_parsing=False, validtime=validtime,
+                                                   basedtg=basedtg, tstep=tstep, pert=pert, var=var,
+                                                   default=default, abort=abort)
 
         # Parse setting
         this_setting = self.parse_setting(this_setting, check_parsing=check_parsing,
@@ -712,7 +709,7 @@ class FirstGuess(AbstractTask):
             config (_type_): _description_
         """
         AbstractTask.__init__(self, config)
-        self.var_name = self.config.get_setting("TASK#VAR_NAME", default=None)
+        self.var_name = self.get_setting("TASK#VAR_NAME", default=None)
 
     def execute(self):
         """Execute."""
@@ -769,7 +766,7 @@ class Oi2soda(AbstractTask):
             config (_type_): _description_
         """
         AbstractTask.__init__(self, config)
-        self.var_name = self.config.get_setting("TASK#VAR_NAME")
+        self.var_name = self.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""

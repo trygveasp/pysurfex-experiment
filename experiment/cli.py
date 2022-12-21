@@ -158,7 +158,7 @@ def surfex_script(**kwargs):
         exp_dependencies_file = work_dir + "/exp_dependencies.json"
         print(exp_dependencies_file)
         sfx_exp = experiment.ExpFromFiles(exp_dependencies_file)
-        sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration2.json", indent=2)
+        sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration.json", indent=2)
 
         # Create and start the suite
         def_file = f"{work_dir}/{suite}.def"
@@ -211,7 +211,7 @@ def update_config(**kwargs):
     # Set experiment from files. Should be existing now after setup
     exp_dependencies_file = f"{work_dir}/exp_dependencies.json"
     sfx_exp = experiment.ExpFromFiles(exp_dependencies_file)
-    sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration2.json", indent=2)
+    sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration.json", indent=2)
 
     logging.info("Configuration was updated!")
 

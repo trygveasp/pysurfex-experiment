@@ -22,7 +22,7 @@ class Forcing(AbstractTask):
         self.var_name = self.get_setting("TASK#VAR_NAME")
         user_config = None
         # TODO fix this test
-        if "FORCING_USER_CONFIG" in self.config.settings:
+        if "FORCING_USER_CONFIG" in self.sfx_config.settings:
             user_config = self.get_setting("TASK#FORCING_USER_CONFIG", default=None)
         self.user_config = user_config
 
@@ -65,8 +65,8 @@ class Forcing(AbstractTask):
         kwargs.update({"output_format": output_format})
 
         pattern = self.get_setting("FORCING#PATTERN", check_parsing=False)
-        input_format = self.config.get_setting("FORCING#INPUT_FORMAT")
-        kwargs.update({"geo_input_file": self.config.get_setting("FORCING#INPUT_GEO_FILE")})
+        input_format = self.get_setting("FORCING#INPUT_FORMAT")
+        kwargs.update({"geo_input_file": self.get_setting("FORCING#INPUT_GEO_FILE")})
         zref = self.get_setting("FORCING#ZREF")
         zval = self.get_setting("FORCING#ZVAL")
         uref = self.get_setting("FORCING#UREF")

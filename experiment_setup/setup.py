@@ -4,8 +4,8 @@ from argparse import ArgumentParser
 import os
 import json
 import logging
-import collections
-import copy
+# import collections
+# import copy
 import tomlkit
 import toml
 try:
@@ -56,6 +56,7 @@ def toml_dump(to_dump, fname):
     fh.close()
 
 
+'''
 def flatten(d, sep="#"):
     """Flatten the setting to get member setting.
 
@@ -81,8 +82,10 @@ def flatten(d, sep="#"):
 
     recurse(d)
     return obj
+'''
 
 
+'''
 def deep_update(source, overrides):
     """Update a nested dictionary or similar mapping.
 
@@ -106,8 +109,9 @@ def deep_update(source, overrides):
             source[key] = override
 
     return source
+'''
 
-
+'''
 def merge_toml_env(old_env, mods):
     """Merge the dicts from toml by a deep update.
 
@@ -120,6 +124,7 @@ def merge_toml_env(old_env, mods):
 
     """
     return deep_update(old_env, mods)
+'''
 
 
 def merge_toml_env_from_files(toml_files):
@@ -253,6 +258,7 @@ def get_config_files(wd):
     return config_files
 
 
+'''
 def process_merged_settings(merged_settings):
     """Process the settings and split out member settings.
 
@@ -288,8 +294,10 @@ def process_merged_settings(merged_settings):
             member_settings.update({str(mbr): toml_settings})
 
     return merged_settings, member_settings
+'''
 
 
+'''
 def merge_toml_env_from_config_dicts(config_files):
     """Merge the settings in a config dict.
 
@@ -307,8 +315,9 @@ def merge_toml_env_from_config_dicts(config_files):
         modification = config_files[f]["toml"]
         merged_env = merge_toml_env(merged_env, modification)
     return merged_env
+'''
 
-
+''''''
 def get_member_settings(d, member, sep="#"):
     """Get the member setting.
 
@@ -349,6 +358,7 @@ def get_member_settings(d, member, sep="#"):
                               str(member), str(member_settings))
     logging.debug("Finished member settings for member %s = %s", str(member), str(member_settings))
     return member_settings
+''''''
 
 
 def merge_to_toml_config_files(config_files, wd, configuration=None, testbed_configuration=None,
@@ -550,7 +560,7 @@ def surfex_script_setup(**kwargs):
 
     # Setup
     exp_name = kwargs.get("exp")
-    wd = kwargs.get("wd")
+    wdir = kwargs.get("wd")
     pysurfex = f"{os.path.dirname(surfex.__file__)}/../"
     pysurfex_experiment = kwargs.get("pysurfex_experiment")
     offline_source = kwargs.get("offline_source")
@@ -562,23 +572,17 @@ def surfex_script_setup(**kwargs):
     config_file = kwargs.get("config_file")
 
     # Find experiment
-    if wd is None:
-        wd = os.getcwd()
-        logging.info("Setting current working directory as WD: %s", wd)
+    if wdir is None:
+        wdir = os.getcwd()
+        logging.info("Setting current working directory as WD: %s", wdir)
     if exp_name is None:
-        logging.info("Setting EXP from WD: %s", wd)
-        exp_name = wd.split("/")[-1]
+        logging.info("Setting EXP from WD: %s", wdir)
+        exp_name = wdir.split("/")[-1]
         logging.info("EXP = %s", exp_name)
 
     if offline_source is None:
         logging.warning("No offline soure code set. Assume existing binaries")
 
-    setup_files(wd, exp_name, host, pysurfex, pysurfex_experiment,
+    setup_files(wdir, exp_name, host, pysurfex, pysurfex_experiment,
                 offline_source=offline_source,
                 configuration=config, configuration_file=config_file)
-
-
-def surfex_exp_setup():
-    """Surfex exp setup entry point."""
-    kwargs = parse_surfex_script_setup(sys.argv[1:])
-    surfex_script_setup(**kwargs)

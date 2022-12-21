@@ -8,7 +8,7 @@ import scheduler
 class SurfexSuite():
     """Surfex suite."""
 
-    def __init__(self, suite_name, exp, joboutdir, task_settings, dtgs, next_start_dtg, dtgbeg=None, ecf_micro="%",
+    def __init__(self, suite_name, config, joboutdir, task_settings, dtgs, next_start_dtg, dtgbeg=None, ecf_micro="%",
                  dry_run=False):
         """Initialize a SurfexSuite object.
 
@@ -27,11 +27,11 @@ class SurfexSuite():
         else:
             dtgbeg_str = dtgbeg.strftime("%Y%m%d%H%M")
 
-        exp_dir = exp.work_dir + ""
+        exp_dir = config.work_dir + ""
         ecf_include = exp_dir + "/ecf"
         ecf_files = joboutdir
         os.makedirs(ecf_files, exist_ok=True)
-        template = exp.scripts + "/ecf/default.py"
+        template = config.scripts + "/ecf/default.py"
         ecf_home = joboutdir
         ecf_out = joboutdir
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
@@ -60,11 +60,10 @@ class SurfexSuite():
             f"{ecf_micro}ECF_JOB{ecf_micro}"
         )
 
-        #troika = exp.config.get_setting("TROIKA#COMMAND")
+        #troika = config.get_setting("TROIKA#COMMAND")
         troika = "troika"
-        troika_config = exp.config.get_setting("TROIKA#CONFIG")
-        config_file = exp.config_file
-        config = exp.config
+        troika_config = config.get_setting("TROIKA#CONFIG")
+        config_file = config.config_file
         loglevel = "DEBUG"
         variables = {
             "ECF_EXTN": ".py",
@@ -85,7 +84,7 @@ class SurfexSuite():
             "TROIKA": troika,
             "TROIKA_CONFIG": troika_config,
             "EXP_DIR": exp_dir,
-            "EXP": exp.name,
+            "EXP": config.name,
             "DTG": dtgbeg_str,
             "DTGPP": dtgbeg_str,
             "STREAM": "",
@@ -97,7 +96,7 @@ class SurfexSuite():
         print(variables)
         self.suite = scheduler.EcflowSuite(self.suite_name, ecf_files, variables=variables, dry_run=False)
 
-        if exp.config.get_setting("COMPILE#BUILD"):
+        if config.get_setting("COMPILE#BUILD"):
             comp = scheduler.EcflowSuiteFamily("Compilation", self.suite, ecf_files)
             configure = scheduler.EcflowSuiteTask("ConfigureOfflineBinaries", comp,
                                                   config, task_settings, ecf_files, input_template=template)
@@ -183,18 +182,18 @@ class SurfexSuite():
 
             else:
 
-                schemes = exp.config.get_setting("SURFEX#ASSIM#SCHEMES")
+                schemes = config.get_setting("SURFEX#ASSIM#SCHEMES")
                 do_soda = False
                 for scheme in schemes:
                     if schemes[scheme].upper() != "NONE":
                         do_soda = True
 
                 do_snow_ass = False
-                obs_types = exp.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-                nnco = exp.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+                obs_types = config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
+                nnco = config.get_setting("SURFEX#ASSIM#OBS#NNCO")
                 for ivar in range(0, len(nnco)):
                     if len(obs_types) > ivar and obs_types[ivar] == "SWE":
-                        snow_ass = exp.config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
+                        snow_ass = config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
                         if len(snow_ass) > 0:
                             cycle_hour = int(dtg.strftime("%H"))
                             for sn_cycle in snow_ass:
@@ -213,15 +212,15 @@ class SurfexSuite():
                                                         triggers=triggers, input_template=template)
 
                     perturbations = None
-                    if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
+                    if config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
 
                         perturbations = scheduler.EcflowSuiteFamily("Perturbations", initialization, ecf_files)
-                        nncv = exp.config.get_setting("SURFEX#ASSIM#ISBA#EKF#NNCV")
-                        names = exp.config.get_setting("SURFEX#ASSIM#ISBA#EKF#CVAR_M")
+                        nncv = config.get_setting("SURFEX#ASSIM#ISBA#EKF#NNCV")
+                        names = config.get_setting("SURFEX#ASSIM#ISBA#EKF#CVAR_M")
                         triggers = None
                         mbr = None
-                        fgint = exp.config.get_fgint(exp.progress.dtg, mbr=mbr)
-                        fg_dtg = (exp.progress.dtg - timedelta(hours=fgint)).strftime("%Y%m%d%H%M")
+                        fgint = config.get_fgint(config.progress.dtg, mbr=mbr)
+                        fg_dtg = (config.progress.dtg - timedelta(hours=fgint)).strftime("%Y%m%d%H%M")
                         if fg_dtg in cycle_input_dtg_node:
                             triggers = scheduler.EcflowSuiteTriggers(
                                 scheduler.EcflowSuiteTrigger(cycle_input_dtg_node[fg_dtg]))
@@ -253,7 +252,7 @@ class SurfexSuite():
 
                     prepare_oi_soil_input = None
                     prepare_oi_climate = None
-                    if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "OI"):
+                    if config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "OI"):
                         prepare_oi_soil_input = scheduler.EcflowSuiteTask("PrepareOiSoilInput",
                                                                           initialization,
                                                                           config, task_settings, ecf_files,
@@ -264,15 +263,15 @@ class SurfexSuite():
                                                                        input_template=template)
 
                     prepare_sst = None
-                    if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#SEA", "INPUT"):
-                        if exp.config.setting_is("SURFEX#ASSIM#SEA#CFILE_FORMAT_SST", "ASCII"):
+                    if config.setting_is("SURFEX#ASSIM#SCHEMES#SEA", "INPUT"):
+                        if config.setting_is("SURFEX#ASSIM#SEA#CFILE_FORMAT_SST", "ASCII"):
                             prepare_sst = scheduler.EcflowSuiteTask("PrepareSST", initialization,
                                                                     config, task_settings, ecf_files,
                                                                     input_template=template)
 
                     an_variables = {"t2m": False, "rh2m": False, "sd": False}
-                    obs_types = exp.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-                    nnco = exp.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+                    obs_types = config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
+                    nnco = config.get_setting("SURFEX#ASSIM#OBS#NNCO")
                     for t_ind, val in enumerate(obs_types):
                         if nnco[t_ind] == 1:
                             if obs_types[t_ind] == "T2M" or obs_types[t_ind] == "T2M_P":
@@ -316,10 +315,10 @@ class SurfexSuite():
 
                     prepare_lsm = None
                     need_lsm = False
-                    if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "OI"):
+                    if config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "OI"):
                         need_lsm = True
-                    if exp.config.setting_is("SURFEX#ASSIM#SCHEMES#INLAND_WATER", "WATFLX"):
-                        if exp.config.get_setting("SURFEX#ASSIM#INLAND_WATER#LEXTRAP_WATER"):
+                    if config.setting_is("SURFEX#ASSIM#SCHEMES#INLAND_WATER", "WATFLX"):
+                        if config.get_setting("SURFEX#ASSIM#INLAND_WATER#LEXTRAP_WATER"):
                             need_lsm = True
                     if need_lsm:
                         triggers = scheduler.EcflowSuiteTriggers(fg4oi_complete)
@@ -389,11 +388,11 @@ class SurfexSuite():
         self.suite.save_as_defs(def_file)
 
 
-def get_defs(exp, suite_type):
+def get_defs(config, suite_type):
     """Get the definitions.
 
     Args:
-        exp (experiment.Exp): Experiment
+        config (experiment.ExpConfiguration): Experiment
         suite_type (str): What kind of suite
 
     Raises:
@@ -403,16 +402,16 @@ def get_defs(exp, suite_type):
     Returns:
         scheduler.SuiteDefinition: A suite definitition
     """
-    suite_name = exp.name.replace("-", "_")
+    suite_name = config.name.replace("-", "_")
     suite_name = suite_name.replace(".", "_")
-    print(exp.name)
+    print(config.name)
     logging.debug("Get defs for %s", suite_name)
-    system = exp.system
-    progress = exp.progress
+    system = config.system
+    progress = config.progress
     joboutdir = system.get_var("JOBOUTDIR", "0")
-    env_submit = exp.work_dir + "/Env_submit"
+    env_submit = config.work_dir + "/Env_submit"
     task_settings = scheduler.TaskSettingsJson(env_submit)
-    hh_list = exp.config.get_total_unique_cycle_list()
+    hh_list = config.get_total_unique_cycle_list()
     dtgstart = progress.dtg
     dtgbeg = progress.dtgbeg
     dtgend = progress.dtgend
@@ -425,7 +424,7 @@ def get_defs(exp, suite_type):
     while dtg <= dtgend:
         dtgs.append(dtg)
         # hour = dtg.strftime("%H")
-        fcint = exp.config.get_fcint(dtg)
+        fcint = config.get_fcint(dtg)
         logging.debug("DTG: %s, unique HH_LIST: %s. FCINT: %s", str(dtg), str(hh_list), fcint)
         # if len(hh_list) > 1:
         #    for h in range(0, len(hh_list)):
@@ -441,5 +440,5 @@ def get_defs(exp, suite_type):
         #    raise Exception
         dtg = dtg + timedelta(seconds=fcint)
     if suite_type == "surfex":
-        return SurfexSuite(suite_name, exp, joboutdir, task_settings, dtgs, dtg, dtgbeg=dtgbeg)
+        return SurfexSuite(suite_name, config, joboutdir, task_settings, dtgs, dtg, dtgbeg=dtgbeg)
     raise NotImplementedError(f"Suite definition for {suite_type} is not implemented!")
