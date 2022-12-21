@@ -5,19 +5,15 @@ import json
 import toml
 
 
-class System(object):
-    """Main system class.
-
-    Args:
-        object (_type_): _description_
-    """
+class System():
+    """Main system class."""
 
     def __init__(self, host_system, exp_name):
         """Constuct a system object.
 
         Args:
-            host_system (_type_): _description_
-            exp_name (_type_): _description_
+            host_system (dict): Dict describing the system
+            exp_name (str): Experiment name.
 
         Raises:
             Exception: _description_

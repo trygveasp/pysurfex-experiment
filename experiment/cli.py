@@ -67,9 +67,6 @@ def surfex_script(**kwargs):
     action = kwargs["action"]
     exp = kwargs.get("exp")
 
-    # Co
-    file = kwargs["file"]
-
     # Others
     dtg = kwargs["dtg"]
     dtgend = kwargs["dtgend"]
@@ -94,10 +91,6 @@ def surfex_script(**kwargs):
         # TODO
 
         raise NotImplementedError
-    elif action == "co":
-        if file is None:
-            raise Exception("Checkout requires a file (--file)")
-        experiment.ExpFromFiles(exp, work_dir).checkout(file)
     else:
         # Some kind of start
         if action == "start" and dtg is None:
@@ -165,33 +158,12 @@ def surfex_script(**kwargs):
         exp_dependencies_file = work_dir + "/exp_dependencies.json"
         print(exp_dependencies_file)
         sfx_exp = experiment.ExpFromFiles(exp_dependencies_file)
-        system = sfx_exp.system
-
-        data0 = system.get_var("SFX_EXP_DATA", "0")
-        # lib0 = system.get_var("SFX_EXP_LIB", "0")
-        # logfile = data0 + "/ECF.log"
-
-        # Create exp scheduler json file
-        # sfx_exp.write_scheduler_info(logfile)
-
-        # Create LIB0 and copy init run if WD != lib0
-        #if work_dir.rstrip("/") != lib0.rstrip("/"):
-        #    ecf_init_run = lib0 + "/ecf/InitRun.py"
-        #    dirname = os.path.dirname(ecf_init_run)
-        #    dirs = dirname.split("/")
-        #    if len(dirs) > 1:
-        #        fpath = "/"
-        #        for dname in dirs[1:]:
-        #            fpath = fpath + str(dname)
-        #            # print(p)
-        #            os.makedirs(fpath, exist_ok=True)
-        #            fpath = fpath + "/"
-        #    shutil.copy2(work_dir + "/ecf/InitRun.py", ecf_init_run)
+        sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration2.json", indent=2)
 
         # Create and start the suite
         def_file = f"{work_dir}/{suite}.def"
 
-        defs = experiment.get_defs(sfx_exp, system, progress, suite)
+        defs = experiment.get_defs(sfx_exp, suite)
         defs.save_as_defs(def_file)
         print(def_file)
         sfx_exp.server.start_suite(defs.suite_name, def_file, begin=begin)
@@ -239,13 +211,8 @@ def update_config(**kwargs):
     # Set experiment from files. Should be existing now after setup
     exp_dependencies_file = f"{work_dir}/exp_dependencies.json"
     sfx_exp = experiment.ExpFromFiles(exp_dependencies_file)
-    system = sfx_exp.system
+    sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration2.json", indent=2)
 
-    data0 = system.get_var("SFX_EXP_DATA", "0")
-    logfile = data0 + "/ECF.log"
-
-    # Create exp scheduler json file
-    sfx_exp.write_scheduler_info(logfile)
     logging.info("Configuration was updated!")
 
 

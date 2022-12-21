@@ -86,8 +86,33 @@ class Progress():
                   indent=indent)
 
 
+class ProgressFromDict(Progress):
+
+    """Create progress object from a json file."""
+
+    def __init__(self, progress):
+        """Initialize a progress object from files.
+
+        Args:
+            progress_file (str): Progress dict
+
+        """
+        dtg = progress.get("DTG")
+        if dtg is not None:
+            dtg = datetime.strptime(dtg, "%Y%m%d%H%M")
+        dtgbeg = progress.get("DTGBEG")
+        if dtgbeg is not None:
+            dtgbeg = datetime.strptime(dtgbeg, "%Y%m%d%H%M")
+        dtgend = progress.get("DTGEND")
+        if dtgend is not None:
+            dtgend = datetime.strptime(dtgend, "%Y%m%d%H%M")
+        dtgpp = progress.get("DTGPP")
+        if dtgpp is not None:
+            dtgpp = datetime.strptime(dtgpp, "%Y%m%d%H%M")
+        Progress.__init__(self, dtg, dtgbeg, dtgend=dtgend, dtgpp=dtgpp)
+
 class ProgressFromFile(Progress):
-    """Create progress object form a json file."""
+    """Create progress object from a json file."""
 
     def __init__(self, progress_file, progress_pp_file):
         """Initialize a progress object from files.

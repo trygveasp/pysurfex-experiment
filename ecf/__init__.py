@@ -1,8 +1,4 @@
 """Ecflow jobs."""
-from dotenv import load_dotenv
-load_dotenv()
-import os
-print(os.environ["LD_LIBRARY_PATH"])
 
 from .InitRun import parse_ecflow_vars_init_run, read_paths_to_sync_init_run,\
     read_system_vars_init_run, init_run_main, read_ecflow_server_file_init_run

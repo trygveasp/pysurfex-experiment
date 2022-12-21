@@ -27,10 +27,7 @@ class SurfexSuite():
         else:
             dtgbeg_str = dtgbeg.strftime("%Y%m%d%H%M")
 
-        lib = exp.system.get_var("SFX_EXP_LIB", "0")
-        scratch = exp.system.get_var("SFX_EXP_DATA", "0")
         exp_dir = exp.work_dir + ""
-
         ecf_include = exp_dir + "/ecf"
         ecf_files = joboutdir
         os.makedirs(ecf_files, exist_ok=True)
@@ -63,11 +60,11 @@ class SurfexSuite():
             f"{ecf_micro}ECF_JOB{ecf_micro}"
         )
 
-        troika = "/opt/troika/bin/troika"
-        troika_config = "/opt/troika/etc/troika.yml"
+        #troika = exp.config.get_setting("TROIKA#COMMAND")
+        troika = "troika"
+        troika_config = exp.config.get_setting("TROIKA#CONFIG")
         config_file = exp.config_file
         config = exp.config
-        # task_config = config["env_submit"]
         loglevel = "DEBUG"
         variables = {
             "ECF_EXTN": ".py",
@@ -87,29 +84,18 @@ class SurfexSuite():
             "CONFIG": str(config_file),
             "TROIKA": troika,
             "TROIKA_CONFIG": troika_config,
+            "EXP_DIR": exp_dir,
+            "EXP": exp.name,
+            "DTG": dtgbeg_str,
+            "DTGPP": dtgbeg_str,
+            "STREAM": "",
+            "ENSMBR": "",
+            "ARGS": ""
         }
 
         self.suite_name = suite_name
-        # scheduler.SuiteDefinition.__init__(self, suite_name, joboutdir, ecf_files, exp.config,
-        #                                   task_settings, loglevel,
-        #                                   ecf_home=ecf_home, ecf_include=ecf_include,
-        #                                   ecf_out=ecf_out,
-        #                                   ecf_jobout=ecf_jobout,
-        #                                   ecf_job_cmd=ecf_job_cmd,
-        #                                   ecf_status_cmd=ecf_status_cmd,
-        #                                   ecf_kill_cmd=ecf_kill_cmd,
-        #                                   ecf_micro=ecf_micro, dry_run=dry_run)
-
         print(variables)
         self.suite = scheduler.EcflowSuite(self.suite_name, ecf_files, variables=variables, dry_run=False)
-        self.suite.ecf_node.add_variable("EXP_DIR", exp_dir)
-        self.suite.ecf_node.add_variable("EXP", exp.name)
-        self.suite.ecf_node.add_variable("LIB", exp_dir)
-        self.suite.ecf_node.add_variable("DTG", dtgbeg_str)
-        self.suite.ecf_node.add_variable("DTGBEG", dtgbeg_str)
-        self.suite.ecf_node.add_variable("STREAM", "")
-        self.suite.ecf_node.add_variable("ENSMBR", "")
-        self.suite.ecf_node.add_variable("ARGS", "")
 
         if exp.config.get_setting("COMPILE#BUILD"):
             comp = scheduler.EcflowSuiteFamily("Compilation", self.suite, ecf_files)
@@ -403,13 +389,11 @@ class SurfexSuite():
         self.suite.save_as_defs(def_file)
 
 
-def get_defs(exp, system, progress, suite_type):
+def get_defs(exp, suite_type):
     """Get the definitions.
 
     Args:
         exp (experiment.Exp): Experiment
-        system (experiment.System): System
-        progress (experiment.Progress): DTG handling
         suite_type (str): What kind of suite
 
     Raises:
@@ -423,6 +407,8 @@ def get_defs(exp, system, progress, suite_type):
     suite_name = suite_name.replace(".", "_")
     print(exp.name)
     logging.debug("Get defs for %s", suite_name)
+    system = exp.system
+    progress = exp.progress
     joboutdir = system.get_var("JOBOUTDIR", "0")
     env_submit = exp.work_dir + "/Env_submit"
     task_settings = scheduler.TaskSettingsJson(env_submit)

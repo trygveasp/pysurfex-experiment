@@ -23,7 +23,9 @@ class AbstractTask(object):
         if surfex is None:
             raise Exception("Surfex module not properly loaded!")
 
-        exp_file_paths = config["SYSTEM_FILE_PATHS"]
+        # print(config)
+        exp_file_paths = config["EXP_SYSTEM_FILE_PATHS"]
+        print(exp_file_paths)
         system = config["SYSTEM_VARS"]
         progress = config["PROGRESS"]
         print(progress)

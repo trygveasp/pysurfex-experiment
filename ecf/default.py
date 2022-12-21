@@ -9,12 +9,11 @@ from experiment_tasks import get_task
 def parse_ecflow_vars():
     """Parse the ecflow variables."""
     return {
-        "LIB": "%LIB%",
-        # "HOST": "@HOST_TO_BE_SUBSTITUTED@",
+        "CONFIG": "%CONFIG%",
         "WRAPPER": "%WRAPPER%",
         "ENSMBR": "%ENSMBR%",
         "DTG": "%DTG%",
-        "DTGBEG": "%DTGBEG%",
+        "DTGPP": "%DTGPP%",
         "stream": "%STREAM%",
         "TASK_NAME": "%TASK%",
         "VAR_NAME": "%VAR_NAME%",
@@ -37,37 +36,19 @@ def parse_ecflow_vars():
 '''
 
 
-def read_system_vars(lib, host="0"):
-    """Read system dict from json file."""
-    with open(lib + "/exp_system_vars.json", mode="r", encoding="utf-8") as file_handler:
-        return json.load(file_handler)[host]
-
-
-def read_ecflow_server_file(lib):
-    """Read ecflow host settings."""
-    with open(lib + "/Env_server", mode="r", encoding="utf-8") as file_handler:
-        return json.load(file_handler)
-
-
-def read_system_file_paths(lib, host="0"):
-    """Read system file paths."""
-    with open(lib + "/exp_system.json", mode="r", encoding="utf-8") as file_handler:
-        return json.load(file_handler)[host]
-
-
-def read_exp_configuration(lib, ensmbr=None):
+def read_exp_configuration(config_file, ensmbr=None):
     """Read experiment configuration.
 
     The task knows which host it runs on and which member it is
 
     """
-    with open(lib + "/exp_configuration.json", mode="r", encoding="utf-8") as file_handler:
+    with open(config_file, mode="r", encoding="utf-8") as file_handler:
         if ensmbr is None:
             return json.load(file_handler)
         return json.load(file_handler)[ensmbr]
 
 
-def default_main(system, server_settings, task_config, system_file_paths, **kwargs):
+def default_main(config, **kwargs):
     """Ecflow container default method."""
     debug = kwargs.get("DEBUG")
     if debug is None:
@@ -78,25 +59,21 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
     else:
         logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
 
-    ecf_host = server_settings.get("ECF_HOST")
-    ecf_port = server_settings.get("ECF_PORT")
-    # server_logfile = kwargs.get("SERVER_LOGFILE")
+    ecf_host = config["SCHEDULER"].get("ECF_HOST")
+    ecf_port = config["SCHEDULER"].get("ECF_PORT")
     server = scheduler.EcflowServer(ecf_host, ecf_port)
 
     ecf_name = kwargs.get("ECF_NAME")
     ecf_pass = kwargs.get("ECF_PASS")
     ecf_tryno = kwargs.get("ECF_TRYNO")
     ecf_rid = kwargs.get("ECF_RID")
-    # submission_id = kwargs.get("SUBMISSION_ID")
     task = scheduler.EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid)
 
     stream = kwargs.get("STREAM")
-    task_config["GENERAL"].update({"STREAM": stream})
+    config["GENERAL"].update({"STREAM": stream})
     args = kwargs.get("ARGS")
 
     task_name = kwargs.get("TASK_NAME")
-    # debug = kwargs["DEBUG"]
-
     wrapper = kwargs.get("WRAPPER")
 
     args_dict = {
@@ -117,18 +94,13 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
                 args_dict.update({parts[0]: parts[1]})
 
     dtg = kwargs["DTG"]
-    dtgbeg = kwargs["DTGBEG"]
-    progress = {
+    dtgpp = kwargs["DTGPP"]
+    config["PROGRESS"].update({
         "DTG": dtg,
-        "DTGBEG": dtgbeg,
-        "DTGPP": dtg
-    }
-
-    task_config.update({"SYSTEM_FILE_PATHS": system_file_paths})
-    task_config.update({"SYSTEM_VARS": system})
-    task_config.update({"PROGRESS": progress})
-    if "TASK" not in task_config:
-        task_config.update({"TASK":
+        "DTGPP": dtgpp
+        })
+    if "TASK" not in config:
+        config.update({"TASK":
             {
                 "WRAPPER": wrapper,
                 "VAR_NAME": kwargs.get("VAR_NAME"),
@@ -139,17 +111,8 @@ def default_main(system, server_settings, task_config, system_file_paths, **kwar
     # This will also handle call to sys.exit(), i.e. Client.__exit__ will still be called.
     with scheduler.EcflowClient(server, task):
 
-        # scheduler_pythonpath = system_variables["SCHEDULER_PYTHONPATH"]
-        #  Dummy commands to try out your self
-        # print(f"PYTHONPATH={scheduler_pythonpath} && %EXP_DIR%/bin/ECF_status_exp
-        # %EXP_DIR%/scheduler.json " +
-        #     "%ECF_NAME% %ECF_TRYNO% %ECF_PASS% -ecf_rid  -submission_id ")
-        # print("PYTHONPATH={scheduler_pythonpath} && %EXP_DIR%/bin/ECF_kill_exp
-        # %EXP_DIR%/scheduler.json " +
-        #    "%ECF_NAME% %ECF_TRYNO% %ECF_PASS% -ecf_rid %ECF_RID% -submission_id ")
-
         logging.info("Running task %s", task_name)
-        get_task(task.ecf_task, task_config).run()
+        get_task(task.ecf_task, config).run()
         logging.info("Finished task %s", task_name)
 
 
@@ -157,26 +120,14 @@ if __name__ == "__main__":
     # Get ecflow variables
     kwargs_main = parse_ecflow_vars()
 
-    # Set system vars for host
-    LIB = kwargs_main["LIB"]
-    # HOST = kwargs_main["HOST"]
-    HOST = "0"
-    system_vars_main = read_system_vars(LIB, host=HOST)
-
-    # Server settings
-    server_settings_main = read_ecflow_server_file(LIB)
-
     # Experiment configuration
     ENSMBR = kwargs_main["ENSMBR"]
     if ENSMBR == "":
         ENSMBR = None
-    exp_configuration_main = read_exp_configuration(LIB, ensmbr=ENSMBR)
-    # System file paths for host
-    system_file_paths_main = read_system_file_paths(LIB, host=HOST)
 
-    default_main(system_vars_main, server_settings_main, exp_configuration_main,
-                 system_file_paths_main, **kwargs_main)
+    exp_configuration_main = read_exp_configuration(kwargs_main["CONFIG"], ensmbr=ENSMBR)
+    default_main(exp_configuration_main, **kwargs_main)
 
-'''
-%end"
-'''
+'''    # noqa
+%end"  # noqa
+'''    # noqa

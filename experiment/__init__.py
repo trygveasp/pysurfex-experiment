@@ -6,13 +6,13 @@ from .cli import parse_surfex_script, surfex_script, parse_update_config, update
                  surfex_exp_config
 from .experiment import Exp, ExpFromFiles
 from .configuration import ExpConfiguration, ExpConfigurationFromDict
-from .progress import Progress, ProgressFromFile
+from .progress import Progress, ProgressFromFile, ProgressFromDict
 from .system import System, SystemFilePathsFromSystem, SystemFilePathsFromSystemFile, SystemFromFile
 
 __all__ = ["get_defs", "SurfexSuite",
            "parse_surfex_script", "surfex_script", "parse_update_config", "update_config",
            "Exp", "ExpFromFiles",
            "ExpConfiguration", "ExpConfigurationFromDict",
-           "Progress", "ProgressFromFile",
+           "Progress", "ProgressFromFile", "ProgressFromDict",
            "System", "SystemFilePathsFromSystem", "SystemFilePathsFromSystemFile", "SystemFromFile"
            ]
