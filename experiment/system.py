@@ -20,7 +20,7 @@ class System():
         """
         logging.debug(str(host_system))
         self.system_variables = ["SFX_EXP_DATA", "SFX_EXP_LIB", "JOBOUTDIR", "MKDIR",
-                                 "RSYNC", "HOSTS", "LOGIN_HOST", "SCHEDULER_PYTHONPATH",
+                                 "RSYNC", "HOSTS", 
                                  "SYNC_DATA", "SURFEX_CONFIG"]
         self.hosts = None
         self.exp_name = exp_name

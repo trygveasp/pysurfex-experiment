@@ -14,14 +14,13 @@ SubmitTask = "experiment_scheduler:run_submit_cmd_exp"
 
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 gridpp = "^0.6.0"
 titanlib = "^0.3.3"
 datetime = "^4.7"
 tomlkit = "^0.11.6"
 setuptools = "57.2.0"
 demjson = "1.6"
-cfunits = "3.2.4"
 pysurfex-scheduler = {git = "git@github.com:metno/pysurfex-scheduler.git", branch="feature/deode_similar", develop = true}
 pysurfex = {git = "git@github.com:metno/pysurfex.git", develop = true}
 troika = {git = "https://git.ecmwf.int/scm/ecsdk/troika.git"}

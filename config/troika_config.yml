@@ -58,6 +58,15 @@ sites:
     sbatch_command: "ecsbatch --export PYTHONPATH=$HOME/.local/lib/python3.8/site-packages/"
     scancel_command: 'scancel -f'
 
+  nebula:
+    type: slurm
+    connection: local
+    kill_sequence: [[5, 2], [10, 9]]
+    pre_submit: ["create_output_dir"]
+    preprocess: ["remove_top_blank_lines", "slurm_add_output", "slurm_bubble"]
+    sbatch_command: "sbatch"
+    scancel_command: 'scancel -f'
+
   hpc2020:
     type: slurm
     connection: ssh

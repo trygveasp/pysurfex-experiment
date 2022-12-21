@@ -505,7 +505,7 @@ def setup_files(wd, exp_name, host, pysurfex, pysurfex_experiment,
         "offline_source": offline_source
     }
     exp_dependencies_file = wd + "/exp_dependencies.json"
-    json.dump(exp_dependencies, open(exp_dependencies_file, mode="w", encoding="UTF-8"))
+    json.dump(exp_dependencies, open(exp_dependencies_file, mode="w", encoding="utf-8"), indent=2)
 
 
 def parse_surfex_script_setup(argv):

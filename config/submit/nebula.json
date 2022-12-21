@@ -2,10 +2,11 @@
   "submit_types": ["background", "nebula"],
   "default_submit_type": "nebula",
   "background": {
-    "HOST": "0",
-    "SUBMIT": "",
+    "SCHOST": "localhost",
+    "ENV": {
+       "ECFLOW": "import os; import sys; exec(os.popen('/software/sse/manual/lmod/lmod/libexec/lmod python load met-modules ecflow/4.17.1').read()); sys.path.insert(0, os.environ['PYTHONPATH'])"
+    },
     "tasks": [
-      "InitRun",
       "LogProgress",
       "LogProgressPP",
       "PrepareCycle",
@@ -13,14 +14,18 @@
     ]
   },
   "nebula": {
-    "SUBMIT_TYPE": "slurm",
-    "INTERPRETER":  "#!/usr/bin/env python3",
-    "ACCOUNT": "#SBATCH  -A met_forsk",
-    "NODES": "#SBATCH -N 1",
-    "SHARED": "#SBATCH --exclusive",
-    "TASKS_PER_NODE": "#SBATCH --ntasks-per-node=1",
-    "NTPC": "#SBATCH --ntasks-per-core=1",
-    "WALLTIME": "#SBATCH -t 00:30:00",
+    "SCHOST": "nebula",
+    "ENV": {
+       "ECFLOW": "import os; import sys; exec(os.popen('/software/sse/manual/lmod/lmod/libexec/lmod python load met-modules ecflow/4.17.1').read()); sys.path.insert(0, os.environ['PYTHONPATH'])"
+    },
+    "BATCH":{
+      "ACCOUNT": "#SBATCH  -A met_forsk",
+      "NODES": "#SBATCH -N 1",
+      "SHARED": "#SBATCH --exclusive",
+      "TASKS_PER_NODE": "#SBATCH --ntasks-per-node=1",
+      "NTPC": "#SBATCH --ntasks-per-core=1",
+      "WALLTIME": "#SBATCH -t 00:30:00"
+    },
     "tasks": [
     ]
   },

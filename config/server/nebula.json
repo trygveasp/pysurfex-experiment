@@ -1,4 +1,5 @@
 {
   "ECF_HOST": "l1",
-  "ECF_PORT_OFFSET": 10000
+  "ECF_PORT": 13314,
+  "ECF_PORT_OFFSET": 0
 }
