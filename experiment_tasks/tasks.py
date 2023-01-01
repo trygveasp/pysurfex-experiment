@@ -23,70 +23,60 @@ class AbstractTask(object):
         if surfex is None:
             raise Exception("Surfex module not properly loaded!")
 
-        # print(config)
-        exp_file_paths = config.exp_file_paths
-        print(exp_file_paths)
+        logging.debug("Create task")
+        self.config = config
+        self.exp_file_paths = config.exp_file_paths
         system = config.system
-        progress = config.progress
-        print(progress)
         dtg = config.progress.dtg
         dtgbeg = config.progress.dtgbeg
         self.dtg = dtg
         self.dtgbeg = dtgbeg
 
-        host = "0"
-        self.exp_file_paths = surfex.SystemFilePaths(exp_file_paths)
+        self.host = "0"
+        # self.exp_file_paths = surfex.SystemFilePaths(exp_file_paths)
         self.work_dir = self.exp_file_paths.get_system_path("exp_dir")
         self.lib = self.exp_file_paths.get_system_path("sfx_exp_lib")
         self.stream = config.get_setting("GENERAL#STREAM")
-        self.surfex_config = system.get_var("SURFEX_CONFIG", host)
+        self.surfex_config = system.get_var("SURFEX_CONFIG", self.host)
         self.sfx_exp_vars = None
         logging.debug("        config: %s", json.dumps(config.settings, sort_keys=True, indent=2))
         logging.debug("        system: %s", json.dumps(system.system, sort_keys=True, indent=2))
         logging.debug("exp_file_paths: %s", json.dumps(self.exp_file_paths.system_file_paths,
                                                        sort_keys=True, indent=2))
 
-        self.sfx_config = surfex.Configuration(config.settings.copy())
-
-        settings = config.settings
-        self.mbr = None
-        self.members = None
-        if "FORECAST" in settings:
-            members = settings["FORECAST"].get("ENSMSEL")
-            if members is not None:
-                self.members = len(members)
-            self.mbr = settings["FORECAST"].get("ENSMBR")
+        self.mbr = config.ensmbr
+        self.members = config.members
 
         # Domain/geo
-        domain = self.get_setting("GEOMETRY#DOMAIN")
-        domains = self.get_setting("GEOMETRY#DOMAINS")
+        domain = self.config.get_setting("GEOMETRY#DOMAIN")
+        domains = self.config.get_setting("GEOMETRY#DOMAINS")
         domain_json = surfex.set_domain(domains, domain, hm_mode=True)
         geo = surfex.get_geo_object(domain_json)
         self.geo = geo
 
-        # self.task = task
-
-        wrapper = self.get_setting("TASK#WRAPPER")
+        wrapper = self.config.get_setting("TASK#WRAPPER")
         if wrapper is None:
             wrapper = ""
         self.wrapper = wrapper
 
         masterodb = False
-        lfagmap = self.get_setting("SURFEX#IO#LFAGMAP")
-        self.csurf_filetype = self.get_setting("SURFEX#IO#CSURF_FILETYPE")
+        lfagmap = self.config.get_setting("SURFEX#IO#LFAGMAP")
+        self.csurf_filetype = self.config.get_setting("SURFEX#IO#CSURF_FILETYPE")
         self.suffix = surfex.SurfFileTypeExtension(self.csurf_filetype, lfagmap=lfagmap,
                                                    masterodb=masterodb).suffix
 
-        self.wrk = self.get_system_path("wrk_dir", default_dir="default_wrk_dir", basedtg=self.dtg)
-        self.archive = self.get_system_path("archive_dir", default_dir="default_archive_dir",
+        # TODO Move to config
+        ###########################################################################
+        self.wrk = self.exp_file_paths.get_system_path("wrk_dir", default_dir="default_wrk_dir", basedtg=self.dtg)
+        self.archive = self.exp_file_paths.get_system_path("archive_dir", default_dir="default_archive_dir",
                                             basedtg=self.dtg)
         os.makedirs(self.archive, exist_ok=True)
-        self.bindir = self.get_system_path("bin_dir", default_dir="default_bin_dir")
+        self.bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
 
-        self.extrarch = self.get_system_path("extrarch_dir", default_dir="default_extrarch_dir",
+        self.extrarch = self.exp_file_paths.get_system_path("extrarch_dir", default_dir="default_extrarch_dir",
                                              basedtg=self.dtg)
         os.makedirs(self.extrarch, exist_ok=True)
-        self.obsdir = self.get_system_path("obs_dir", default_dir="default_obs_dir",
+        self.obsdir = self.exp_file_paths.get_system_path("obs_dir", default_dir="default_obs_dir",
                                            basedtg=self.dtg)
 
         self.exp_file_paths.add_system_file_path("wrk_dir", self.wrk)
@@ -94,23 +84,23 @@ class AbstractTask(object):
         self.exp_file_paths.add_system_file_path("archive_dir", self.archive)
         self.exp_file_paths.add_system_file_path("extrarch_dir", self.extrarch)
         self.exp_file_paths.add_system_file_path("obs_dir", self.obsdir)
-
         os.makedirs(self.obsdir, exist_ok=True)
+        self.fcint = self.config.get_fcint(self.dtg)
+        self.fgint = self.config.get_fgint(self.dtg)
+        self.fg_dtg = self.dtg - timedelta(seconds=self.fgint)
+        self.next_dtg = self.dtg + timedelta(seconds=self.fcint)
+        self.next_dtgpp = self.next_dtg
+        self.first_guess_dir = self.exp_file_paths.get_system_path("first_guess_dir",
+                                                    default_dir="default_first_guess_dir",
+                                                    basedtg=self.fg_dtg)
+        self.input_path = self.work_dir + "/nam"
+        ###########################################################################
+
         self.wdir = str(os.getpid())
         self.wdir = self.wrk + "/" + self.wdir
         print("WDIR=" + self.wdir)
         os.makedirs(self.wdir, exist_ok=True)
         os.chdir(self.wdir)
-
-        self.fcint = self.get_fcint(self.dtg)
-        self.fgint = self.get_fgint(self.dtg)
-        self.fg_dtg = self.dtg - timedelta(seconds=self.fgint)
-        self.next_dtg = self.dtg + timedelta(seconds=self.fcint)
-        self.next_dtgpp = self.next_dtg
-        self.first_guess_dir = self.get_system_path("first_guess_dir",
-                                                    default_dir="default_first_guess_dir",
-                                                    basedtg=self.fg_dtg)
-        self.input_path = self.work_dir + "/nam"
 
         self.fg_guess_sfx = self.wrk + "/first_guess_sfx"
         self.fc_start_sfx = self.wrk + "/fc_start_sfx"
@@ -119,11 +109,6 @@ class AbstractTask(object):
             "t2m": "air_temperature_2m",
             "rh2m": "relative_humidity_2m",
             "sd": "surface_snow_thickness"
-        }
-        self.sfx_exp_vars = {
-            "EXP": self.get_setting("GENERAL#EXP"),
-            "SFX_EXP_LIB": self.exp_file_paths.get_system_path("sfx_exp_lib"),
-            "SFX_EXP_DATA": self.exp_file_paths.get_system_path("sfx_exp_data"),
         }
 
     def run(self):
@@ -151,199 +136,6 @@ class AbstractTask(object):
 
         if self.wdir is not None:
             shutil.rmtree(self.wdir)
-
-    def get_system_path(self, dname, default_dir=None, validtime=None, basedtg=None):
-        """Get the system file path.
-
-        Args:
-            dname (str): _description_
-            default_dir (str, optional): _description_. Defaults to None.
-            validtime (_type_, optional): _description_. Defaults to None.
-            basedtg (_type_, optional): _description_. Defaults to None.
-
-        Returns:
-            _type_: _description_
-
-        """
-        path = self.exp_file_paths.get_system_path(dname, default_dir=default_dir, mbr=self.mbr,
-                                                   validtime=validtime, basedtg=basedtg)
-
-        if self.mbr is not None:
-            path = str(path).replace("@E@", f"mbr{int(self.mbr):d}")
-            path = str(path).replace("@EE@", f"mbr{int(self.mbr):02d}")
-            path = str(path).replace("@EEE@", f"mbr{int(self.mbr):03d}")
-        else:
-            path = str(path).replace("@E@", "")
-            path = str(path).replace("@EE@", "")
-            path = str(path).replace("@EEE@", "")
-        return path
-
-    def get_system_file(self, dname, file, default_dir=None, validtime=None, basedtg=None):
-        """Get the system file.
-
-        Args:
-            dname (_type_): _description_
-            file (_type_): _description_
-            default_dir (_type_, optional): _description_. Defaults to None.
-            validtime (_type_, optional): _description_. Defaults to None.
-            basedtg (_type_, optional): _description_. Defaults to None.
-
-        Returns:
-            _type_: _description_
-
-        """
-        file = self.exp_file_paths.get_system_file(dname, file, default_dir=default_dir,
-                                                   mbr=self.mbr,
-                                                   validtime=validtime, basedtg=basedtg)
-        return file
-
-    def get_setting(self, setting, check_parsing=True, validtime=None, basedtg=None,
-                    tstep=None, pert=None, var=None, default=None, abort=True):
-        """Get setting.
-
-        Args:
-            setting (_type_): _description_
-            check_parsing (bool, optional): _description_. Defaults to True.
-            validtime (_type_, optional): _description_. Defaults to None.
-            basedtg (_type_, optional): _description_. Defaults to None.
-            tstep (_type_, optional): _description_. Defaults to None.
-            pert (_type_, optional): _description_. Defaults to None.
-            var (_type_, optional): _description_. Defaults to None.
-            default (_type_, optional): _description_. Defaults to None.
-            abort (bool, optional): _description_. Defaults to True.
-
-        Returns:
-            _type_: _description_
-
-        """
-        this_setting = self.sfx_config.get_setting(setting, check_parsing=False, validtime=validtime,
-                                                   basedtg=basedtg, tstep=tstep, pert=pert, var=var,
-                                                   default=default, abort=abort)
-
-        # Parse setting
-        this_setting = self.parse_setting(this_setting, check_parsing=check_parsing,
-                                          validtime=validtime, basedtg=basedtg, tstep=tstep,
-                                          pert=pert, var=var)
-        return this_setting
-
-    def parse_setting(self, setting, check_parsing=True, validtime=None, basedtg=None, tstep=None,
-                      pert=None, var=None):
-        """Parse the setting.
-
-        Args:
-            setting (_type_): _description_
-            check_parsing (bool, optional): _description_. Defaults to True.
-            validtime (_type_, optional): _description_. Defaults to None.
-            basedtg (_type_, optional): _description_. Defaults to None.
-            tstep (_type_, optional): _description_. Defaults to None.
-            pert (_type_, optional): _description_. Defaults to None.
-            var (_type_, optional): _description_. Defaults to None.
-
-        Raises:
-            Exception: _description_
-
-        Returns:
-            _type_: _description_
-
-        """
-        # Check on arguments
-        if isinstance(setting, str):
-
-            if basedtg is not None:
-                if isinstance(basedtg, str):
-                    basedtg = datetime.strptime(basedtg, "%Y%m%d%H")
-            if validtime is not None:
-                if isinstance(validtime, str):
-                    validtime = datetime.strptime(validtime, "%Y%m%d%H")
-            else:
-                validtime = basedtg
-
-            if basedtg is not None and validtime is not None:
-                lead_time = validtime - basedtg
-                setting = str(setting).replace("@YYYY_LL@", validtime.strftime("%Y"))
-                setting = str(setting).replace("@MM_LL@", validtime.strftime("%m"))
-                setting = str(setting).replace("@DD_LL@", validtime.strftime("%d"))
-                setting = str(setting).replace("@HH_LL@", validtime.strftime("%H"))
-                setting = str(setting).replace("@mm_LL@", validtime.strftime("%M"))
-                lead_seconds = int(lead_time.total_seconds())
-                # lead_minutes = int(lead_seconds / 3600)
-                lead_hours = int(lead_seconds / 3600)
-                setting = str(setting).replace("@LL@", f"{lead_hours:02d}")
-                setting = str(setting).replace("@LLL@", f"{lead_hours:03d}")
-                setting = str(setting).replace("@LLLL@", f"{lead_hours:04d}")
-                if tstep is not None:
-                    lead_step = int(lead_seconds / tstep)
-                    setting = str(setting).replace("@TTT@", f"{lead_step:03d}")
-                    setting = str(setting).replace("@TTTT@", f"{lead_step:04d}")
-
-            if basedtg is not None:
-                setting = str(setting).replace("@YMD@", basedtg.strftime("%Y%m%d"))
-                setting = str(setting).replace("@YYYY@", basedtg.strftime("%Y"))
-                setting = str(setting).replace("@YY@", basedtg.strftime("%y"))
-                setting = str(setting).replace("@MM@", basedtg.strftime("%m"))
-                setting = str(setting).replace("@DD@", basedtg.strftime("%d"))
-                setting = str(setting).replace("@HH@", basedtg.strftime("%H"))
-                setting = str(setting).replace("@mm@", basedtg.strftime("%M"))
-
-            if self.mbr is not None:
-                setting = str(setting).replace("@E@", f"mbr{int(self.mbr):d}")
-                setting = str(setting).replace("@EE@", f"mbr{int(self.mbr):02d}")
-                setting = str(setting).replace("@EEE@", f"mbr{int(self.mbr):03d}")
-            else:
-                setting = str(setting).replace("@E@", "")
-                setting = str(setting).replace("@EE@", "")
-                setting = str(setting).replace("@EEE@", "")
-
-            if pert is not None:
-                print("replace", pert, "in ", setting)
-                setting = str(setting).replace("@PERT@", str(pert))
-                print("replaced", pert, "in ", setting)
-
-            if var is not None:
-                setting = str(setting).replace("@VAR@", var)
-
-            if self.sfx_exp_vars is not None:
-                logging.debug("%s %s", str(self.sfx_exp_vars), str(setting))
-                for sfx_exp_var in self.sfx_exp_vars:
-                    if isinstance(self.sfx_exp_vars[sfx_exp_var], str):
-                        logging.debug("%s  <--> %s @%s@", str(setting), str(sfx_exp_var),
-                                      str(self.sfx_exp_vars[sfx_exp_var]))
-                        setting = str(setting).replace("@" + sfx_exp_var + "@",
-                                                       self.sfx_exp_vars[sfx_exp_var])
-
-        if check_parsing:
-            if isinstance(setting, str) and setting.count("@") > 1:
-                raise Exception("Setting was not substituted properly? " + setting)
-
-        return setting
-
-    def get_fcint(self, dtg):
-        """Get fcint from config for time stamp.
-
-        Args:
-            dtg (datetime.datetime): The time stamp to use
-
-        Returns:
-            int: fcint in seconds
-
-        """
-        time_stamp = dtg.strftime("%H%M")
-        fcint = self.get_setting("GENERAL#FCINT")
-        return fcint[time_stamp]
-
-    def get_fgint(self, dtg):
-        """Get fgint from config for time stamp.
-
-        Args:
-            dtg (datetime.datetime): The time stamp to use
-
-        Returns:
-            int: fgint in seconds
-
-        """
-        time_stamp = dtg.strftime("%H%M")
-        fcint = self.get_setting("GENERAL#FGINT")
-        return fcint[time_stamp]
 
 
 class Dummy(object):
@@ -429,7 +221,7 @@ class QualityControl(AbstractTask):
 
         """
         AbstractTask.__init__(self, config)
-        self.var_name = self.get_setting("TASK#VAR_NAME")
+        self.var_name = self.config.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -467,7 +259,7 @@ class QualityControl(AbstractTask):
 
         # T2M
         if self.var_name == "t2m":
-            synop_obs = self.get_setting("OBSERVATIONS#SYNOP_OBS_T2M")
+            synop_obs = self.config.get_setting("OBSERVATIONS#SYNOP_OBS_T2M")
             data_sets = {}
             if synop_obs:
                 bufr_tests = default_tests
@@ -487,7 +279,7 @@ class QualityControl(AbstractTask):
                         "tests": bufr_tests
                     }
                 })
-            netatmo_obs = self.get_setting("OBSERVATIONS#NETATMO_OBS_T2M")
+            netatmo_obs = self.config.get_setting("OBSERVATIONS#NETATMO_OBS_T2M")
             if netatmo_obs:
                 netatmo_tests = default_tests
                 netatmo_tests.update({
@@ -500,7 +292,7 @@ class QualityControl(AbstractTask):
                         "minval": 200
                     }
                 })
-                filepattern = self.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN",
+                filepattern = self.config.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN",
                                                check_parsing=False)
                 data_sets.update({
                     "netatmo": {
@@ -517,7 +309,7 @@ class QualityControl(AbstractTask):
 
         # RH2M
         elif self.var_name == "rh2m":
-            synop_obs = self.get_setting("OBSERVATIONS#SYNOP_OBS_RH2M")
+            synop_obs = self.config.get_setting("OBSERVATIONS#SYNOP_OBS_RH2M")
             data_sets = {}
             if synop_obs:
                 bufr_tests = default_tests
@@ -538,7 +330,7 @@ class QualityControl(AbstractTask):
                     }
                 })
 
-            netatmo_obs = self.get_setting("OBSERVATIONS#NETATMO_OBS_RH2M")
+            netatmo_obs = self.config.get_setting("OBSERVATIONS#NETATMO_OBS_RH2M")
             if netatmo_obs:
                 netatmo_tests = default_tests
                 netatmo_tests.update({
@@ -551,7 +343,7 @@ class QualityControl(AbstractTask):
                         "minval": 0
                     }
                 })
-                filepattern = self.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN",
+                filepattern = self.config.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN",
                                                check_parsing=False)
                 data_sets.update({
                     "netatmo": {
@@ -568,7 +360,7 @@ class QualityControl(AbstractTask):
 
         # Snow Depth
         elif self.var_name == "sd":
-            synop_obs = self.get_setting("OBSERVATIONS#SYNOP_OBS_SD")
+            synop_obs = self.config.get_setting("OBSERVATIONS#SYNOP_OBS_SD")
             data_sets = {}
             if synop_obs:
                 bufr_tests = default_tests
@@ -605,10 +397,10 @@ class QualityControl(AbstractTask):
         output = self.obsdir + "/qc_" + self.translation[self.var_name] + ".json"
         uname = self.var_name.upper()
         try:
-            tests = self.get_setting(f"OBSERVATIONS#QC#{uname}#TESTS")
+            tests = self.config.get_setting(f"OBSERVATIONS#QC#{uname}#TESTS")
         except KeyError:
             logging.info("Use default test OBSERVATIONS#QC#TESTS")
-            tests = self.get_setting("OBSERVATIONS#QC#TESTS")
+            tests = self.config.get_setting("OBSERVATIONS#QC#TESTS")
 
         indent = 2
         blacklist = {}
@@ -643,7 +435,7 @@ class OptimalInterpolation(AbstractTask):
 
         """
         AbstractTask.__init__(self, config)
-        self.var_name = self.get_setting("TASK#VAR_NAME")
+        self.var_name = self.config.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -660,15 +452,15 @@ class OptimalInterpolation(AbstractTask):
         epsilon = 0.25
 
         uname = self.var_name.upper()
-        hlength = self.get_setting(f"OBSERVATIONS#OI#{uname}#HLENGTH", default=hlength)
-        vlength = self.get_setting(f"OBSERVATIONS#OI#{uname}#VLENGTH", default=vlength)
-        wlength = self.get_setting(f"OBSERVATIONS#OI#{uname}#WLENGTH", default=wlength)
-        elev_gradient = self.get_setting(f"OBSERVATIONS#OI#{uname}#GRADIENT", default=elev_gradient)
-        max_locations = self.get_setting(f"OBSERVATIONS#OI#{uname}#MAX_LOCATIONS",
+        hlength = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#HLENGTH", default=hlength)
+        vlength = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#VLENGTH", default=vlength)
+        wlength = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#WLENGTH", default=wlength)
+        elev_gradient = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#GRADIENT", default=elev_gradient)
+        max_locations = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#MAX_LOCATIONS",
                                          default=max_locations)
-        epsilon = self.get_setting(f"OBSERVATIONS#OI#{uname}#EPSILON", default=epsilon)
-        minvalue = self.get_setting(f"OBSERVATIONS#OI#{uname}#MINVALUE", default=None, abort=False)
-        maxvalue = self.get_setting(f"OBSERVATIONS#OI#{uname}#MAXVALUE", default=None, abort=False)
+        epsilon = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#EPSILON", default=epsilon)
+        minvalue = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#MINVALUE", default=None, abort=False)
+        maxvalue = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#MAXVALUE", default=None, abort=False)
         input_file = self.archive + "/raw_" + var + ".nc"
         output_file = self.archive + "/an_" + var + ".nc"
 
@@ -709,11 +501,11 @@ class FirstGuess(AbstractTask):
             config (_type_): _description_
         """
         AbstractTask.__init__(self, config)
-        self.var_name = self.get_setting("TASK#VAR_NAME", default=None)
+        self.var_name = self.config.get_setting("TASK#VAR_NAME", default=None)
 
     def execute(self):
         """Execute."""
-        firstguess = self.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
+        firstguess = self.config.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
         fg_file = self.exp_file_paths.get_system_file("first_guess_dir", firstguess,
                                                       basedtg=self.fg_dtg,
                                                       validtime=self.dtg,
@@ -741,7 +533,7 @@ class CycleFirstGuess(FirstGuess):
 
     def execute(self):
         """Execute."""
-        firstguess = self.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
+        firstguess = self.config.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
         fg_file = self.exp_file_paths.get_system_file("first_guess_dir", firstguess,
                                                       basedtg=self.fg_dtg,
                                                       validtime=self.dtg,
@@ -766,34 +558,34 @@ class Oi2soda(AbstractTask):
             config (_type_): _description_
         """
         AbstractTask.__init__(self, config)
-        self.var_name = self.get_setting("TASK#VAR_NAME")
+        self.var_name = self.config.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
-        yy = self.dtg.strftime("%y")
-        mm = self.dtg.strftime("%m")
-        dd = self.dtg.strftime("%d")
-        hh = self.dtg.strftime("%H")
-        obfile = "OBSERVATIONS_" + yy + mm + dd + "H" + hh + ".DAT"
-        output = self.get_system_file("obs_dir", obfile, basedtg=self.dtg,
+        yy2 = self.dtg.strftime("%y")
+        mm2 = self.dtg.strftime("%m")
+        dd2 = self.dtg.strftime("%d")
+        hh2 = self.dtg.strftime("%H")
+        obfile = "OBSERVATIONS_" + yy2 + mm2 + dd2 + "H" + hh2 + ".DAT"
+        output = self.config.exp_file_path.get_system_file("obs_dir", obfile, basedtg=self.dtg,
                                       default_dir="default_obs_dir")
 
         t2m = None
         rh2m = None
-        sd = None
+        s_d = None
 
         an_variables = {"t2m": False, "rh2m": False, "sd": False}
-        obs_types = self.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-        nnco = self.get_setting("SURFEX#ASSIM#OBS#NNCO")
-        snow_ass = self.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
+        obs_types = self.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
+        nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+        snow_ass = self.config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
         snow_ass_done = False
         if len(snow_ass) > 0:
-            hh = int(self.dtg.strftime("%H"))
-            for sn in snow_ass:
-                if hh == int(sn):
+            hhh = int(self.dtg.strftime("%H"))
+            for s_n in snow_ass:
+                if hhh == int(s_n):
                     snow_ass_done = True
 
-        for ivar, val in enumerate(obs_types):
+        for ivar, __ in enumerate(obs_types):
             if nnco[ivar] == 1:
                 if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
                     an_variables.update({"t2m": True})
@@ -838,7 +630,7 @@ class Qc2obsmon(AbstractTask):
     def __init__(self, config):
         """Construct the QC2obsmon data."""
         AbstractTask.__init__(self, config)
-        self.var_name = self.get_setting("TASK#VAR_NAME")
+        self.var_name = self.config.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -849,8 +641,8 @@ class Qc2obsmon(AbstractTask):
         logging.debug("Write to %s", output)
         if os.path.exists(output):
             os.unlink(output)
-        nnco = self.get_setting("SURFEX#ASSIM#OBS#NNCO")
-        obs_types = self.get_setting("SURFEX#ASSIM#OBS#COBS_M")
+        nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+        obs_types = self.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
         for ivar, val in enumerate(nnco):
             if val == 1:
                 if len(obs_types) > ivar:
@@ -865,10 +657,10 @@ class Qc2obsmon(AbstractTask):
 
                     if var_in != "sd":
                         var_name = self.translation[var_in]
-                        qc = self.obsdir + "/qc_" + var_name + ".json"
+                        q_c = self.obsdir + "/qc_" + var_name + ".json"
                         fg_file = self.archive + "/raw_" + var_name + ".nc"
                         an_file = self.archive + "/an_" + var_name + ".nc"
-                        surfex.write_obsmon_sqlite_file(dtg=self.dtg, output=output, qc=qc,
+                        surfex.write_obsmon_sqlite_file(dtg=self.dtg, output=output, qc=q_c,
                                                         fg_file=fg_file,
                                                         an_file=an_file, varname=var_in,
                                                         file_var=var_name)
@@ -884,7 +676,7 @@ class FirstGuess4OI(AbstractTask):
     def __init__(self, config):
         """Construct the FirstGuess4OI task."""
         AbstractTask.__init__(self, config)
-        self.var_name = self.get_setting("TASK#VAR_NAME")
+        self.var_name = self.config.get_setting("TASK#VAR_NAME")
 
     def execute(self):
         """Execute."""
@@ -899,7 +691,7 @@ class FirstGuess4OI(AbstractTask):
             symlink_files.update({self.archive + "/raw.nc": "raw" + extra + ".nc"})
         else:
             var_in = []
-            nnco = self.get_setting("SURFEX#ASSIM#OBS#NNCO")
+            nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
 
             for ivar, val in enumerate(nnco):
                 if val == 1:
@@ -952,34 +744,34 @@ class FirstGuess4OI(AbstractTask):
             Exception: _description_
 
         """
-        fg = None
+        f_g = None
         for var in variables:
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                inputfile = self.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
+                inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
                                              validtime=self.dtg)
             except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
-                inputfile = self.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
+                inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
                                              validtime=self.dtg)
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                fileformat = self.get_setting(identifier + "FILEFORMAT")
+                fileformat = self.config.get_setting(identifier + "FILEFORMAT")
             except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
-                fileformat = self.get_setting(identifier + "FILEFORMAT")
+                fileformat = self.config.get_setting(identifier + "FILEFORMAT")
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                converter = self.get_setting(identifier + "CONVERTER")
+                converter = self.config.get_setting(identifier + "CONVERTER")
             except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
-                converter = self.get_setting(identifier + "CONVERTER")
+                converter = self.config.get_setting(identifier + "CONVERTER")
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                input_geo_file = self.get_setting(identifier + "INPUT_GEO_FILE")
+                input_geo_file = self.config.get_setting(identifier + "INPUT_GEO_FILE")
             except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
-                input_geo_file = self.get_setting(identifier + "INPUT_GEO_FILE")
+                input_geo_file = self.config.get_setting(identifier + "INPUT_GEO_FILE")
 
             print(inputfile, fileformat, converter, input_geo_file)
             config_file = self.work_dir + "/config/first_guess.yml"
@@ -1013,23 +805,23 @@ class FirstGuess4OI(AbstractTask):
             field = np.reshape(field, [geo.nlons, geo.nlats])
 
             # Create file
-            if fg is None:
-                nx = geo.nlons
-                ny = geo.nlats
-                fg = surfex.create_netcdf_first_guess_template(variables, nx, ny, output)
-                fg.variables["time"][:] = float(validtime.strftime("%s"))
-                fg.variables["longitude"][:] = np.transpose(geo.lons)
-                fg.variables["latitude"][:] = np.transpose(geo.lats)
-                fg.variables["x"][:] = [i for i in range(0, nx)]
-                fg.variables["y"][:] = [i for i in range(0, ny)]
+            if f_g is None:
+                n_x = geo.nlons
+                n_y = geo.nlats
+                f_g = surfex.create_netcdf_first_guess_template(variables, n_x, n_y, output)
+                f_g.variables["time"][:] = float(validtime.strftime("%s"))
+                f_g.variables["longitude"][:] = np.transpose(geo.lons)
+                f_g.variables["latitude"][:] = np.transpose(geo.lats)
+                f_g.variables["x"][:] = [i for i in range(0, n_x)]
+                f_g.variables["y"][:] = [i for i in range(0, n_y)]
 
             if var == "altitude":
                 field[field < 0] = 0
 
-            fg.variables[var][:] = np.transpose(field)
+            f_g.variables[var][:] = np.transpose(field)
 
-        if fg is not None:
-            fg.close()
+        if f_g is not None:
+            f_g.close()
 
 
 class LogProgress(AbstractTask):

@@ -25,8 +25,7 @@ DOMAIN = "DRAMMEN"                  # See definitions in config/Harmonie_domains
 [INITIAL_CONDITIONS]
 ANASURF = "gridpp"
 # "/nobackup/prod2/cooper/BD_archive/2020/09/16/00/fc20200916_00+003
-# PREP_INPUT_FILE = "@SFX_EXP_DATA@/nam/prep_from_namelist_values.json"
-PREP_INPUT_FILE = "/home/sbu/sfx_home/pysurfex-experiment/nam/prep_from_namelist_values.json"
+PREP_INPUT_FILE = "@SFX_EXP_DIR@/nam/prep_from_namelist_values.json"
 PREP_INPUT_FILETYPE = "json"
 PREP_PGDFILE = ""
 PREP_PGDFILETYPE = ""

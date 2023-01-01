@@ -98,3 +98,15 @@ ENV/
 
 # Rope project settings
 .ropeproject
+progress.json
+.gitignore
+config/config.yml
+config/first_guess.yml
+config/config_exp_surfex.toml
+progressPP.json
+poetry.lock
+Env
+Env_input_paths
+Env_server
+Env_submit
+Env_system

@@ -32,7 +32,7 @@ class SurfexBinaryTask(AbstractTask):
         self.soda = False
         self.namelist = None
 
-        kwargs = self.get_setting("TASK#ARGS")
+        kwargs = self.config.get_setting("TASK#ARGS")
         logging.debug("kwargs: %s", kwargs)
         print_namelist = kwargs.get("print_namelist")
         if print_namelist is None:
@@ -57,7 +57,7 @@ class SurfexBinaryTask(AbstractTask):
         self.ivar = kwargs.get("ivar")
 
         xyz = ".exe"
-        libdir = self.sfx_exp_vars["SFX_EXP_LIB"]
+        libdir = self.config.system.get_var("SFX_EXP_LIB", self.config.host)
         xyz_file = libdir + "/xyz"
         if os.path.exists(xyz_file):
             with open(xyz_file, mode="r", encoding="utf-8") as zyz_fh:
@@ -105,27 +105,27 @@ class SurfexBinaryTask(AbstractTask):
             self.pgd = True
             self.need_pgd = False
             self.need_prep = False
-            input_data = surfex.PgdInputData(self.sfx_config, self.exp_file_paths,
+            input_data = surfex.PgdInputData(self.config, self.exp_file_paths,
                                              check_existence=self.check_existence)
         elif self.mode == "prep":
             self.prep = True
             self.need_prep = False
-            input_data = surfex.PrepInputData(self.sfx_config, self.exp_file_paths,
+            input_data = surfex.PrepInputData(self.config, self.exp_file_paths,
                                               check_existence=self.check_existence,
                                               prep_file=prep_file, prep_pgdfile=prep_pgdfile)
         elif self.mode == "offline":
-            input_data = surfex.OfflineInputData(self.sfx_config, self.exp_file_paths,
+            input_data = surfex.OfflineInputData(self.config, self.exp_file_paths,
                                                  check_existence=self.check_existence)
         elif self.mode == "soda":
             self.soda = True
             # print(kwargs)
-            input_data = surfex.SodaInputData(self.sfx_config, self.exp_file_paths,
+            input_data = surfex.SodaInputData(self.config, self.exp_file_paths,
                                               check_existence=self.check_existence,
                                               dtg=self.dtg, masterodb=masterodb,
                                               perturbed_file_pattern=perturbed_file_pattern)
         elif self.mode == "perturbed":
             self.perturbed = True
-            input_data = surfex.OfflineInputData(self.sfx_config, self.exp_file_paths,
+            input_data = surfex.OfflineInputData(self.config, self.exp_file_paths,
                                                  check_existence=self.check_existence)
         else:
             raise NotImplementedError(self.mode + " is not implemented!")
@@ -133,7 +133,7 @@ class SurfexBinaryTask(AbstractTask):
         logging.debug("pgd %s", pgd_file_path)
         logging.debug("self.perturbed %s, self.pert %s", self.perturbed, self.pert)
 
-        self.namelist = surfex.BaseNamelist(self.mode, self.sfx_config, self.input_path,
+        self.namelist = surfex.BaseNamelist(self.mode, self.config, self.input_path,
                                             forc_zs=forc_zs,
                                             prep_file=prep_file, prep_filetype=prep_filetype,
                                             prep_pgdfile=prep_pgdfile,
@@ -222,7 +222,7 @@ class Pgd(SurfexBinaryTask):
 
     def execute(self):
         """Execute."""
-        pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
+        pgdfile = self.config.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         output = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
                                                      default_dir="default_climdir")
         binary = self.bindir + "/PGD" + self.xyz
@@ -251,15 +251,15 @@ class Prep(SurfexBinaryTask):
 
     def execute(self):
         """Execute."""
-        pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
+        pgdfile = self.config.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
                                                             default_dir="default_climdir")
-        prep_file = self.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILE",
+        prep_file = self.config.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILE",
                                      validtime=self.dtg, basedtg=self.fg_dtg)
-        prep_filetype = self.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILETYPE")
-        prep_pgdfile = self.get_setting("INITIAL_CONDITIONS#PREP_PGDFILE")
-        prep_pgdfiletype = self.get_setting("INITIAL_CONDITIONS#PREP_PGDFILETYPE")
-        prepfile = self.get_setting("SURFEX#IO#CPREPFILE") + self.suffix
+        prep_filetype = self.config.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILETYPE")
+        prep_pgdfile = self.config.get_setting("INITIAL_CONDITIONS#PREP_PGDFILE")
+        prep_pgdfiletype = self.config.get_setting("INITIAL_CONDITIONS#PREP_PGDFILETYPE")
+        prepfile = self.config.get_setting("SURFEX#IO#CPREPFILE") + self.suffix
         output = self.exp_file_paths.get_system_file("prep_dir", prepfile, basedtg=self.dtg,
                                                      default_dir="default_archive_dir")
         binary = self.bindir + "/PREP" + self.xyz
@@ -296,16 +296,16 @@ class Forecast(SurfexBinaryTask):
 
     def execute(self):
         """Execute."""
-        pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
+        pgdfile = self.config.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
                                                             default_dir="default_climdir")
         binary = self.bindir + "/OFFLINE" + self.xyz
-        forc_zs = self.get_setting("FORECAST#FORC_ZS")
+        forc_zs = self.config.get_setting("FORECAST#FORC_ZS")
 
-        output = self.archive + "/" + self.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
+        output = self.archive + "/" + self.config.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
 
         archive_data = None
-        if self.get_setting("SURFEX#IO#CTIMESERIES_FILETYPE") == "NC":
+        if self.config.get_setting("SURFEX#IO#CTIMESERIES_FILETYPE") == "NC":
             last_ll = self.dtg + timedelta(hours=self.fcint)
 
             fname = "SURFOUT." + last_ll.strftime("%Y%m%d") + "_" + last_ll.strftime("%H") + "h" + \
@@ -348,16 +348,16 @@ class PerturbedRun(SurfexBinaryTask):
 
     def execute(self):
         """Execute."""
-        pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
+        pgdfile = self.config.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
                                                             default_dir="default_climdir")
         bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
         binary = bindir + "/OFFLINE" + self.xyz
-        forc_zs = self.get_setting("FORECAST#FORC_ZS")
+        forc_zs = self.config.get_setting("FORECAST#FORC_ZS")
 
         # PREP file is previous analysis unless first assimilation cycle
         if self.fg_dtg == self.dtgbeg:
-            prepfile = self.get_setting("SURFEX#IO#CPREPFILE") + self.suffix
+            prepfile = self.config.get_setting("SURFEX#IO#CPREPFILE") + self.suffix
         else:
             prepfile = "ANALYSIS" + self.suffix
 
@@ -365,7 +365,7 @@ class PerturbedRun(SurfexBinaryTask):
                                                              basedtg=self.fg_dtg,
                                                              default_dir="default_archive_dir")
 
-        output = self.archive + "/" + self.get_setting("SURFEX#IO#CSURFFILE") + "_PERT" + \
+        output = self.archive + "/" + self.config.get_setting("SURFEX#IO#CSURFFILE") + "_PERT" + \
                                 str(self.pert) + self.suffix
 
         # Forcing dir is for previous cycle
@@ -408,14 +408,14 @@ class Soda(SurfexBinaryTask):
         bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
         binary = bindir + "/SODA" + self.xyz
 
-        pgdfile = self.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
+        pgdfile = self.config.get_setting("SURFEX#IO#CPGDFILE") + self.suffix
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
                                                             default_dir="default_climdir")
 
         prep_file_path = self.fg_guess_sfx
         output = self.archive + "/ANALYSIS" + self.suffix
         perturbed_file_pattern = None
-        if self.sfx_config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
+        if self.config.setting_is("SURFEX#ASSIM#SCHEMES#ISBA", "EKF"):
             # TODO If pertubed runs moved to pp it should be a diffenent dtg
             pert_run_dir = self.exp_file_paths.get_system_path("archive_dir",
                                                                default_dir="default_archive_dir")
@@ -427,7 +427,7 @@ class Soda(SurfexBinaryTask):
                                                                   basedtg=self.fg_dtg)
             self.exp_file_paths.add_system_file_path("first_guess_dir", first_guess_dir)
 
-            csurffile = self.get_setting("SURFEX#IO#CSURFFILE")
+            csurffile = self.config.get_setting("SURFEX#IO#CSURFFILE")
             perturbed_file_pattern = csurffile + "_PERT@PERT@" + self.suffix
 
         if not os.path.exists(output) or self.force:

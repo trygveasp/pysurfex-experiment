@@ -19,11 +19,11 @@ class Forcing(AbstractTask):
 
         """
         AbstractTask.__init__(self, config)
-        self.var_name = self.get_setting("TASK#VAR_NAME")
+        self.var_name = self.config.get_setting("TASK#VAR_NAME")
         user_config = None
         # TODO fix this test
-        if "FORCING_USER_CONFIG" in self.sfx_config.settings:
-            user_config = self.get_setting("TASK#FORCING_USER_CONFIG", default=None)
+        if "FORCING_USER_CONFIG" in self.config.settings:
+            user_config = self.config.get_setting("TASK#FORCING_USER_CONFIG", default=None)
         self.user_config = user_config
 
     def execute(self):
@@ -55,7 +55,7 @@ class Forcing(AbstractTask):
                                                           default_dir="default_forcing_dir")
         os.makedirs(forcing_dir, exist_ok=True)
 
-        output_format = self.get_setting("SURFEX#IO#CFORCING_FILETYPE").lower()
+        output_format = self.config.get_setting("SURFEX#IO#CFORCING_FILETYPE").lower()
         if output_format == "netcdf":
             output = forcing_dir + "/FORCING.nc"
         else:
@@ -64,20 +64,20 @@ class Forcing(AbstractTask):
         kwargs.update({"of": output})
         kwargs.update({"output_format": output_format})
 
-        pattern = self.get_setting("FORCING#PATTERN", check_parsing=False)
-        input_format = self.get_setting("FORCING#INPUT_FORMAT")
-        kwargs.update({"geo_input_file": self.get_setting("FORCING#INPUT_GEO_FILE")})
-        zref = self.get_setting("FORCING#ZREF")
-        zval = self.get_setting("FORCING#ZVAL")
-        uref = self.get_setting("FORCING#UREF")
-        uval = self.get_setting("FORCING#UVAL")
-        zsoro_converter = self.get_setting("FORCING#ZSORO_CONVERTER")
-        sca_sw = self.get_setting("FORCING#SCA_SW")
-        co2 = self.get_setting("FORCING#CO2")
-        rain_converter = self.get_setting("FORCING#RAIN_CONVERTER")
-        wind_converter = self.get_setting("FORCING#WIND_CONVERTER")
-        wind_dir_converter = self.get_setting("FORCING#WINDDIR_CONVERTER")
-        debug = self.get_setting("FORCING#DEBUG")
+        pattern = self.config.get_setting("FORCING#PATTERN", check_parsing=False)
+        input_format = self.config.get_setting("FORCING#INPUT_FORMAT")
+        kwargs.update({"geo_input_file": self.config.get_setting("FORCING#INPUT_GEO_FILE")})
+        zref = self.config.get_setting("FORCING#ZREF")
+        zval = self.config.get_setting("FORCING#ZVAL")
+        uref = self.config.get_setting("FORCING#UREF")
+        uval = self.config.get_setting("FORCING#UVAL")
+        zsoro_converter = self.config.get_setting("FORCING#ZSORO_CONVERTER")
+        sca_sw = self.config.get_setting("FORCING#SCA_SW")
+        co2 = self.config.get_setting("FORCING#CO2")
+        rain_converter = self.config.get_setting("FORCING#RAIN_CONVERTER")
+        wind_converter = self.config.get_setting("FORCING#WIND_CONVERTER")
+        wind_dir_converter = self.config.get_setting("FORCING#WINDDIR_CONVERTER")
+        debug = self.config.get_setting("FORCING#DEBUG")
 
         kwargs.update({"input_format": input_format})
         kwargs.update({"pattern": pattern})

@@ -2,14 +2,14 @@
 from datetime import datetime, timedelta
 import logging
 import os
+import shutil
 import scheduler
 
 
 class SurfexSuite():
     """Surfex suite."""
 
-    def __init__(self, suite_name, config, joboutdir, task_settings, dtgs, next_start_dtg, dtgbeg=None, ecf_micro="%",
-                 dry_run=False):
+    def __init__(self, suite_name, config, joboutdir, task_settings, dtgs, next_start_dtg, dtgbeg=None, ecf_micro="%"):
         """Initialize a SurfexSuite object.
 
         Args:
@@ -60,8 +60,12 @@ class SurfexSuite():
             f"{ecf_micro}ECF_JOB{ecf_micro}"
         )
 
+        # TODO
         #troika = config.get_setting("TROIKA#COMMAND")
-        troika = "troika"
+        # troika = "troika"
+        troika = shutil.which("troika")
+        if troika is None:
+            raise Exception("Troika not found!")
         troika_config = config.get_setting("TROIKA#CONFIG")
         config_file = config.config_file
         loglevel = "DEBUG"
