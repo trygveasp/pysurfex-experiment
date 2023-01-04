@@ -4,7 +4,8 @@ import logging
 from datetime import timedelta, datetime
 import collections
 import copy
-import scheduler
+import tomlkit
+import experiment_scheduler as scheduler
 import surfex
 import experiment
 
@@ -102,7 +103,7 @@ class Configuration():
         self.env_submit = self.settings["SUBMISSION"]
         # Date/time
         progress = self.settings["PROGRESS"]
-        self.progress =  experiment.ProgressFromDict(progress)
+        self.progress = experiment.ProgressFromDict(progress)
 
         ##################################################################################
         # Update time information                     Is this needed????
@@ -275,7 +276,7 @@ class Configuration():
                     logging.debug("This setting: %s", str(this_setting))
                     member_settings = Configuration.merge_dict(member_settings, this_setting)
                     logging.debug("Merged member settings for member %s = %s",
-                                str(member), str(member_settings))
+                                  str(member), str(member_settings))
         logging.debug("Finished member settings for member %s = %s", str(member), str(member_settings))
         return member_settings
 

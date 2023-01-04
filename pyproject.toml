@@ -21,7 +21,7 @@ datetime = "^4.7"
 tomlkit = "^0.11.6"
 setuptools = "57.2.0"
 demjson = "1.6"
-pysurfex-scheduler = {git = "git@github.com:metno/pysurfex-scheduler.git", branch="feature/deode_similar", develop = true}
+# pysurfex-scheduler = {git = "git@github.com:metno/pysurfex-scheduler.git", branch="feature/deode_similar", develop = true}
 pysurfex = {git = "git@github.com:metno/pysurfex.git", develop = true}
 troika = {git = "https://git.ecmwf.int/scm/ecsdk/troika.git"}
 

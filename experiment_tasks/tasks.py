@@ -69,15 +69,15 @@ class AbstractTask(object):
         ###########################################################################
         self.wrk = self.exp_file_paths.get_system_path("wrk_dir", default_dir="default_wrk_dir", basedtg=self.dtg)
         self.archive = self.exp_file_paths.get_system_path("archive_dir", default_dir="default_archive_dir",
-                                            basedtg=self.dtg)
+                                                           basedtg=self.dtg)
         os.makedirs(self.archive, exist_ok=True)
         self.bindir = self.exp_file_paths.get_system_path("bin_dir", default_dir="default_bin_dir")
 
         self.extrarch = self.exp_file_paths.get_system_path("extrarch_dir", default_dir="default_extrarch_dir",
-                                             basedtg=self.dtg)
+                                                            basedtg=self.dtg)
         os.makedirs(self.extrarch, exist_ok=True)
         self.obsdir = self.exp_file_paths.get_system_path("obs_dir", default_dir="default_obs_dir",
-                                           basedtg=self.dtg)
+                                                          basedtg=self.dtg)
 
         self.exp_file_paths.add_system_file_path("wrk_dir", self.wrk)
         self.exp_file_paths.add_system_file_path("bin_dir", self.bindir)
@@ -91,8 +91,8 @@ class AbstractTask(object):
         self.next_dtg = self.dtg + timedelta(seconds=self.fcint)
         self.next_dtgpp = self.next_dtg
         self.first_guess_dir = self.exp_file_paths.get_system_path("first_guess_dir",
-                                                    default_dir="default_first_guess_dir",
-                                                    basedtg=self.fg_dtg)
+                                                                   default_dir="default_first_guess_dir",
+                                                                   basedtg=self.fg_dtg)
         self.input_path = self.work_dir + "/nam"
         ###########################################################################
 
@@ -293,7 +293,7 @@ class QualityControl(AbstractTask):
                     }
                 })
                 filepattern = self.config.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN",
-                                               check_parsing=False)
+                                                      check_parsing=False)
                 data_sets.update({
                     "netatmo": {
                         "filepattern": filepattern,
@@ -344,7 +344,7 @@ class QualityControl(AbstractTask):
                     }
                 })
                 filepattern = self.config.get_setting("OBSERVATIONS#NETATMO_FILEPATTERN",
-                                               check_parsing=False)
+                                                      check_parsing=False)
                 data_sets.update({
                     "netatmo": {
                         "filepattern": filepattern,
@@ -457,7 +457,7 @@ class OptimalInterpolation(AbstractTask):
         wlength = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#WLENGTH", default=wlength)
         elev_gradient = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#GRADIENT", default=elev_gradient)
         max_locations = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#MAX_LOCATIONS",
-                                         default=max_locations)
+                                                default=max_locations)
         epsilon = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#EPSILON", default=epsilon)
         minvalue = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#MINVALUE", default=None, abort=False)
         maxvalue = self.config.get_setting(f"OBSERVATIONS#OI#{uname}#MAXVALUE", default=None, abort=False)
@@ -568,7 +568,7 @@ class Oi2soda(AbstractTask):
         hh2 = self.dtg.strftime("%H")
         obfile = "OBSERVATIONS_" + yy2 + mm2 + dd2 + "H" + hh2 + ".DAT"
         output = self.config.exp_file_path.get_system_file("obs_dir", obfile, basedtg=self.dtg,
-                                      default_dir="default_obs_dir")
+                                                           default_dir="default_obs_dir")
 
         t2m = None
         rh2m = None
@@ -749,11 +749,11 @@ class FirstGuess4OI(AbstractTask):
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
                 inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
-                                             validtime=self.dtg)
+                                                    validtime=self.dtg)
             except KeyError:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
-                                             validtime=self.dtg)
+                                                    validtime=self.dtg)
             try:
                 identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
                 fileformat = self.config.get_setting(identifier + "FILEFORMAT")

@@ -2,7 +2,7 @@
 import sys
 import logging
 from argparse import ArgumentParser
-import scheduler
+import experiment_scheduler as scheduler
 
 
 def parse_submit_cmd_exp(argv):

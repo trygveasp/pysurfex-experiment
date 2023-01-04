@@ -7,7 +7,7 @@ from experiment_tasks import get_task
 # @ENV_SUB2@
 
 
-def default_main(task, config_file, loglevel):
+def stand_alone_main(task, config_file, loglevel):
     """Execute default main.
 
     Args:
@@ -56,4 +56,4 @@ if __name__ == "__main__":
     CONFIG = "@STAND_ALONE_TASK_CONFIG@"
     CONFIG = "/home/sbu/sfx_home/test_default/exp_configuration.json"
 
-    default_main(TASK_NAME, CONFIG, LOGLEVEL)
+    stand_alone_main(TASK_NAME, CONFIG, LOGLEVEL)

@@ -3,7 +3,6 @@ import sys
 from argparse import ArgumentParser
 from datetime import datetime
 import os
-import shutil
 import logging
 import experiment
 
@@ -67,6 +66,8 @@ def surfex_script(**kwargs):
     action = kwargs["action"]
     exp = kwargs.get("exp")
 
+    stream = kwargs.get("stream")
+
     # Others
     dtg = kwargs["dtg"]
     dtgend = kwargs["dtgend"]
@@ -112,7 +113,7 @@ def surfex_script(**kwargs):
         elif action == "install":
             if dtg is None:
                 dtg = "200806160000"
-            suite = "Makeup"
+            raise NotImplementedError
 
         progress_file = work_dir + "/progress.json"
         progress_pp_file = work_dir + "/progressPP.json"
@@ -156,8 +157,7 @@ def surfex_script(**kwargs):
 
         # Set experiment from files. Should be existing now after setup
         exp_dependencies_file = work_dir + "/exp_dependencies.json"
-        print(exp_dependencies_file)
-        sfx_exp = experiment.ExpFromFiles(exp_dependencies_file)
+        sfx_exp = experiment.ExpFromFilesDepFile(exp_dependencies_file, stream=stream)
         sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration.json", indent=2)
 
         # Create and start the suite
@@ -165,7 +165,6 @@ def surfex_script(**kwargs):
 
         defs = experiment.get_defs(sfx_exp, suite)
         defs.save_as_defs(def_file)
-        print(def_file)
         sfx_exp.server.start_suite(defs.suite_name, def_file, begin=begin)
 
 
@@ -210,7 +209,7 @@ def update_config(**kwargs):
 
     # Set experiment from files. Should be existing now after setup
     exp_dependencies_file = f"{work_dir}/exp_dependencies.json"
-    sfx_exp = experiment.ExpFromFiles(exp_dependencies_file)
+    sfx_exp = experiment.ExpFromFilesDepFile(exp_dependencies_file)
     sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration.json", indent=2)
 
     logging.info("Configuration was updated!")

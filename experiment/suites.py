@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import logging
 import os
 import shutil
-import scheduler
+import experiment_scheduler as scheduler
 
 
 class SurfexSuite():
@@ -14,7 +14,7 @@ class SurfexSuite():
 
         Args:
             suite_name (str): Name of the suite
-            exp (experiment.Experiment): Experiment you want to run
+            exp (experiment.Configuration): Configuration you want to run
             joboutdir (str): Directory for job and log files
             TaskSettings (TaskSettings): Submission environment for jobs
             dtgs (list): The DTGs you want to run
@@ -27,11 +27,12 @@ class SurfexSuite():
         else:
             dtgbeg_str = dtgbeg.strftime("%Y%m%d%H%M")
 
-        exp_dir = config.work_dir + ""
+        # config = exp_config.sfx_config
+        exp_dir = config.get_setting("GENERAL#EXP_DIR") + ""
         ecf_include = exp_dir + "/ecf"
         ecf_files = joboutdir
         os.makedirs(ecf_files, exist_ok=True)
-        template = config.scripts + "/ecf/default.py"
+        template = exp_dir + "/ecf/default.py"
         ecf_home = joboutdir
         ecf_out = joboutdir
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
@@ -61,8 +62,6 @@ class SurfexSuite():
         )
 
         # TODO
-        #troika = config.get_setting("TROIKA#COMMAND")
-        # troika = "troika"
         troika = shutil.which("troika")
         if troika is None:
             raise Exception("Troika not found!")
@@ -88,7 +87,7 @@ class SurfexSuite():
             "TROIKA": troika,
             "TROIKA_CONFIG": troika_config,
             "EXP_DIR": exp_dir,
-            "EXP": config.name,
+            "EXP": config.get_setting("GENERAL#EXP"),
             "DTG": dtgbeg_str,
             "DTGPP": dtgbeg_str,
             "STREAM": "",
@@ -222,8 +221,7 @@ class SurfexSuite():
                         nncv = config.get_setting("SURFEX#ASSIM#ISBA#EKF#NNCV")
                         names = config.get_setting("SURFEX#ASSIM#ISBA#EKF#CVAR_M")
                         triggers = None
-                        mbr = None
-                        fgint = config.get_fgint(config.progress.dtg, mbr=mbr)
+                        fgint = config.get_fgint(config.progress.dtg)
                         fg_dtg = (config.progress.dtg - timedelta(hours=fgint)).strftime("%Y%m%d%H%M")
                         if fg_dtg in cycle_input_dtg_node:
                             triggers = scheduler.EcflowSuiteTriggers(
