@@ -20,4 +20,4 @@ MKDIR = "mkdir -p"
 RSYNC = "rsync  -rltoDvhL"
 SCHEDULER_PYTHONPATH = "/perm/sbu/offline_modules/apps/pysurfex-scheduler/:/usr/local/apps/ecflow/5.8.1/lib/python3.8/site-packages/"
 SURFEX_CONFIG = "atos-gnu"
-
+TROIKA = "troika"

@@ -21,6 +21,7 @@ class Exp(experiment.Configuration):
         """
         logging.debug("Construct Exp")
         offline_source = exp_dependencies.get("offline_source")
+        namelist_dir = exp_dependencies.get("namelist_dir")
         wdir = exp_dependencies.get("exp_dir")
         exp_name = exp_dependencies.get("exp_name")
 
@@ -31,6 +32,9 @@ class Exp(experiment.Configuration):
         self.scripts = exp_dependencies.get("pysurfex_experiment")
         self.pysurfex = exp_dependencies.get("pysurfex")
         self.offline_source = offline_source
+        merged_config["COMPILE"].update({"OFFLINE_SOURCE": offline_source})
+        merged_config["GENERAL"].update({"NAMELIST_DIR": namelist_dir})
+        merged_config["GENERAL"].update({"PYSURFEX_EXPERIMENT": self.scripts})
         self.config_file = None
 
         experiment.Configuration.__init__(self, merged_config)
@@ -156,7 +160,8 @@ class ExpFromFiles(Exp):
         all_merged_settings.update({"PROGRESS": progress})
 
         # Troika
-        all_merged_settings.update({"TROIKA": {"CONFIG": wdir + "/config/troika_config.yml"}})
+        troika_config = exp_dependencies["config"]["other_files"]["troika_config.yml"]
+        all_merged_settings.update({"TROIKA": {"CONFIG": troika_config}})
 
         Exp.__init__(self, exp_dependencies, all_merged_settings)
 
@@ -229,15 +234,11 @@ class ExpFromFiles(Exp):
         # Check existence of needed config files
         config_files = {}
         for ftype, fname in config_files_in.items():
-            print(ftype, "...", fname)
             if os.path.exists(fname):
                 toml_dict = ExpFromFiles.toml_load(fname)
-                # toml_dict = toml.load(open(fname, mode="r"))
             else:
                 raise Exception("No config file found for " + fname)
 
-            # print(toml_dict)
-            # raise
             config_files.update({
                 ftype: {
                     "toml": toml_dict,
@@ -346,7 +347,7 @@ class ExpFromFiles(Exp):
 
     @staticmethod
     def setup_files(wdir, exp_name, host, pysurfex, pysurfex_experiment,
-                    offline_source=None, talk=True):
+                    offline_source=None, namelist_dir=None, talk=True):
         """Set up the files for an experiment.
 
         Args:
@@ -431,7 +432,7 @@ class ExpFromFiles(Exp):
         if talk:
             logging.info("Set up other config files %s", str(c_files))
         other_files = {}
-        for c_f in ["first_guess.yml", "config.yml"]:
+        for c_f in ["first_guess.yml", "config.yml", "troika_config.yml"]:
             lname = f"{wdir}/config/{c_f}"
             gname = f"{pysurfex_experiment}/config/{c_f}"
             if c_f in pysurfex_files:
@@ -462,13 +463,20 @@ class ExpFromFiles(Exp):
             domains = gdomains
         else:
             raise Exception
+
+        if namelist_dir is None:
+            namelist_dir = f"{pysurfex_experiment}/nam"
+            if talk:
+                logging.info("Using default namelist directory %s", namelist_dir)
+
         exp_dependencies.update({"domains": domains})
         exp_dependencies.update({
             "exp_dir": wdir,
             "exp_name": exp_name,
             "pysurfex_experiment": pysurfex_experiment,
             "pysurfex": pysurfex,
-            "offline_source": offline_source
+            "offline_source": offline_source,
+            "namelist_dir": namelist_dir
         })
         return exp_dependencies
 
@@ -547,6 +555,6 @@ class ExpFromFilesDepFile(ExpFromFiles):
         if os.path.exists(exp_dependencies_file):
             with open(exp_dependencies_file, mode="r", encoding="utf-8") as exp_dependencies_file:
                 exp_dependencies = json.load(exp_dependencies_file)
-                ExpFromFiles.__init__(exp_dependencies, stream=stream)
+                ExpFromFiles.__init__(self, exp_dependencies, stream=stream)
         else:
             raise FileNotFoundError("Experiment dependencies not found " + exp_dependencies_file)

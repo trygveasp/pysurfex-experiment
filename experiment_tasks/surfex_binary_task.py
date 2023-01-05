@@ -255,7 +255,7 @@ class Prep(SurfexBinaryTask):
         pgd_file_path = self.exp_file_paths.get_system_file("pgd_dir", pgdfile,
                                                             default_dir="default_climdir")
         prep_file = self.config.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILE",
-                                     validtime=self.dtg, basedtg=self.fg_dtg)
+                                            validtime=self.dtg, basedtg=self.fg_dtg)
         prep_filetype = self.config.get_setting("INITIAL_CONDITIONS#PREP_INPUT_FILETYPE")
         prep_pgdfile = self.config.get_setting("INITIAL_CONDITIONS#PREP_PGDFILE")
         prep_pgdfiletype = self.config.get_setting("INITIAL_CONDITIONS#PREP_PGDFILETYPE")

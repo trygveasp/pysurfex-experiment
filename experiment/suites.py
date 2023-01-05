@@ -14,7 +14,7 @@ class SurfexSuite():
 
         Args:
             suite_name (str): Name of the suite
-            exp (experiment.Configuration): Configuration you want to run
+            exp (experiment.Exp): Configuration you want to run
             joboutdir (str): Directory for job and log files
             TaskSettings (TaskSettings): Submission environment for jobs
             dtgs (list): The DTGs you want to run
@@ -28,11 +28,11 @@ class SurfexSuite():
             dtgbeg_str = dtgbeg.strftime("%Y%m%d%H%M")
 
         # config = exp_config.sfx_config
-        exp_dir = config.get_setting("GENERAL#EXP_DIR") + ""
+        exp_dir = f"{config.get_setting('GENERAL#EXP_DIR')}"
         ecf_include = exp_dir + "/ecf"
         ecf_files = joboutdir
         os.makedirs(ecf_files, exist_ok=True)
-        template = exp_dir + "/ecf/default.py"
+        template = f"{config.get_setting('GENERAL#PYSURFEX_EXPERIMENT')}/ecf/default.py"
         ecf_home = joboutdir
         ecf_out = joboutdir
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
@@ -62,7 +62,11 @@ class SurfexSuite():
         )
 
         # TODO
-        troika = shutil.which("troika")
+        troika = None
+        try:
+            troika = config.system.get_var("TROIKA", "0")
+        except Exception:
+            troika = shutil.which("troika")
         if troika is None:
             raise Exception("Troika not found!")
         troika_config = config.get_setting("TROIKA#CONFIG")
@@ -101,8 +105,12 @@ class SurfexSuite():
 
         if config.get_setting("COMPILE#BUILD"):
             comp = scheduler.EcflowSuiteFamily("Compilation", self.suite, ecf_files)
-            configure = scheduler.EcflowSuiteTask("ConfigureOfflineBinaries", comp,
+            sync = scheduler.EcflowSuiteTask("SyncSourceCode", comp,
                                                   config, task_settings, ecf_files, input_template=template)
+            sync_complete = scheduler.EcflowSuiteTrigger(sync, mode="complete")
+            configure = scheduler.EcflowSuiteTask("ConfigureOfflineBinaries", comp,
+                                                  config, task_settings, ecf_files, input_template=template,
+                                                  triggers=scheduler.EcflowSuiteTriggers([sync_complete]))
             configure_complete = scheduler.EcflowSuiteTrigger(configure, mode="complete")
             scheduler.EcflowSuiteTask("MakeOfflineBinaries", comp, config, task_settings, ecf_files,
                                       input_template=template,
@@ -411,8 +419,8 @@ def get_defs(config, suite_type):
     system = config.system
     progress = config.progress
     joboutdir = system.get_var("JOBOUTDIR", "0")
-    env_submit = config.work_dir + "/Env_submit"
-    task_settings = scheduler.TaskSettingsJson(env_submit)
+    env_submit = config.env_submit
+    task_settings = scheduler.TaskSettings(env_submit)
     hh_list = config.get_total_unique_cycle_list()
     dtgstart = progress.dtg
     dtgbeg = progress.dtgbeg

@@ -2,7 +2,7 @@
 # @ENV_SUB1@
 import json
 import logging
-import scheduler
+import experiment_scheduler as scheduler
 from experiment import ConfigurationFromJsonFile
 from experiment_tasks import get_task
 # @ENV_SUB2@

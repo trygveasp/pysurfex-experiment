@@ -20,7 +20,7 @@ class System():
         """
         logging.debug(str(host_system))
         self.system_variables = ["SFX_EXP_DATA", "SFX_EXP_LIB", "JOBOUTDIR", "MKDIR",
-                                 "RSYNC", "HOSTS",
+                                 "RSYNC", "HOSTS", "TROIKA",
                                  "SYNC_DATA", "SURFEX_CONFIG"]
         self.hosts = None
         self.exp_name = exp_name
@@ -37,7 +37,7 @@ class System():
                     system0.update({var: host_system["HOST_SYSTEM"][var]})
 
                 # Always sync for HOST0
-                elif var == "SYNC_DATA":
+                elif var == "SYNC_DATA" or var == "TROIKA":
                     pass
                 else:
                     raise Exception("Variable is missing: " + var)

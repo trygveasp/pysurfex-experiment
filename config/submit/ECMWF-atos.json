@@ -26,22 +26,26 @@
     "SCHOST": "hpc",
     "ENV": {
        "MODULE_UDUNITS": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'udunits'); os.environ['LD_LIBRARY_PATH']=os.environ.get('UDUNITS_DIR') + '/lib/'",
-       "MODULE_PROJ": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'proj/7.2.1')"
+       "MODULE_PROJ": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'proj/7.2.1')",
+       "OPENMPI1": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'openmpi')"
     },
     "BATCH": {
        "WALLTIME": "#SBATCH --time=00:10:00"
     },
     "tasks": [
-      "Offline"
+      "Forecast", "PerturbedRun", "Pgd", "Prep", "Soda"
     ]
   },
   "task_exceptions": {
     "MakeOfflineBinaries": {
       "ENV": {
-        "OPENMPI": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'openmpi')"
+        "OPENMPI0": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'prgenv/gnu')",
+        "OPENMPI1": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'openmpi')",
+        "ECCODES": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'ecmwf-toolbox')",
+        "NETCDF": "exec(open('/usr/local/apps/lmod/8.6.8/init/env_modules_python.py').read()); module('load', 'netcdf4')"
       } 
     },
-    "Offline": {
+    "Forecast": {
        "BATCH": {
           "WALLTIME": "#SBATCH --time=00:15:00"
        },

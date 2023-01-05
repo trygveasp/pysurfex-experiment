@@ -22,7 +22,6 @@ SURFEX_CONFIG = "my_harmonie_config"
 LOGIN_HOST = "localhost"
 SCHEDULER_PYTHONPATH = ""
 
-
 [HOST_SYSTEM.HOST1]
 HOST_NAME = "localhost"
 SFX_EXP_DATA = "/tmp/host1/scratch/sfx_home/@EXP@"

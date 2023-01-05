@@ -93,7 +93,7 @@ class AbstractTask(object):
         self.first_guess_dir = self.exp_file_paths.get_system_path("first_guess_dir",
                                                                    default_dir="default_first_guess_dir",
                                                                    basedtg=self.fg_dtg)
-        self.input_path = self.work_dir + "/nam"
+        self.input_path = self.config.get_setting("GENERAL#NAMELIST_DIR")
         ###########################################################################
 
         self.wdir = str(os.getpid())
@@ -110,6 +110,9 @@ class AbstractTask(object):
             "rh2m": "relative_humidity_2m",
             "sd": "surface_snow_thickness"
         }
+        self.obs_types = self.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
+        self.nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+        logging.debug("NNCO: %s", self.nnco)
 
     def run(self):
         """Run task.
@@ -567,33 +570,25 @@ class Oi2soda(AbstractTask):
         dd2 = self.dtg.strftime("%d")
         hh2 = self.dtg.strftime("%H")
         obfile = "OBSERVATIONS_" + yy2 + mm2 + dd2 + "H" + hh2 + ".DAT"
-        output = self.config.exp_file_path.get_system_file("obs_dir", obfile, basedtg=self.dtg,
-                                                           default_dir="default_obs_dir")
+        output = self.config.exp_file_paths.get_system_file("obs_dir", obfile, basedtg=self.dtg,
+                                                            default_dir="default_obs_dir")
 
         t2m = None
         rh2m = None
         s_d = None
 
         an_variables = {"t2m": False, "rh2m": False, "sd": False}
-        obs_types = self.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-        nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
-        snow_ass = self.config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
-        snow_ass_done = False
-        if len(snow_ass) > 0:
-            hhh = int(self.dtg.strftime("%H"))
-            for s_n in snow_ass:
-                if hhh == int(s_n):
-                    snow_ass_done = True
-
+        obs_types = self.obs_types
+        logging.debug("NNCO: %s", self.nnco)
         for ivar, __ in enumerate(obs_types):
-            if nnco[ivar] == 1:
+            logging.debug("ivar=%s NNCO[ivar]=%s obtype=%s", ivar, self.nnco[ivar], obs_types[ivar])
+            if self.nnco[ivar] == 1:
                 if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
                     an_variables.update({"t2m": True})
                 elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
                     an_variables.update({"rh2m": True})
                 elif obs_types[ivar] == "SWE":
-                    if snow_ass_done:
-                        an_variables.update({"sd": True})
+                    an_variables.update({"sd": True})
 
         for var, var_name in an_variables.items():
             if an_variables[var]:
@@ -641,9 +636,8 @@ class Qc2obsmon(AbstractTask):
         logging.debug("Write to %s", output)
         if os.path.exists(output):
             os.unlink(output)
-        nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
-        obs_types = self.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-        for ivar, val in enumerate(nnco):
+        obs_types = self.obs_types
+        for ivar, val in enumerate(self.nnco):
             if val == 1:
                 if len(obs_types) > ivar:
                     if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
@@ -691,16 +685,18 @@ class FirstGuess4OI(AbstractTask):
             symlink_files.update({self.archive + "/raw.nc": "raw" + extra + ".nc"})
         else:
             var_in = []
-            nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
-
-            for ivar, val in enumerate(nnco):
+            obs_types = self.obs_types
+            for ivar, val in enumerate(self.nnco):
                 if val == 1:
-                    if ivar == 0:
-                        var_in.append("t2m")
-                    elif ivar == 1:
-                        var_in.append("rh2m")
-                    elif ivar == 4:
-                        var_in.append("sd")
+                    if len(obs_types) > ivar:
+                        if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
+                            var_in.append("t2m")
+                        elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
+                            var_in.append("rh2m")    
+                        elif obs_types[ivar] == "SWE":
+                            var_in.append("sd")
+                        else:
+                            raise NotImplementedError(obs_types[ivar])
 
             variables = []
             try:

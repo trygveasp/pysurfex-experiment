@@ -94,7 +94,8 @@ class Configuration():
             "EXP": exp_name,
             "SFX_EXP_LIB": self.exp_file_paths.get_system_path("sfx_exp_lib"),
             "SFX_EXP_DATA": self.exp_file_paths.get_system_path("sfx_exp_data"),
-            "SFX_EXP_DIR": exp_dir
+            "SFX_EXP_DIR": exp_dir,
+            "PYSURFEX_EXPERIMENT": self.settings["GENERAL"]["PYSURFEX_EXPERIMENT"]
         }
         self.config_file = None
 
@@ -135,6 +136,31 @@ class Configuration():
                 self.member_settings[str(mbr)]["GENERAL"].update({"FGINT": fgint_members})
                 logging.debug("fcint_members %s", str(fcint_members))
                 logging.debug("fgint_members %s", str(fgint_members))
+
+        obs_types = self.settings["SURFEX"]["ASSIM"]["OBS"]["COBS_M"]
+        nnco_r = self.settings["SURFEX"]["ASSIM"]["OBS"]["NNCO"]
+        snow_ass = self.settings["SURFEX"]["ASSIM"]["ISBA"]["UPDATE_SNOW_CYCLES"]
+        snow_ass_done = False
+        if len(snow_ass) > 0:
+            if self.progress.dtg is not None:
+                hhh = int(self.progress.dtg.strftime("%H"))
+                for s_n in snow_ass:
+                    if hhh == int(s_n):
+                        snow_ass_done = True
+        nnco = []
+        for ivar, __ in enumerate(obs_types):
+            ival = 0
+            if nnco_r[ivar] == 1:
+                ival = 1
+                if obs_types[ivar] == "SWE":
+                    if not snow_ass_done:
+                        logging.info("Disabling snow assimilation since cycle is not in %s", snow_ass)
+                        ival = 0
+            logging.debug("ivar=%s ival=%s", ivar, ival)
+            nnco.append(ival)
+        self.settings["SURFEX"]["ASSIM"]["OBS"].update({"NNCO": nnco})
+        logging.debug("NNCO: %s", nnco)
+        logging.debug("NNCO: %s", self.settings["SURFEX"]["ASSIM"]["OBS"]["NNCO"])
 
     def split_member_settings(self, merged_settings):
         """Process the settings and split out member settings.

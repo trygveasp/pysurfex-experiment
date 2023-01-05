@@ -196,7 +196,7 @@ DOMAIN="DRAMMEN"
 NETATMO_FILEPATTERN = "@SFX_EXP_DATA@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@YYYY@@MM@@DD@T@HH@@mm@*Z*.json"
 
 [INITIAL_CONDITIONS]
-PREP_INPUT_FILE = "@SFX_EXP_LIB@/nam/prep_from_namelist_values.json"
+PREP_INPUT_FILE = "@PYSURFEX_EXPERIMENT@/nam/prep_from_namelist_values.json"
 PREP_INPUT_FILETYPE = "json"
 PREP_PGDFILE = ""
 PREP_PGDFILETYPE = ""
