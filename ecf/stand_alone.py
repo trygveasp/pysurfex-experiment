@@ -54,6 +54,6 @@ if __name__ == "__main__":
     # loglevel = "@STAND_ALONE_TASK_LOGLEVEL@"
     LOGLEVEL = logging.DEBUG
     CONFIG = "@STAND_ALONE_TASK_CONFIG@"
-    CONFIG = "/home/sbu/sfx_home/test_default/exp_configuration.json"
 
     stand_alone_main(TASK_NAME, CONFIG, LOGLEVEL)
+

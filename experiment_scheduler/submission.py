@@ -150,7 +150,7 @@ class TaskSettings(object):
 
         Args:
             task (str): Task name
-            config (deode.config): The configuration
+            config (experiment.Configuration): The configuration
             input_template_job (str): Input container template.
             task_job (str): Task container
             variables (_type_, optional): _description_. Defaults to None.
@@ -186,11 +186,11 @@ class TaskSettings(object):
             input_content = input_content.replace("# @ENV_SUB1@", python_task_env)
             input_content = input_content.replace("@STAND_ALONE_TASK_NAME@", task)
             # TODO
-            # config_file = config.get_value("metadata.source_file_path")
-            # if config_file is not None:
-            #    input_content = input_content.replace(
-            #        "@STAND_ALONE_TASK_CONFIG@", str(config_file)
-            #    )
+            config_file = config.config_file
+            if config_file is not None:
+                input_content = input_content.replace(
+                    "@STAND_ALONE_TASK_CONFIG@", str(config_file)
+                )
             input_content = input_content.replace("@STAND_ALONE_TASK_LOGLEVEL@", "DEBUG")
             file_handler.write(input_content)
         # Make file executable for user

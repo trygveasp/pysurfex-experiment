@@ -1,4 +1,5 @@
 """Experiment configuration."""
+import os
 import json
 import logging
 from datetime import timedelta, datetime
@@ -945,4 +946,4 @@ class ConfigurationFromJsonFile(Configuration):
         with open(filename, mode="r", encoding="utf-8") as file_handler:
             all_settings = json.load(file_handler)
         Configuration.__init__(self, all_settings)
-        self.config_file = filename
+        self.config_file = os.path.abspath(filename)

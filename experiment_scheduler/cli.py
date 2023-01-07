@@ -3,7 +3,7 @@ import sys
 import logging
 from argparse import ArgumentParser
 import experiment_scheduler as scheduler
-
+import experiment
 
 def parse_submit_cmd_exp(argv):
     """Parse the command line input arguments."""
@@ -44,11 +44,13 @@ def submit_cmd_exp(**kwargs):
 
     logging.debug("kwargs %s", str(kwargs))
     print(scheduler.__file__)
+    config = kwargs.get("config_file")
+    config = experiment.ConfigurationFromJsonFile(config)
     submission_defs = scheduler.TaskSettingsJson(kwargs.get('submission_file'))
     sub = scheduler.NoSchedulerSubmission(submission_defs)
     sub.submit(
         kwargs.get("task"),
-        kwargs.get("config_file"),
+        config,
         kwargs.get("template_job"),
         kwargs.get("task_job"),
         kwargs.get("output"),

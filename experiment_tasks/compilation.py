@@ -25,7 +25,7 @@ class SyncSourceCode(AbstractTask):
     def execute(self):
         """Execute."""
         rsync = self.config.system.get_var("RSYNC", self.host)
-        sfx_lib = self.exp_file_paths.get_system_path("sfx_exp_lib") + "/offline/."
+        sfx_lib = self.exp_file_paths.get_system_path("sfx_exp_lib") + "/offline"
         os.makedirs(sfx_lib, exist_ok=True)
         offline_source = self.config.get_setting("COMPILE#OFFLINE_SOURCE")
         ifsaux = f"{offline_source}/../../src/ifsaux"
@@ -34,7 +34,7 @@ class SyncSourceCode(AbstractTask):
             cmd = f"{rsync} {ifsaux}/* {ifsaux_copy}"
             print(cmd)
             os.system(cmd)
-        cmd = f"{rsync} {offline_source} {sfx_lib}"
+        cmd = f"{rsync} {offline_source}/ {sfx_lib}"
         print(cmd)
         os.system(cmd)
 

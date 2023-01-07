@@ -1,0 +1,18 @@
+{
+  "sand_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/",
+  "clay_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/",
+  "soc_top_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/",
+  "soc_sub_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/",
+  "flake_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/",
+  "ecoclimap_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/",
+  "ecoclimap_cover_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/",
+  "ecoclimap_bin_dir": "/lustre/storeB/users/trygveasp/sfx_data/met_nordic/lib/offline/MY_RUN/ECOCLIMAP/",
+  "ecoclimap_sg_cover_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/COVER/",
+  "tree_height_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/HT/",
+  "albnir_soil_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBNIR_SNOWFREE",
+  "albnir_veg_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBNIR_SNOWFREE",
+  "albvis_soil_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBVIS_SNOWFREE/",
+  "albvis_veg_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBVIS_SNOWFREE/",
+  "lai_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/LAI/300M/",
+  "oro_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/"
+}

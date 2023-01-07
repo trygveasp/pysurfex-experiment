@@ -67,6 +67,15 @@ sites:
     sbatch_command: "sbatch"
     scancel_command: 'scancel -f'
 
+  ppi-rhel8:
+    type: sge
+    connection: local
+    kill_sequence: [[5, 2], [10, 9]]
+    pre_submit: ["create_output_dir"]
+    preprocess: ["remove_top_blank_lines", "sge_add_output", "sge_bubble"]
+    qsub_command: "qsub_v"
+    qdel_command: 'qdel'
+
   hpc2020:
     type: slurm
     connection: ssh

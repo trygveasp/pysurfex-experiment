@@ -1,5 +1,6 @@
 """Ecflow suites."""
 import os
+import sys
 import logging
 try:
     import ecflow  # noqa reportMissingImports
@@ -340,8 +341,15 @@ class EcflowSuiteTask(EcflowNode):
                 raise Exception("Input template is missing")
 
             variables = task_settings.get_settings(name)
+            if "INTERPRETER" in variables:
+                interpreter = variables["INTERPRETER"]
+            else:
+                interpreter = f"{sys.executable}"
             logging.debug("vars %s", variables)
             for var, value in variables.items():
+                print(value)
+                value = value.replace("@INTERPRETER@", interpreter.replace("#!",""))
+                print(value)
                 logging.debug("var=%s value=%s", var, value)
                 if self.ecf_node is not None:
                     self.ecf_node.add_variable(var, value)
