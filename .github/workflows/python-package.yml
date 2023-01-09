@@ -12,11 +12,10 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
-        python-version: [3.6]
-        # python-version: [3.6, 3.7]
+        python-version: [3.8]
 
     steps:
     - uses: actions/checkout@v2
@@ -24,99 +23,37 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Check config
-      run: |
-        cat > sshd_config <<EOF
-          SyslogFacility AUTHPRIV
-          PermitRootLogin yes
-          AuthorizedKeysFile	.ssh/authorized_keys
-          PasswordAuthentication yes
-          ChallengeResponseAuthentication no
-          UsePAM yes
-          UseDNS no
-          X11Forwarding no
-          PrintMotd no
-        EOF
-        sudo mv sshd_config /etc/ssh/sshd_config
-        sudo systemctl restart ssh
-    - name: Create ssh key
-      run: >
-        ssh-keygen -t rsa -b 4096 -N '' -f ~/.ssh/id_rsa
-    - name: Add key to auth file
-      run: >
-        cat ~/.ssh/id_rsa.pub | tee -a ~/.ssh/authorized_keys
-    - name: Ensure the owner of the key is correct
-      run: |
-        chmod 600 ~/.ssh/authorized_keys
-        chmod 700 ~/.ssh
-        sudo chmod -c 0755 ~/
-        ls -la ~/.ssh
-    - name: Test SSH connection to localhost
-      run: >
-        ssh -vvv -i ~/.ssh/id_rsa -o BatchMode=yes -o StrictHostKeyChecking=no $(whoami)@localhost
     - name: Install dependencies
       run: |
         cd ${GITHUB_WORKSPACE}
-        sudo apt update && sudo apt install libudunits2-dev libboost-dev libproj-dev libeccodes0 \
-        libeccodes-dev ecflow-server ecflow-client python3-ecflow python3-setuptools
+        apt-get update && apt-get install -y \
+        curl python3 python3-pip libeccodes-dev \
+        libproj-dev libudunits2-dev python3-sphinx
 
-        # Start the server manually
-        ecflow_start
-        ecflow_client --port $(( `id -u` + 1500 )) --ping
+        curl -sSL https://install.python-poetry.org | python3 -
+        python3 -m pip install setuptools --upgrade
+        ~/.local/bin/poetry install
 
-        python -m pip install --upgrade pip
-        python --version
-        pip install numpy
-        python -c "import numpy"
-        pip install flake8 pytest
-        pip install sphinx
-        pip install coveralls
-        # Github does not work with openDAP for newest netcdf versions (curl/netcdf problems)
-        pip install "netCDF4<1.6.0"
-        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-    - name: Clone pysurfex
-      run: |
-        # Clone pysurfex
-        git clone https://github.com/metno/pysurfex.git ../pysurfex
-        # Install the dependencies
-        cd ${GITHUB_WORKSPACE}/../pysurfex/
-        pip install -r requirements.txt
     - name: Unit testing and coverage
       run: |
-        python --version
-        python -c "import eccodes"
-        # https://drive.google.com/file/d/1Kp9MIbK4QQLuJucw3z4YRpvAanM1PNk8
-        wget --no-check-certificate --load-cookies /tmp/cookies.txt "https://docs.google.com/uc?export=download&confirm=$(wget --quiet --save-cookies /tmp/cookies.txt --keep-session-cookies --no-check-certificate 'https://docs.google.com/uc?export=download&id=1Kp9MIbK4QQLuJucw3z4YRpvAanM1PNk8' -O- | sed -rn 's/.*confirm=([0-9A-Za-z_]+).*/\1\n/p')&id=1Kp9MIbK4QQLuJucw3z4YRpvAanM1PNk8" -O testdata.zip && rm -rf /tmp/cookies.txt
-        unzip -o testdata.zip
-        ls -l /usr/lib/python3/dist-packages/ecflow
-        ls -l /usr/bin/start_ecflow.sh || echo "/usr/bin/start_ecflow.sh not found"
-        ls -l /usr/sbin/ecflow_start || echo "/usr/sbin/ecflow_start not found"
-        ls -l ${GITHUB_WORKSPACE}
-        export PYTHONPATH="${GITHUB_WORKSPACE}:${GITHUB_WORKSPACE}/test:${GITHUB_WORKSPACE}/../pysurfex:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
-        python -c "import ecflow; print(ecflow.__file__)"
-        ls -l /usr/lib/python3/dist-packages/
-        ls -l /opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages
-        python -c "import enum; print(enum.__file__)"
-        python -c "import surfex; print(surfex.__file__)"
-        python -c "import scheduler; print(scheduler.__file__)"
-        coverage run -m unittest discover
-        coverage html
-        coverage xml
+        ~/.local/bin/poetry run python --version
+        ~/.local/bin/poetry run coverage run -m unittest discover
+        ~/.local/bin/poetry run coverage html
+        ~/.local/bin/poetry run coverage xml
         
     - name: Coveralls
-      if: ${{ matrix.python-version == 3.6 }}
+      if: ${{ matrix.python-version == 3.8 }}
       run: |
         cd ${GITHUB_WORKSPACE}
         export COVERALLS_REPO_TOKEN=${{secrets.COVERALLS_REPO_TOKEN}}
-        coveralls
+        ~/.local/bin/poetry run coveralls
     - name: Create documentation
-      if: ${{ matrix.python-version == 3.6 }}
+      if: ${{ matrix.python-version == 3.8 }}
       run: |
-        export PYTHONPATH="${GITHUB_WORKSPACE}:/usr/lib/python3/dist-packages/:/opt/hostedtoolcache/Python/3.6.15/x64/lib/python3.6/site-packages:$PYTHONPATH"
         cd docs
-        make html
+        ./build.sh
     - name: Commit documentation changes
-      if: ${{ matrix.python-version == 3.6 }}
+      if: ${{ matrix.python-version == 3.8 }}
       run: |
         git clone https://github.com/metno/pysurfex-experiment.git --branch gh-pages --single-branch gh-pages
         cp -r docs/build/html/* gh-pages/
@@ -128,7 +65,7 @@ jobs:
         # The above command will fail if no changes were present, so we ignore
         # the return code.
     - name: Push changes
-      if: ${{ matrix.python-version == 3.6 }}
+      if: ${{ matrix.python-version == 3.8 }}
       uses: ad-m/github-push-action@master
       with:
         branch: gh-pages
