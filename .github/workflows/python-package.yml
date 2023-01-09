@@ -99,13 +99,10 @@ jobs:
         python -c "import enum; print(enum.__file__)"
         python -c "import surfex; print(surfex.__file__)"
         python -c "import scheduler; print(scheduler.__file__)"
-        export CLIENTID=${{secrets.CLIENTID}}
-        cd ${GITHUB_WORKSPACE}/..
-        coverage run --source=pysurfex-experiment -m unittest discover -s pysurfex-experiment -p 'test_*.py'
-        mv .coverage pysurfex-experiment/.
-        # coverage html -d pysurfex-experiment/coverage/html
-        # coverage xml -o pysurfex-experiment/coverage/coverage.xml
-        # python -m unittest discover pysurfex-experiment  -p 'test_*.py'
+        coverage run -m unittest discover
+        coverage html
+        coverage xml
+        
     - name: Coveralls
       if: ${{ matrix.python-version == 3.6 }}
       run: |

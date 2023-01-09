@@ -1,0 +1,9 @@
+[run]
+source=experiment,experiment_setup,experiment_scheduler,experiment_tasks,ecf
+
+[html]
+directory = coverage/html
+
+[xml]
+output = coverage/coverage.xml
+

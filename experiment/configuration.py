@@ -5,7 +5,6 @@ import logging
 from datetime import timedelta, datetime
 import collections
 import copy
-import tomlkit
 import experiment_scheduler as scheduler
 import surfex
 import experiment
@@ -28,6 +27,7 @@ class Configuration():
 
         """
         self.sep = sep
+        self.config_file = None
         conf_dict, member_conf_dict = self.split_member_settings(config)
         self.sfx_config = surfex.Configuration(conf_dict.copy())
         self.settings = self.sfx_config.settings

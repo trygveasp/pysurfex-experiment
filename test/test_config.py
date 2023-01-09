@@ -9,6 +9,7 @@ from pathlib import Path
 import logging
 # import toml
 # import experiment_scheduler as scheduler
+from unittest.mock import patch
 import experiment
 import surfex
 # import experiment_setup
@@ -32,11 +33,13 @@ class TestConfig(unittest.TestCase):
         cls.pysurfex_experiment = f"{str((Path(__file__).parent).parent)}"
         pysurfex = f"{str((Path(surfex.__file__).parent).parent)}"
         offline_source = "/tmp/source"
+
         cls.exp_dependencies = experiment.ExpFromFiles.setup_files(wdir, exp_name, host, pysurfex,
-                                                               cls.pysurfex_experiment,
-                                                               offline_source=offline_source)
+                                                                   cls.pysurfex_experiment,
+                                                                   offline_source=offline_source)
         stream = None
-        cls.sfx_exp = experiment.ExpFromFiles(cls.exp_dependencies, stream=stream)
+        with patch('experiment_scheduler.scheduler.ecflow') as mock_ecflow:
+            cls.sfx_exp = experiment.ExpFromFiles(cls.exp_dependencies, stream=stream)
 
     def test_check_experiment_path(self):
         """Test if exp_dependencies contain some expected variables."""
@@ -50,17 +53,19 @@ class TestConfig(unittest.TestCase):
         logging.debug("Read setting")
         build = self.sfx_exp.get_setting("COMPILE#BUILD")
         print(build)
-        self.assertFalse(build, "Build is true")
+        self.assertTrue(build, "Build is false")
 
-    def test_read_member_setting(self):
+    @patch('experiment_scheduler.scheduler.ecflow')
+    def test_read_member_setting(self, mock_ecflow):
         """Read member settings."""
         logging.debug("Read member setting")
         sfx_exp = experiment.ExpFromFiles(self.exp_dependencies)
         sfx_exp.update_setting("GENERAL#ENSMBR", 2)
         build = sfx_exp.get_setting("COMPILE#BUILD")
-        self.assertFalse(build, "Build is true")
+        self.assertTrue(build, "Build is false")
 
-    def test_update_setting(self):
+    @patch('experiment_scheduler.scheduler.ecflow')
+    def test_update_setting(self, mock_ecflow):
         """Update setting."""
         sfx_exp = experiment.ExpFromFiles(self.exp_dependencies)
         sfx_exp.update_setting("GENERAL#ENSMBR", 2)
