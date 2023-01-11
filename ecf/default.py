@@ -7,6 +7,7 @@ from experiment import ConfigurationFromJsonFile
 from experiment_tasks import get_task
 # @ENV_SUB2@
 
+
 def parse_ecflow_vars():
     """Parse the ecflow variables."""
     return {
@@ -15,15 +16,10 @@ def parse_ecflow_vars():
         "ENSMBR": "%ENSMBR%",
         "DTG": "%DTG%",
         "DTGPP": "%DTGPP%",
-        "stream": "%STREAM%",
+        "STREAM": "%STREAM%",
         "TASK_NAME": "%TASK%",
         "VAR_NAME": "%VAR_NAME%",
-        # TODO from ecflow
-        "DEBUG": True,
-        "FORCE": False,
-        "CHECK_EXISTENCE": True,
-        "PRINT_NAMELIST": True,
-        "STREAM": "%STREAM%",
+        "LOGLEVEL": "%LOGLEVEL%",
         "ARGS": "%ARGS%",
         "ECF_NAME": "%ECF_NAME%",
         "ECF_PASS": "%ECF_PASS%",
@@ -39,14 +35,17 @@ def parse_ecflow_vars():
 
 def default_main(**kwargs):
     """Ecflow container default method."""
-    debug = kwargs.get("DEBUG")
-    if debug is None:
-        debug = False
-    if debug:
+    loglevel = kwargs.get("LOGLEVEL")
+    if loglevel.lower() == "debug":
         logging.basicConfig(format='%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s',
                             level=logging.DEBUG)
     else:
-        logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=logging.INFO)
+        level = logging.INFO
+        if loglevel.lower() == "warning":
+            level = logging.WARNING
+        elif loglevel.lower() == "critical":
+            level = logging.CRITICAL
+        logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=level)
 
     ecf_name = kwargs.get("ECF_NAME")
     ecf_pass = kwargs.get("ECF_PASS")
@@ -54,32 +53,25 @@ def default_main(**kwargs):
     ecf_rid = kwargs.get("ECF_RID")
     task = scheduler.EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid)
 
+    task_name = kwargs.get("TASK_NAME")
     config = kwargs.get("CONFIG")
     config = ConfigurationFromJsonFile(config)
     config.update_setting("GENERAL#STREAM", kwargs.get("STREAM"))
     config.update_setting("GENERAL#ENSMBR", kwargs.get("ENSMBR"))
+
     args = kwargs.get("ARGS")
-
-    task_name = kwargs.get("TASK_NAME")
-    args_dict = {
-        "force": kwargs["FORCE"],
-        "check_existence": kwargs["CHECK_EXISTENCE"],
-        "print_namelist": kwargs["PRINT_NAMELIST"]
-    }
-
+    args_dict = {}
     if args != "":
-        print(args)
+        logging.debug("ARGS=%s", args)
         for arg in args.split(";"):
-            print(arg)
             parts = arg.split("=")
-            print(parts)
-            print(len(parts))
+            logging.debug("arg=%s parts=%s len(parts)=%s", arg, parts, len(parts))
             if len(parts) == 2:
                 args_dict.update({parts[0]: parts[1]})
 
-    progress ={
-        "DTG": kwargs["DTG"],
-        "DTGPP": kwargs["DTGPP"]
+    progress = {
+        "DTG": kwargs.get("DTG"),
+        "DTGPP": kwargs.get("DTGPP")
     }
 
     config.update_setting("PROGRESS", progress)

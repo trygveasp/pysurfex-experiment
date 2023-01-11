@@ -62,8 +62,7 @@ class TaskSettings(object):
 
         if "SCHOST" in task_settings:
             self.job_type = task_settings["SCHOST"]
-        logging.debug(task_settings)
-        print(task_settings)
+        logging.debug("Task settings: %s", task_settings)
         return task_settings
 
     def get_task_settings(self, task, key=None, variables=None, ecf_micro="%"):
@@ -191,7 +190,10 @@ class TaskSettings(object):
                 input_content = input_content.replace(
                     "@STAND_ALONE_TASK_CONFIG@", str(config_file)
                 )
-            input_content = input_content.replace("@STAND_ALONE_TASK_LOGLEVEL@", "DEBUG")
+            loglevel = self.get_task_settings(task, "LOGLEVEL")
+            if loglevel is None:
+                loglevel = "INFO"
+            input_content = input_content.replace("@STAND_ALONE_TASK_LOGLEVEL@", loglevel)
             file_handler.write(input_content)
         # Make file executable for user
         os.chmod(task_job, 0o744)

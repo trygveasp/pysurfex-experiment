@@ -13,6 +13,6 @@
   "albnir_veg_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBNIR_SNOWFREE",
   "albvis_soil_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBVIS_SNOWFREE/",
   "albvis_veg_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/ALBVIS_SNOWFREE/",
-  "lai_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/LAI/300M/",
+  "lai_dir": "/lustre/storeB/project/nwp/H2O/wp4/ECOCLIMAP_SG/ftp.umr-cnrm.fr/ECOCLIMAP-SG/V0/LAI/LAI_SAT/",
   "oro_dir": "/lustre/storeB/project/nwp/H2O/wp4/SURFEX_physio/"
 }

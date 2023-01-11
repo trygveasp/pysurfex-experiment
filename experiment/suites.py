@@ -37,7 +37,7 @@ class SurfexSuite():
         ecf_out = joboutdir
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
         os.makedirs(ecf_out, exist_ok=True)
-        print(ecf_home)
+        logging.debug("ECF_HOME: ", ecf_home)
 
         # Commands started from the scheduler does not have full environment
         ecf_job_cmd = (
@@ -61,17 +61,8 @@ class SurfexSuite():
             f"{ecf_micro}ECF_JOB{ecf_micro}"
         )
 
-        # TODO
-        troika = None
-        try:
-            troika = config.system.get_var("TROIKA", "0")
-        except Exception:
-            troika = shutil.which("troika")
-        if troika is None:
-            raise Exception("Troika not found!")
-        troika_config = config.get_setting("TROIKA#CONFIG")
         config_file = config.config_file
-        loglevel = "DEBUG"
+        loglevel = "INFO"
         variables = {
             "ECF_EXTN": ".py",
             "ECF_FILES": ecf_files,
@@ -88,25 +79,28 @@ class SurfexSuite():
             "WRAPPER": "",
             "VAR_NAME": "",
             "CONFIG": str(config_file),
-            "TROIKA": troika,
-            "TROIKA_CONFIG": troika_config,
+            "TROIKA": config.troika,
+            "TROIKA_CONFIG": config.troika_config,
             "EXP_DIR": exp_dir,
             "EXP": config.get_setting("GENERAL#EXP"),
             "DTG": dtgbeg_str,
             "DTGPP": dtgbeg_str,
             "STREAM": "",
             "ENSMBR": "",
-            "ARGS": ""
+            "ARGS": "",
+            "FORCE": "",
+            "CHECK_EXISTENCE": "",
+            "PRINT_NAMELIST": ""
         }
 
         self.suite_name = suite_name
-        print(variables)
+        logging.debug("variables:", variables)
         self.suite = scheduler.EcflowSuite(self.suite_name, ecf_files, variables=variables, dry_run=False)
 
         if config.get_setting("COMPILE#BUILD"):
             comp = scheduler.EcflowSuiteFamily("Compilation", self.suite, ecf_files)
             sync = scheduler.EcflowSuiteTask("SyncSourceCode", comp,
-                                                  config, task_settings, ecf_files, input_template=template)
+                                             config, task_settings, ecf_files, input_template=template)
             sync_complete = scheduler.EcflowSuiteTrigger(sync, mode="complete")
             configure = scheduler.EcflowSuiteTask("ConfigureOfflineBinaries", comp,
                                                   config, task_settings, ecf_files, input_template=template,
@@ -237,7 +231,6 @@ class SurfexSuite():
 
                         nivar = 1
                         for ivar, val in enumerate(nncv):
-                            print(ivar, val)
                             logging.debug("ivar %s, nncv[ivar] %s", str(ivar), str(val))
                             if ivar == 0:
                                 name = "REF"
@@ -414,7 +407,7 @@ def get_defs(config, suite_type):
     """
     suite_name = config.name.replace("-", "_")
     suite_name = suite_name.replace(".", "_")
-    print(config.name)
+    logging.debug("Config name %s", config.name)
     logging.debug("Get defs for %s", suite_name)
     system = config.system
     progress = config.progress

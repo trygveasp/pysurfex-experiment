@@ -68,7 +68,7 @@ class EcflowNode():
                 if triggers.trigger_string is not None:
                     self.ecf_node.add_trigger(triggers.trigger_string)
                 else:
-                    print("WARNING: Empty trigger")
+                    logging.warning("WARNING: Empty trigger")
             else:
                 raise Exception("Triggers must be a Triggers object")
         self.triggers = triggers
@@ -96,7 +96,7 @@ class EcflowNode():
             if triggers.trigger_string is not None:
                 self.ecf_node.add_part_trigger(triggers.trigger_string, mode)
             else:
-                print("WARNING: Empty trigger")
+                logging.warning("WARNING: Empty trigger")
         else:
             raise Exception("Triggers must be a Triggers object")
 
@@ -347,9 +347,8 @@ class EcflowSuiteTask(EcflowNode):
                 interpreter = f"{sys.executable}"
             logging.debug("vars %s", variables)
             for var, value in variables.items():
-                print(value)
-                value = value.replace("@INTERPRETER@", interpreter.replace("#!",""))
-                print(value)
+                logging.debug("value=%s", value)
+                value = value.replace("@INTERPRETER@", interpreter.replace("#!", ""))
                 logging.debug("var=%s value=%s", var, value)
                 if self.ecf_node is not None:
                     self.ecf_node.add_variable(var, value)

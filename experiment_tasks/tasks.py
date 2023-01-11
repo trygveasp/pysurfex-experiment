@@ -54,8 +54,9 @@ class AbstractTask(object):
         geo = surfex.get_geo_object(domain_json)
         self.geo = geo
 
-        wrapper = self.config.get_setting("TASK#WRAPPER")
-        if wrapper is None:
+        try:
+            wrapper = self.config.get_setting("TASK#WRAPPER")
+        except KeyError:
             wrapper = ""
         self.wrapper = wrapper
 
@@ -98,7 +99,7 @@ class AbstractTask(object):
 
         self.wdir = str(os.getpid())
         self.wdir = self.wrk + "/" + self.wdir
-        print("WDIR=" + self.wdir)
+        logging.info("WDIR=" + self.wdir)
         os.makedirs(self.wdir, exist_ok=True)
         os.chdir(self.wdir)
 
@@ -716,7 +717,7 @@ class FirstGuess4OI(AbstractTask):
         cache = surfex.cache.Cache(cache_time)
         # cache = None
         if os.path.exists(output):
-            print("Output already exists " + output)
+            logging.info("Output already exists " + output)
         else:
             self.write_file(output, variables, self.geo, validtime, cache=cache)
 
@@ -769,7 +770,8 @@ class FirstGuess4OI(AbstractTask):
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 input_geo_file = self.config.get_setting(identifier + "INPUT_GEO_FILE")
 
-            print(inputfile, fileformat, converter, input_geo_file)
+            logging.info("inputfile=%s, fileformat=%s", inputfile, fileformat)
+            logging.info("converter=%s, input_geo_file=%s", converter, input_geo_file)
             config_file = self.work_dir + "/config/first_guess.yml"
             with open(config_file, mode="r", encoding="utf-8") as file_handler:
                 config = yaml.safe_load(file_handler)

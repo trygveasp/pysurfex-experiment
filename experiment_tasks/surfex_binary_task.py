@@ -173,7 +173,6 @@ class SurfexBinaryTask(AbstractTask):
 
         if self.perturbed:
             if self.pert > 0:
-                print(self.ivar)
                 surfex.PerturbedOffline(binary, batch, prepfile, self.ivar, settings, input_data,
                                         pgdfile=pgdfile, surfout=surffile,
                                         archive_data=archive_data,
@@ -271,7 +270,7 @@ class Prep(SurfexBinaryTask):
                                             prep_filetype=prep_filetype, prep_pgdfile=prep_pgdfile,
                                             prep_pgdfiletype=prep_pgdfiletype)
         else:
-            print("Output already exists: ", output)
+            logging.info("Output already exists: %s", output)
 
         # PREP should prepare for forecast
         if os.path.exists(self.fc_start_sfx):
@@ -311,7 +310,7 @@ class Forecast(SurfexBinaryTask):
             fname = "SURFOUT." + last_ll.strftime("%Y%m%d") + "_" + last_ll.strftime("%H") + "h" + \
                     last_ll.strftime("%M") + ".nc"
             archive_data = surfex.JsonOutputData({fname: self.archive + "/" + fname})
-            print(archive_data)
+            logging.debug("archive_data=%s", archive_data)
 
         # Forcing dir
         self.exp_file_paths.add_system_file_path("forcing_dir", self.exp_file_paths.get_system_path(
@@ -323,7 +322,7 @@ class Forecast(SurfexBinaryTask):
                                             prep_file_path=self.fc_start_sfx,
                                             forc_zs=forc_zs, archive_data=archive_data)
         else:
-            print("Output already exists: ", output)
+            logging.info("Output already exists: ", output)
 
     def postfix(self):
         """Do default postfix."""
@@ -381,7 +380,7 @@ class PerturbedRun(SurfexBinaryTask):
                                             forc_zs=forc_zs,
                                             prep_file_path=prep_file_path)
         else:
-            print("Output already exists: ", output)
+            logging.info("Output already exists: ", output)
 
     # Make sure we don't clean yet
     def postfix(self):
@@ -435,7 +434,7 @@ class Soda(SurfexBinaryTask):
                                             prep_file_path=prep_file_path,
                                             perturbed_file_pattern=perturbed_file_pattern)
         else:
-            print("Output already exists: ", output)
+            logging.info("Output already exists: ", output)
 
         # SODA should prepare for forecast
         if os.path.exists(self.fc_start_sfx):

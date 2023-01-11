@@ -1,6 +1,7 @@
 """Experiment configuration."""
 import os
 import json
+import shutil
 import logging
 from datetime import timedelta, datetime
 import collections
@@ -69,6 +70,8 @@ class Configuration():
                 exp_name = self.settings["GENERAL"]["EXP"]
             if "EXP_DIR" in self.settings["GENERAL"]:
                 exp_dir = self.settings["GENERAL"]["EXP_DIR"]
+        self.exp_dir = exp_dir
+        self.exp_name = exp_name
         if exp_name is not None and exp_dir is not None:
             self.system = experiment.System(system, exp_name)
         else:
@@ -80,7 +83,7 @@ class Configuration():
             stream = self.settings["GENERAL#STREAM"]
         self.stream = stream
 
-        print(self.settings["SYSTEM_FILE_PATHS"])
+        logging.debug("SYSTEM_FILE_PATHS: %s", self.settings["SYSTEM_FILE_PATHS"])
         # System file paths
         system_file_paths = self.settings["SYSTEM_FILE_PATHS"]
         system_file_paths = experiment.SystemFilePathsFromSystem(system_file_paths, self.system,
@@ -90,7 +93,6 @@ class Configuration():
         # TODO handle host
         self.host = "0"
         self.exp_file_paths = surfex.SystemFilePaths(system_file_paths.paths[self.host])
-        print("\n\nexp_fil_paths", self.exp_file_paths)
         self.sfx_exp_vars = {
             "EXP": exp_name,
             "SFX_EXP_LIB": self.exp_file_paths.get_system_path("sfx_exp_lib"),
@@ -103,6 +105,27 @@ class Configuration():
         server = self.settings["SCHEDULER"]
         self.server = scheduler.EcflowServer(ecf_host=server["ECF_HOST"], ecf_port=server["ECF_PORT"])
         self.env_submit = self.settings["SUBMISSION"]
+
+        troika = None
+        try:
+            troika = config.system.get_var("TROIKA", "0")
+        except Exception:
+            troika = shutil.which("troika")
+        if troika is None:
+            raise Exception("Troika not found!")
+
+        troika_config = None
+        if "TROIKA" in self.settings:
+            if "CONFIG" in self.settings["TROIKA"]:
+                troika_config = self.settings["TROIKA"]["CONFIG"]
+        if troika_config is None:
+            raise Exception("Troika config not found!")
+        self.troika = troika
+        self.troika_config = troika_config
+
+        if "TASK" not in self.settings:
+            self.settings.update({"TASK": {}})
+
         # Date/time
         progress = self.settings["PROGRESS"]
         self.progress = experiment.ProgressFromDict(progress)
@@ -138,6 +161,7 @@ class Configuration():
                 logging.debug("fcint_members %s", str(fcint_members))
                 logging.debug("fgint_members %s", str(fgint_members))
 
+        # Some relevant assimilation settings
         obs_types = self.settings["SURFEX"]["ASSIM"]["OBS"]["COBS_M"]
         nnco_r = self.settings["SURFEX"]["ASSIM"]["OBS"]["NNCO"]
         snow_ass = self.settings["SURFEX"]["ASSIM"]["ISBA"]["UPDATE_SNOW_CYCLES"]
@@ -398,7 +422,7 @@ class Configuration():
         """Check if the setting contains value.
 
         Args:
-            setting (_type_): _description_
+            setting (str): _description_
             value (list): _description_
 
         Returns:
@@ -565,9 +589,9 @@ class Configuration():
                 setting = str(setting).replace("@EEE@", "")
 
             if pert is not None:
-                print("replace", pert, "in ", setting)
+                logging.debug("replace %s in %s", pert, setting)
                 setting = str(setting).replace("@PERT@", str(pert))
-                print("replaced", pert, "in ", setting)
+                logging.debug("replaced %s in %s", pert, setting)
 
             if var is not None:
                 setting = str(setting).replace("@VAR@", var)
@@ -628,7 +652,6 @@ class Configuration():
             list: List with times
         """
         # Create a list of all unique HHs from all members
-        # print(self.members, self.get_hh_list())
         hh_list_all = []
         if self.members is not None:
             for __ in self.members:
@@ -644,7 +667,6 @@ class Configuration():
                 if hour not in hh_list_all:
                     hh_list_all.append(hour)
 
-        # print(hh_list_all)
         # Sort this list
         hh_list = []
         for hour in sorted(hh_list_all):
@@ -829,8 +851,6 @@ class Configuration():
             return expanded_list
 
         for __, element in enumerate(elements):
-            # element = elements[i]
-            # print(element)
             if element.find(sep2) > 0 or element.find(sep3) > 0:
                 step = 1
                 if element.find(sep2) > 0:
@@ -855,8 +875,6 @@ class Configuration():
                         this_ll = fmt.format(ltime)
                         expanded_list.append(this_ll)
             else:
-                # print(fmt, element)
-                # print(fmt.decode('ascii'))
                 add = True
                 ltime = int(element)
                 if maxval is not None:

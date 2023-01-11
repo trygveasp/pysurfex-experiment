@@ -4,6 +4,7 @@
   "background": {
     "HOST": "0",
     "SUBMIT": "",
+    "LOGLEVEL": "INFO",
     "ENV": {
        "0UDUNITS": "import os; os.environ.update({'UDUNITS2_XML_PATH': '/usr/share/udunits/udunits2.xml'})"
     },

@@ -1,4 +1,6 @@
 """Discover tasks."""
+import os
+import sys
 import logging
 import importlib
 import inspect
@@ -65,12 +67,27 @@ def get_task(name, config):
 
     Returns:
         _type_: _description_
-    """
-    known_types = discover(experiment_tasks, experiment_tasks.AbstractTask, attrname="__type_name__")
-    print(known_types)
-    logging.debug("Available task types: %s", ", ".join(known_types.keys()))
 
-    cls = known_types[name.lower()]
+    """
+    task_name = name.lower()
+    plugin_namespace = None
+    plugin_namespace_location = f"{config.exp_dir}/experiment_plugin_tasks"
+    if os.path.exists(plugin_namespace_location):
+        logging.info("Using local plugin directory %s", plugin_namespace_location)
+        sys.path.insert(0, config.exp_dir)
+        import experiment_plugin_tasks as plugin_namespace  # noqa
+
+    known_types = discover(experiment_tasks, experiment_tasks.AbstractTask, attrname="__type_name__")
+    logging.debug("Available task types: %s", ", ".join(known_types.keys()))
+    plugin_known_types = {}
+    if plugin_namespace is not None:
+        plugin_known_types = discover(plugin_namespace, experiment_tasks.AbstractTask, attrname="__type_name__")
+        logging.debug("Available plugin task types: %s", ", ".join(plugin_known_types.keys()))
+
+    if task_name in plugin_known_types:
+        cls = plugin_known_types[task_name]
+    else:
+        cls = known_types[task_name]
     task = cls(config)
     logging.debug("Created %r for %s", task, name)
     return task

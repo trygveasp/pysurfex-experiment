@@ -5,17 +5,16 @@ from argparse import ArgumentParser
 import experiment_scheduler as scheduler
 import experiment
 
+
 def parse_submit_cmd_exp(argv):
     """Parse the command line input arguments."""
     parser = ArgumentParser("ECF_submit task to ecflow")
-    parser.add_argument('-sub', dest="submission_file",  type=str, help="JSON file with experiment settings")
     parser.add_argument('-config', dest="config_file", type=str, help="Configuration file")
     parser.add_argument('-task', type=str, help="Task name")
     parser.add_argument('-task_job', type=str, help="Task job file")
     parser.add_argument('-output', type=str, help="Output file")
     parser.add_argument('-template', dest="template_job", type=str, help="Template")
     parser.add_argument('-troika', type=str, help="Troika", default="troika", required=False)
-    parser.add_argument('-troika_config', type=str, help="Troika config", required=False, default="config.yml")
     parser.add_argument('--debug', dest="debug", action="store_true", help="Debug information")
     # parser.add_argument('--version', action='version', version=__version__)
 
@@ -43,10 +42,11 @@ def submit_cmd_exp(**kwargs):
     logging.info("************ ECF_submit_exp ******************")
 
     logging.debug("kwargs %s", str(kwargs))
-    print(scheduler.__file__)
+    logging.debug("scheduler location: %s", scheduler.__file__)
     config = kwargs.get("config_file")
     config = experiment.ConfigurationFromJsonFile(config)
-    submission_defs = scheduler.TaskSettingsJson(kwargs.get('submission_file'))
+    troika_config = config.get_setting("TROIKA#CONFIG")
+    submission_defs = scheduler.TaskSettings(config.env_submit)
     sub = scheduler.NoSchedulerSubmission(submission_defs)
     sub.submit(
         kwargs.get("task"),
@@ -55,7 +55,7 @@ def submit_cmd_exp(**kwargs):
         kwargs.get("task_job"),
         kwargs.get("output"),
         kwargs.get("troika"),
-        kwargs.get("troika_config")
+        troika_config
     )
 
 

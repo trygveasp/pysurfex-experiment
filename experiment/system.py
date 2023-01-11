@@ -51,7 +51,6 @@ class System():
             if hostn in host_system["HOST_SYSTEM"]:
                 for key in host_system["HOST_SYSTEM"][hostn]:
                     value = host_system["HOST_SYSTEM"][hostn][key]
-                    # print(hostn, key, value)
                     systemn.update({key: value})
             system.update({str(host): systemn})
 
