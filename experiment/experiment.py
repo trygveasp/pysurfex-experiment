@@ -101,33 +101,12 @@ class ExpFromFiles(Exp):
             raise FileNotFoundError("Server settings missing " + env_server)
 
         # Date/time settings
-        # TODO adapt progress object
-        dtg = None
-        dtgbeg = None
-        dtgpp = None
-        stream_txt = ""
-        if stream is not None:
-            stream_txt = f"_stream{stream}_"
-        progress_file = f"{wdir}/progress{stream_txt}.json"
-        if os.path.exists(progress_file):
-            with open(progress_file, mode="r", encoding="utf-8") as progress_file:
-                progress = json.load(progress_file)
-                dtg = progress["DTG"]
-                dtgbeg = progress["DTGBEG"]
-        else:
-            dtg = None
-            dtgbeg = None
-        progress_pp_file = f"{wdir}/progressPP{stream_txt}.json"
-        if os.path.exists(progress_pp_file):
-            with open(progress_pp_file, mode="r", encoding="utf-8") as progress_pp_file:
-                progress_pp = json.load(progress_pp_file)
-                dtgpp = progress_pp["DTGPP"]
-        else:
-            dtgpp = None
+        progressObj = experiment.ProgressFromFiles(wdir, stream=stream)
         progress = {
-            "DTG": dtg,
-            "DTGBEG": dtgbeg,
-            "DTGPP": dtgpp
+            "DTG": progressObj.dtg_string,
+            "DTGEND": progressObj.dtgend_string,
+            "DTGBEG": progressObj.dtgbeg_string,
+            "DTGPP": progressObj.dtgpp_string
         }
 
         # Configuration

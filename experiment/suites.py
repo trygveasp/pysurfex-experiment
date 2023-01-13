@@ -193,19 +193,11 @@ class SurfexSuite():
                     if schemes[scheme].upper() != "NONE":
                         do_soda = True
 
-                do_snow_ass = False
                 obs_types = config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-                nnco = config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+                nnco = config.get_nnco(dtg=dtg)
                 for ivar in range(0, len(nnco)):
-                    if len(obs_types) > ivar and obs_types[ivar] == "SWE":
-                        snow_ass = config.get_setting("SURFEX#ASSIM#ISBA#UPDATE_SNOW_CYCLES")
-                        if len(snow_ass) > 0:
-                            cycle_hour = int(dtg.strftime("%H"))
-                            for sn_cycle in snow_ass:
-                                if cycle_hour == int(sn_cycle):
-                                    logging.debug("Do snow assimilation for %s", dtg)
-                                    do_soda = True
-                                    do_snow_ass = True
+                    if nnco[ivar] == 1 and obs_types[ivar] == "SWE":
+                        do_soda = True
 
                 triggers = scheduler.EcflowSuiteTriggers(prep_complete)
                 if not do_soda:
@@ -274,7 +266,7 @@ class SurfexSuite():
 
                     an_variables = {"t2m": False, "rh2m": False, "sd": False}
                     obs_types = config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-                    nnco = config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+                    nnco = config.get_nnco(dtg=dtg)
                     for t_ind, val in enumerate(obs_types):
                         if nnco[t_ind] == 1:
                             if obs_types[t_ind] == "T2M" or obs_types[t_ind] == "T2M_P":
@@ -282,8 +274,7 @@ class SurfexSuite():
                             elif obs_types[t_ind] == "HU2M" or obs_types[t_ind] == "HU2M_P":
                                 an_variables.update({"rh2m": True})
                             elif obs_types[t_ind] == "SWE":
-                                if do_snow_ass:
-                                    an_variables.update({"sd": True})
+                                an_variables.update({"sd": True})
 
                     analysis = scheduler.EcflowSuiteFamily("Analysis", initialization, ecf_files)
                     fg4oi = scheduler.EcflowSuiteTask("FirstGuess4OI", analysis,
@@ -442,6 +433,8 @@ def get_defs(config, suite_type):
         # if fcint is None:
         #    raise Exception
         dtg = dtg + timedelta(seconds=fcint)
+
+    logging.debug("Built DTGS: %s", dtgs)
     if suite_type == "surfex":
         return SurfexSuite(suite_name, config, joboutdir, task_settings, dtgs, dtg, dtgbeg=dtgbeg)
     raise NotImplementedError(f"Suite definition for {suite_type} is not implemented!")

@@ -120,7 +120,7 @@ def surfex_script(**kwargs):
 
         progress = None
         if action.lower() == "prod" or action.lower() == "continue":
-            progress = experiment.ProgressFromFile(progress_file, progress_pp_file)
+            progress = experiment.ProgressFromFiles(work_dir)
             if dtgend is not None:
                 progress.dtgend = datetime.strptime(dtgend, "%Y%m%d%H%M")
         else:
@@ -129,22 +129,11 @@ def surfex_script(**kwargs):
                     raise Exception("No DTG was provided!")
 
                 # Convert dtg/dtgend to datetime
-                if isinstance(dtg, str):
-                    if len(dtg) == 10:
-                        dtg = datetime.strptime(dtg, "%Y%m%d%H")
-                    elif len(dtg) == 12:
-                        dtg = datetime.strptime(dtg, "%Y%m%d%H%M")
-                    else:
-                        raise Exception("DTG must be YYYYMMDDHH or YYYYMMDDHHmm")
-                if isinstance(dtgend, str):
-                    if len(dtgend) == 10:
-                        dtgend = datetime.strptime(dtgend, "%Y%m%d%H")
-                    elif len(dtgend) == 12:
-                        dtgend = datetime.strptime(dtgend, "%Y%m%d%H%M")
-                    else:
-                        raise Exception("DTGEND must be YYYYMMDDHH or YYYYMMDDHHmm")
+                dtg = experiment.Progress.string2datetime(dtg)
+                dtgend = experiment.Progress.string2datetime(dtgend)
+
                 # Read progress from file. Returns None if no file exists or not set.
-                progress = experiment.ProgressFromFile(progress_file, progress_pp_file)
+                progress = experiment.ProgressFromFiles(work_dir, stream=stream)
 
                 dtgbeg = dtg
                 if dtgend is None:
@@ -153,10 +142,10 @@ def surfex_script(**kwargs):
 
         # Update progress
         if progress is not None:
-            progress.save(progress_file, progress_pp_file, indent=2)
+            progress.save_as_json(work_dir, progress=True, progress_pp=True, indent=2)
 
         # Set experiment from files. Should be existing now after setup
-        exp_dependencies_file = work_dir + "/exp_dependencies.json"
+        exp_dependencies_file = f"{work_dir}/exp_dependencies.json"
         sfx_exp = experiment.ExpFromFilesDepFile(exp_dependencies_file, stream=stream)
         sfx_exp.dump_exp_configuration(f"{work_dir}/exp_configuration.json", indent=2)
 

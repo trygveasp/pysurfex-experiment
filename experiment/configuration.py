@@ -161,14 +161,17 @@ class Configuration():
                 logging.debug("fcint_members %s", str(fcint_members))
                 logging.debug("fgint_members %s", str(fgint_members))
 
+    def get_nnco(self, dtg=None):
         # Some relevant assimilation settings
         obs_types = self.settings["SURFEX"]["ASSIM"]["OBS"]["COBS_M"]
         nnco_r = self.settings["SURFEX"]["ASSIM"]["OBS"]["NNCO"]
         snow_ass = self.settings["SURFEX"]["ASSIM"]["ISBA"]["UPDATE_SNOW_CYCLES"]
         snow_ass_done = False
+        if dtg is None:
+            dtg = self.progress.dtg
         if len(snow_ass) > 0:
-            if self.progress.dtg is not None:
-                hhh = int(self.progress.dtg.strftime("%H"))
+            if dtg is not None:
+                hhh = int(dtg.strftime("%H"))
                 for s_n in snow_ass:
                     if hhh == int(s_n):
                         snow_ass_done = True
@@ -183,9 +186,9 @@ class Configuration():
                         ival = 0
             logging.debug("ivar=%s ival=%s", ivar, ival)
             nnco.append(ival)
-        self.settings["SURFEX"]["ASSIM"]["OBS"].update({"NNCO": nnco})
+
         logging.debug("NNCO: %s", nnco)
-        logging.debug("NNCO: %s", self.settings["SURFEX"]["ASSIM"]["OBS"]["NNCO"])
+        return nnco
 
     def split_member_settings(self, merged_settings):
         """Process the settings and split out member settings.

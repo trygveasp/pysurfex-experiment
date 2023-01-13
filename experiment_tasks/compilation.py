@@ -32,10 +32,10 @@ class SyncSourceCode(AbstractTask):
         ifsaux_copy = f"{offline_source}/src/LIB/ifsaux_copy"
         if os.path.exists(ifsaux):
             cmd = f"{rsync} {ifsaux}/* {ifsaux_copy}"
-            print(cmd)
+            logging.info(cmd)
             os.system(cmd)
         cmd = f"{rsync} {offline_source}/ {sfx_lib}"
-        print(cmd)
+        logging.info(cmd)
         os.system(cmd)
 
 
@@ -96,8 +96,6 @@ class MakeOfflineBinaries(AbstractTask):
     def execute(self):
         """Execute."""
 
-        for key, value in os.environ.items():
-            print(f"in task0 : {key}={value}")
         rte = {**os.environ}
         wrapper = ""
         sfx_lib = self.exp_file_paths.get_system_path("sfx_exp_lib")

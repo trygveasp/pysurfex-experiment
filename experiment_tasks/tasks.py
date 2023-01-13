@@ -112,7 +112,8 @@ class AbstractTask(object):
             "sd": "surface_snow_thickness"
         }
         self.obs_types = self.config.get_setting("SURFEX#ASSIM#OBS#COBS_M")
-        self.nnco = self.config.get_setting("SURFEX#ASSIM#OBS#NNCO")
+        self.nnco = self.config.get_nnco(dtg=self.config.progress.dtg)
+        self.config.update_setting("SURFEX#ASSIM#OBS#NNCO", self.nnco)
         logging.debug("NNCO: %s", self.nnco)
 
     def run(self):
@@ -510,11 +511,13 @@ class FirstGuess(AbstractTask):
     def execute(self):
         """Execute."""
         firstguess = self.config.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
+        logging.debug("DTG: %s BASEDTG: %s", self.dtg, self.fg_dtg)
         fg_file = self.exp_file_paths.get_system_file("first_guess_dir", firstguess,
                                                       basedtg=self.fg_dtg,
                                                       validtime=self.dtg,
                                                       default_dir="default_first_guess_dir")
 
+        logging.info("Use first guess: %s", fg_file)
         if os.path.islink(self.fg_guess_sfx) or os.path.exists(self.fg_guess_sfx):
             os.unlink(self.fg_guess_sfx)
         os.symlink(fg_file, self.fg_guess_sfx)
@@ -693,7 +696,7 @@ class FirstGuess4OI(AbstractTask):
                         if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
                             var_in.append("t2m")
                         elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
-                            var_in.append("rh2m")    
+                            var_in.append("rh2m")
                         elif obs_types[ivar] == "SWE":
                             var_in.append("sd")
                         else:
@@ -835,24 +838,9 @@ class LogProgress(AbstractTask):
 
     def execute(self):
 
-        stream_text = ""
-        if self.stream is not None and self.stream != "":
-            stream_text = "_stream_" + self.stream
-        progress_file = self.work_dir + "/progress" + stream_text + ".json"
-
-        if os.path.exists(progress_file):
-            with open(progress_file, mode="r", encoding="utf-8") as file_handler:
-                progress = json.load(file_handler)
-        else:
-            progress = {}
-
-        # Update progress
-        progress.update({
-            "DTG": self.next_dtg.strftime("%Y%m%d%H%M"),
-            "DTGBEG": self.dtgbeg.strftime("%Y%m%d%H%M")
-        })
-        with open(progress_file, mode="w", encoding="utf-8") as file_handler:
-            json.dump(progress, file_handler, indent=2)
+        progress = self.config.progress
+        progress.update(dtg=self.next_dtg)
+        progress.save_as_json(self.config.exp_dir, progress=True)
 
 
 class LogProgressPP(AbstractTask):
@@ -868,20 +856,6 @@ class LogProgressPP(AbstractTask):
 
     def execute(self):
 
-        stream_text = ""
-        if self.stream is not None and self.stream != "":
-            stream_text = "_stream_" + self.stream
-        progress_file = self.work_dir + "/progressPP" + stream_text + ".json"
-
-        if os.path.exists(progress_file):
-            with open(progress_file, mode="r", encoding="utf-8") as file_handler:
-                progress = json.load(file_handler)
-        else:
-            progress = {}
-
-        # Update progress
-        progress.update({
-            "DTGPP": self.next_dtg.strftime("%Y%m%d%H%M")
-        })
-        with open(progress_file, mode="w", encoding="utf-8") as file_handler:
-            json.dump(progress, file_handler, indent=2)
+        progress = self.config.progress
+        progress.update(dtgpp=self.next_dtg)
+        progress.save_as_json(self.config.exp_dir, progress_pp=True)

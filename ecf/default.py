@@ -69,12 +69,7 @@ def default_main(**kwargs):
             if len(parts) == 2:
                 args_dict.update({parts[0]: parts[1]})
 
-    progress = {
-        "DTG": kwargs.get("DTG"),
-        "DTGPP": kwargs.get("DTGPP")
-    }
-
-    config.update_setting("PROGRESS", progress)
+    config.progress.update(dtg=kwargs.get("DTG"), dtgpp=kwargs.get("DTGPP"))
     task_info = {
         "WRAPPER": kwargs.get("WRAPPER"),
         "VAR_NAME": kwargs.get("VAR_NAME"),

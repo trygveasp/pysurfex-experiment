@@ -305,10 +305,12 @@ class Forecast(SurfexBinaryTask):
 
         archive_data = None
         if self.config.get_setting("SURFEX#IO#CTIMESERIES_FILETYPE") == "NC":
-            last_ll = self.dtg + timedelta(hours=self.fcint)
+            last_ll = self.dtg + timedelta(seconds=self.fcint)
 
+            logging.debug("LAST_LL: %s", last_ll)
             fname = "SURFOUT." + last_ll.strftime("%Y%m%d") + "_" + last_ll.strftime("%H") + "h" + \
                     last_ll.strftime("%M") + ".nc"
+            logging.debug("Filename: %s", fname)
             archive_data = surfex.JsonOutputData({fname: self.archive + "/" + fname})
             logging.debug("archive_data=%s", archive_data)
 
@@ -322,7 +324,7 @@ class Forecast(SurfexBinaryTask):
                                             prep_file_path=self.fc_start_sfx,
                                             forc_zs=forc_zs, archive_data=archive_data)
         else:
-            logging.info("Output already exists: ", output)
+            logging.info("Output already exists: %s", output)
 
     def postfix(self):
         """Do default postfix."""
