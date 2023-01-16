@@ -10,13 +10,16 @@
       "LogProgress",
       "LogProgressPP",
       "PrepareCycle",
+      "SyncSourceCode",
+      "ConfigureOfflineBinaries",
       "FirstGuess"
     ]
   },
   "nebula": {
     "SCHOST": "nebula",
     "ENV": {
-       "ECFLOW": "import os; import sys; exec(os.popen('/software/sse/manual/lmod/lmod/libexec/lmod python load met-modules ecflow/4.17.1').read()); sys.path.insert(0, os.environ['PYTHONPATH'])"
+       "ECFLOW": "import os; import sys; exec(os.popen('/software/sse/manual/lmod/lmod/libexec/lmod python load met-modules ecflow/4.17.1').read()); sys.path.insert(0, os.environ['PYTHONPATH'])",
+       "ECCODES": "import os; import sys; exec(os.popen('/software/sse/manual/lmod/lmod/libexec/lmod python load met-modules eccodes/2.18.0-nsc2-ENABLE-AEC-intel-2018a-eb').read());"
     },
     "BATCH":{
       "ACCOUNT": "#SBATCH  -A met_forsk",
@@ -30,6 +33,13 @@
     ]
   },
   "task_exceptions": {
+     "MakeOfflineBinaries": {
+        "ENV": {
+           "BUILD": "import os; import sys; exec(os.popen('/software/sse/manual/lmod/lmod/libexec/lmod python load met-modules buildenv-intel/2018b-eb').read());",
+           "NETCDF": "import os; import sys; exec(os.popen('/software/sse/manual/lmod/lmod/libexec/lmod python load netCDF/4.8.1-HDF5-1.12.1-nsc1-intel-2018a-eb').read());",
+           "HDF": "import os; import sys; exec(os.popen('/software/sse/manual/lmod/lmod/libexec/lmod python load HDF5/1.12.1-nsc1-intel-2018a-eb').read());"
+        }
+     }
   }
 }
 

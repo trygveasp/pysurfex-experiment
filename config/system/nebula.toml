@@ -17,6 +17,6 @@ JOBOUTDIR = "/nobackup/forsk/@USER@/sfx_data/@EXP@/job"
 HM_CS = "gfortran"
 PARCH = ""
 MKDIR = "mkdir -p"
-RSYNC = "rsync -avh"
+RSYNC = "rsync -avhL"
 SURFEX_CONFIG = "nebula"
 
