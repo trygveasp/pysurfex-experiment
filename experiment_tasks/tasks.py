@@ -54,9 +54,8 @@ class AbstractTask(object):
         geo = surfex.get_geo_object(domain_json)
         self.geo = geo
 
-        try:
-            wrapper = self.config.get_setting("TASK#WRAPPER")
-        except KeyError:
+        wrapper = self.config.get_setting("TASK#WRAPPER")
+        if wrapper is None:
             wrapper = ""
         self.wrapper = wrapper
 
@@ -226,7 +225,9 @@ class QualityControl(AbstractTask):
 
         """
         AbstractTask.__init__(self, config)
+        print(self.config.get_setting("TASK"))
         self.var_name = self.config.get_setting("TASK#VAR_NAME")
+        print(self.var_name)
 
     def execute(self):
         """Execute."""
@@ -401,9 +402,11 @@ class QualityControl(AbstractTask):
 
         output = self.obsdir + "/qc_" + self.translation[self.var_name] + ".json"
         uname = self.var_name.upper()
-        try:
-            tests = self.config.get_setting(f"OBSERVATIONS#QC#{uname}#TESTS")
-        except KeyError:
+        print(uname)
+        print(f"OBSERVATIONS#QC#{uname}#TESTS")
+        tests = self.config.get_setting(f"OBSERVATIONS#QC#{uname}#TESTS")
+        print(tests)
+        if tests is None:
             logging.info("Use default test OBSERVATIONS#QC#TESTS")
             tests = self.config.get_setting("OBSERVATIONS#QC#TESTS")
 
@@ -746,30 +749,28 @@ class FirstGuess4OI(AbstractTask):
         """
         f_g = None
         for var in variables:
-            try:
-                identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
+            identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
+            inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
+                                                    validtime=self.dtg)
+            if inputfile is None:
+                identifier = "INITIAL_CONDITIONS#FG4OI#"
                 inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
                                                     validtime=self.dtg)
-            except KeyError:
-                identifier = "INITIAL_CONDITIONS#FG4OI#"
-                inputfile = self.config.get_setting(identifier + "INPUTFILE", basedtg=self.fg_dtg,
-                                                    validtime=self.dtg)
-            try:
-                identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                fileformat = self.config.get_setting(identifier + "FILEFORMAT")
-            except KeyError:
+            identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
+            fileformat = self.config.get_setting(identifier + "FILEFORMAT")
+            if fileformat is None:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 fileformat = self.config.get_setting(identifier + "FILEFORMAT")
-            try:
-                identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                converter = self.config.get_setting(identifier + "CONVERTER")
-            except KeyError:
+
+            identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
+            converter = self.config.get_setting(identifier + "CONVERTER")
+            if converter is None:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 converter = self.config.get_setting(identifier + "CONVERTER")
-            try:
-                identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
-                input_geo_file = self.config.get_setting(identifier + "INPUT_GEO_FILE")
-            except KeyError:
+
+            identifier = "INITIAL_CONDITIONS#FG4OI#" + var + "#"
+            input_geo_file = self.config.get_setting(identifier + "INPUT_GEO_FILE")
+            if input_geo_file is None:
                 identifier = "INITIAL_CONDITIONS#FG4OI#"
                 input_geo_file = self.config.get_setting(identifier + "INPUT_GEO_FILE")
 
