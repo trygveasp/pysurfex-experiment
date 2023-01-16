@@ -349,6 +349,7 @@ class EcflowSuiteTask(EcflowNode):
             for var, value in variables.items():
                 logging.debug("value=%s", value)
                 value = value.replace("@INTERPRETER@", interpreter.replace("#!", ""))
+                value = value.replace("@NAME@", name)
                 logging.debug("var=%s value=%s", var, value)
                 if self.ecf_node is not None:
                     self.ecf_node.add_variable(var, value)

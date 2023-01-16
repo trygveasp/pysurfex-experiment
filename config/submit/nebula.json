@@ -27,7 +27,8 @@
       "SHARED": "#SBATCH --exclusive",
       "TASKS_PER_NODE": "#SBATCH --ntasks-per-node=1",
       "NTPC": "#SBATCH --ntasks-per-core=1",
-      "WALLTIME": "#SBATCH -t 00:30:00"
+      "WALLTIME": "#SBATCH -t 00:30:00",
+      "NAME": "#SBATCH -J @NAME@"
     },
     "tasks": [
     ]

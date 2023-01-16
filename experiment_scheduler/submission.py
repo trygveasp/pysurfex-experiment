@@ -91,6 +91,8 @@ class TaskSettings(object):
                             if setting in variables:
                                 value = f"{ecf_micro}{setting}{ecf_micro}"
                                 logging.debug(value)
+                        if isinstance(value, str):
+                            value = value.replace("@NAME@", task)
                         m_task_settings.update({setting: value})
                     logging.debug(m_task_settings)
                     return m_task_settings
