@@ -111,8 +111,8 @@ class Configuration():
             troika = config.system.get_var("TROIKA", "0")
         except Exception:
             troika = shutil.which("troika")
-        if troika is None:
-            raise Exception("Troika not found!")
+        #if troika is None:
+        #    raise Exception("Troika not found!")
 
         troika_config = None
         if "TROIKA" in self.settings:
@@ -125,6 +125,8 @@ class Configuration():
 
         if "TASK" not in self.settings:
             self.settings.update({"TASK": {}})
+        if "ARGS" not in self.settings["TASK"]:
+            self.settings["TASK"].update({"ARGS": {}})
 
         # Date/time
         progress = self.settings["PROGRESS"]
@@ -495,7 +497,7 @@ class Configuration():
         return True
 
     def get_setting(self, setting, check_parsing=True, validtime=None, basedtg=None,
-                    tstep=None, pert=None, var=None, default=None, abort=True):
+                    tstep=None, pert=None, var=None, default=None, abort=False):
         """Get setting.
 
         Args:
