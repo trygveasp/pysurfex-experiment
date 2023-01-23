@@ -108,7 +108,7 @@ class Configuration():
 
         troika = None
         try:
-            troika = config.system.get_var("TROIKA", "0")
+            troika = self.system.get_var("TROIKA", "0")
         except Exception:
             troika = shutil.which("troika")
         #if troika is None:
