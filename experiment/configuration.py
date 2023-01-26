@@ -6,8 +6,8 @@ import logging
 from datetime import timedelta, datetime
 import collections
 import copy
-import experiment_scheduler as scheduler
 import surfex
+import experiment_scheduler as scheduler
 import experiment
 
 
