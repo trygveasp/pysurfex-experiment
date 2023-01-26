@@ -3,9 +3,8 @@
 #
 
 source /modules/rhel8/conda/install/etc/profile.d/conda.sh
-conda activate production-10-2022
+conda activate production-03-2022
 
-# export XRD=XRD_IFSAUX_COPY
 export NPROC=32
 
 # NetCDF

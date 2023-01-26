@@ -164,6 +164,15 @@ class Configuration():
                 logging.debug("fgint_members %s", str(fgint_members))
 
     def get_nnco(self, dtg=None):
+        """Get the active observations.
+
+        Args:
+            dtg (_type_, optional): datetime.datetime. Defaults to None.
+
+        Returns:
+            list: List with either 0 or 1
+
+        """
         # Some relevant assimilation settings
         obs_types = self.settings["SURFEX"]["ASSIM"]["OBS"]["COBS_M"]
         nnco_r = self.settings["SURFEX"]["ASSIM"]["OBS"]["NNCO"]

@@ -1,6 +1,7 @@
 """Compilation."""
 import os
 import logging
+import shutil
 import surfex
 from experiment_tasks import AbstractTask
 
@@ -37,6 +38,30 @@ class SyncSourceCode(AbstractTask):
         cmd = f"{rsync} {offline_source}/ {sfx_lib}"
         logging.info(cmd)
         os.system(cmd)
+
+        # Add system files if not existing
+        scripts = self.config.get_setting("GENERAL#PYSURFEX_EXPERIMENT")
+        host = self.config.system.get_var("SURFEX_CONFIG", self.host)
+
+        system_file_scripts = f"{scripts}/config/offline/conf/system.{host}"
+        system_file_lib = f"{sfx_lib}/conf/system.{host}"
+
+        logging.debug("Check system_file_lib %s", system_file_lib)
+        if not os.path.exists(system_file_lib):
+            logging.debug("Check system_file_scripts %s", system_file_scripts)
+            if os.path.exists(system_file_scripts):
+                logging.info("Copy %s %s", system_file_scripts, system_file_lib)
+                shutil.copy(system_file_scripts, system_file_lib)
+
+        rules_file_scripts = f"{scripts}/config/offline/src/Rules.{host}.mk"
+        rules_file_lib = f"{sfx_lib}/src/Rules.{host}.mk"
+
+        logging.debug("Check rules_file_lib %s", rules_file_lib)
+        if not os.path.exists(rules_file_lib):
+            logging.debug("Check rules_file_scripts %s", rules_file_scripts)
+            if os.path.exists(rules_file_scripts):
+                logging.info("Copy %s %s", rules_file_scripts, rules_file_lib)
+                shutil.copy(rules_file_scripts, rules_file_lib)
 
 
 class ConfigureOfflineBinaries(AbstractTask):
