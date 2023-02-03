@@ -64,11 +64,16 @@ class Progress():
         if name[-7:] == "_string":
             base = name[0:-7]
             if base in self.__dict__:
+
                 val = self.__dict__[base]
-                if isinstance(val, datetime):
-                    return val.strftime("%Y%m%d%H%M")
+                logging.debug("%s %s", val, type(val))
+                if val is None:
+                    return None
                 else:
-                    raise AttributeError
+                    if isinstance(val, datetime):
+                        return val.strftime("%Y%m%d%H%M")
+                    else:
+                        raise AttributeError
             else:
                 raise AttributeError
         else:

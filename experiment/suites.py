@@ -37,7 +37,7 @@ class SurfexSuite():
         ecf_out = joboutdir
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
         os.makedirs(ecf_out, exist_ok=True)
-        logging.debug("ECF_HOME: ", ecf_home)
+        logging.debug("ECF_HOME: %s", ecf_home)
 
         # Commands started from the scheduler does not have full environment
         ecf_job_cmd = (
