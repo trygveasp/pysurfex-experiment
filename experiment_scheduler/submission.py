@@ -4,6 +4,7 @@ import sys
 import json
 import subprocess
 import logging
+import collections.abc
 
 
 class TaskSettings(object):
@@ -17,6 +18,19 @@ class TaskSettings(object):
         """
         self.submission_defs = submission_defs
         self.job_type = None
+
+    @staticmethod
+    def update_task_setting(d, u):
+        for k, v in u.items():
+            if isinstance(v, collections.abc.Mapping):
+                d[k] = TaskSettings.update_task_setting(d.get(k, {}), v)
+            else:
+                logging.debug("key=%s value=%s", k, v)
+                if k == "tasks":
+                     logging.debug("Skip tasks")
+                     return d
+                d[k] = v
+        return d
 
     def parse_submission_defs(self, task):
         """Parse the submssion definitions.
@@ -43,26 +57,18 @@ class TaskSettings(object):
 
         if task_submit_type in all_defs:
             for setting in all_defs[task_submit_type]:
-                if setting != "tasks":
-                    task_settings.update({setting: all_defs[task_submit_type][setting]})
+                logging.debug("task_submit_type for task %s: %s", task, task_submit_type)
+                task_settings = self.update_task_setting(task_settings, all_defs[task_submit_type])
 
-        # TODO do it recursively
         if "task_exceptions" in all_defs:
             if task in all_defs["task_exceptions"]:
-                keywords = ["BATCH", "ENV"]
-                for kword in keywords:
-                    if kword in all_defs["task_exceptions"][task]:
-                        kword_settings = all_defs["task_exceptions"][task][kword]
-                        for key, value in kword_settings.items():
-                            if key in task_settings:
-                                logging.warning(
-                                    "key=%s already exists in task_settings", key
-                                )
-                            task_settings[kword].update({key: value})
+                logging.debug("Task task_exceptions for task %s", task)
+                task_settings = self.update_task_setting(task_settings, all_defs["task_exceptions"][task])
 
         if "SCHOST" in task_settings:
             self.job_type = task_settings["SCHOST"]
-        logging.debug("Task settings: %s", task_settings)
+
+        logging.debug("Task settings for task %s: %s", task, task_settings)
         return task_settings
 
     def get_task_settings(self, task, key=None, variables=None, ecf_micro="%"):
@@ -180,7 +186,8 @@ class TaskSettings(object):
             env_settings = self.get_task_settings(
                 task, "ENV", variables=variables, ecf_micro=ecf_micro
             )
-            logging.debug(env_settings)
+            logging.debug("Env settings for task %s %s", task, env_settings)
+            logging.debug("Variables for task %s %s", task, variables)
             python_task_env = ""
             for __, e_setting in env_settings.items():
                 python_task_env = python_task_env + f"{e_setting}\n"
