@@ -52,6 +52,17 @@
        "ENV": {
           "MODULE": "print('My beautiful module')"
        }
+    },
+    "Forcing":{
+       "ENV":{
+        "epygram": "import sys; sys.path.insert(0, '/perm/hlam/apps/epygram/1.4.13/epygram'); sys.path.insert(0, '/perm/hlam/apps/epygram/1.4.13/site'); sys.path.insert(0, '/perm/hlam/apps/epygram/1.4.13')"
+      }
+    },
+    "ModifyForcing":{
+       "ENV":{
+        "epygram": "import sys; sys.path.insert(0, '/perm/hlam/apps/epygram/1.4.13/epygram'); sys.path.insert(0, '/perm/hlam/apps/epygram/1.4.13/site'); sys.path.insert(0, '/perm/hlam/apps/epygram/1.4.13')"
+      }
     }
+
   }
 }
