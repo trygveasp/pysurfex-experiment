@@ -67,18 +67,24 @@ INPUT_FORMAT = "netcdf"
 INPUT_GEO_FILE = ""      # Needed for some surfex file types
 # PATTERN = "/tmp/host1/testdata/fc@YYYY@@MM@@DD@@HH@+@LLLL@grib2"
 # INPUT_FORMAT = "grib2"
-RAIN_CONVERTER = "totalprec"
 ZREF = "ml"
 ZVAL = "constant"
 UREF = "ml"
 UVAL = "constant"
+QA_CONVERTER = "rh2q"
 ZSORO_CONVERTER = "phi2m"
+RAIN_CONVERTER = "totalprec"
+SNOW_CONVERTER = "none"
+DIR_SW_CONVERTER = "none"
 SCA_SW = "constant"
 CO2 = "constant"
 WIND_CONVERTER = "windspeed"
 WINDDIR_CONVERTER = "winddir"
+PS_CONVERTER = "none"
 DEBUG = false
 TIMESTEP = 3600
+ANALYSIS = false
 MODIFY_FORCING = false
+INTERPOLATION = "bilinear"
 
 [SYSTEM]
