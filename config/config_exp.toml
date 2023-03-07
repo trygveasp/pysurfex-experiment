@@ -62,28 +62,36 @@ ENSMSEL = []                            # Ensemble members to run (list with mem
 FORC_ZS = true
 
 [FORCING]
-PATTERN = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
+# After 2023013123
+# PATTERN = "https://thredds.met.no/thredds/dodsC/metpparchive/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
+# Before 2023020100
+PATTERN = "https://thredds.met.no/thredds/dodsC/metpparchivev3/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
+# Local file system paths at MET-Norway
+# PATTERN = "/lustre/storeB/project/metproduction/products/yr_short/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
+# PATTERN = "/lustre/storeB/immutable/archive/projects/metproduction/yr_short//@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc
+# PATTERN = "/lustre/storeB/project/metkl/klinogrid/archive/met_nordic_analysis/v3/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
 INPUT_FORMAT = "netcdf"
 INPUT_GEO_FILE = ""      # Needed for some surfex file types
 # PATTERN = "/tmp/host1/testdata/fc@YYYY@@MM@@DD@@HH@+@LLLL@grib2"
 # INPUT_FORMAT = "grib2"
-ZREF = "ml"
+ZREF = "screen"
 ZVAL = "constant"
-UREF = "ml"
+UREF = "screen"
 UVAL = "constant"
-QA_CONVERTER = "rh2q"
-ZSORO_CONVERTER = "phi2m"
-RAIN_CONVERTER = "totalprec"
-SNOW_CONVERTER = "none"
-DIR_SW_CONVERTER = "none"
+QA_CONVERTER = "rh2q_mslp"
+ZSORO_CONVERTER = "none"
+RAIN_CONVERTER = "calcrain"
+SNOW_CONVERTER = "calcsnow"
+DIR_SW_CONVERTER = "analysis"
 SCA_SW = "constant"
+LW_CONVERTER = "analysis"
 CO2 = "constant"
-WIND_CONVERTER = "windspeed"
-WINDDIR_CONVERTER = "winddir"
-PS_CONVERTER = "none"
+WIND_CONVERTER = "none"
+WINDDIR_CONVERTER = "none"
+PS_CONVERTER = "mslp2ps"
 DEBUG = false
 TIMESTEP = 3600
-ANALYSIS = false
+ANALYSIS = true
 MODIFY_FORCING = false
 INTERPOLATION = "bilinear"
 
