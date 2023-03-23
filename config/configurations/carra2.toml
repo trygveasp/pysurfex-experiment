@@ -1,8 +1,10 @@
 
 [initial_conditions.fg4oi]
-inputfile = "@sfx_exp_data@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.@YYYY@@MM@@DD@_@HH_LL@h00.nc"
+inputfile = "@sfx_exp_data@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.nc"
 fileformat = "surfex"
 
+[initial_conditions.fg4oi.surface_snow_thickness]
+converter = "none"
 
 [SURFEX.IO]
 CTIMESERIES_FILETYPE = "NC"         # Fileformat for timseries. Inline runs use FA
