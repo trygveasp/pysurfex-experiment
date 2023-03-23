@@ -21,7 +21,7 @@ class SyncSourceCode(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "SyncSourceCode")
 
     def execute(self):
         """Execute."""
@@ -81,7 +81,7 @@ class ConfigureOfflineBinaries(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "ConfigureOfflineBinaries")
 
     def execute(self):
         """Execute."""
@@ -119,7 +119,7 @@ class MakeOfflineBinaries(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "MakeOfflineBinaries")
 
     def execute(self):
         """Execute."""

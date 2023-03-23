@@ -1,7 +1,10 @@
 """General task module."""
+
+import atexit
 import json
 import os
 import shutil
+import socket
 
 import numpy as np
 import surfex
@@ -18,7 +21,7 @@ from ..toolbox import FileManager
 class AbstractTask(object):
     """General abstract task to be implemented by all tasks using default container."""
 
-    def __init__(self, config):
+    def __init__(self, config, name):
         """Initialize a task run by the default ecflow container.
 
         All tasks implelementing this base class will work with the default
@@ -26,6 +29,7 @@ class AbstractTask(object):
 
         Args:
             config (ParsedObject): Parsed configuration
+            name (str): Task name
 
         Raises:
             RuntimeError: Surfex not loaded
@@ -35,6 +39,7 @@ class AbstractTask(object):
             raise RuntimeError("Surfex module not properly loaded!")
 
         self.config = config
+        self.name = name
         self.logger = get_logger_from_config(config)
         self.logger.debug("Create task")
         self.fmanager = FileManager(self.config)
@@ -133,11 +138,9 @@ class AbstractTask(object):
         self.input_path = self.platform.get_system_value("namelist_dir")
         ###########################################################################
 
-        self.wdir = str(os.getpid())
-        self.wdir = self.wrk + "/" + self.wdir
-        self.logger.info("WDIR=%s", self.wdir)
-        os.makedirs(self.wdir, exist_ok=True)
-        os.chdir(self.wdir)
+        self.pid = str(os.getpid())
+        wdir = f"{self.wrk}/{socket.gethostname()}{self.pid}"
+        self.wdir = wdir
 
         self.fg_guess_sfx = self.wrk + "/first_guess_sfx"
         self.fc_start_sfx = self.wrk + "/fc_start_sfx"
@@ -154,31 +157,68 @@ class AbstractTask(object):
         self.config = self.config.copy(update=update)
         self.logger.debug("NNCO: %s", self.nnco)
 
+    def create_wdir(self):
+        """Create task working directory."""
+        os.makedirs(self.wdir, exist_ok=True)
+
+    def change_to_wdir(self):
+        """Change to task working dir."""
+        os.chdir(self.wdir)
+
+    def remove_wdir(self):
+        """Remove working directory."""
+        os.chdir(self.wrk)
+        shutil.rmtree(self.wdir)
+        self.logger.debug("Remove %s", self.wdir)
+
+    def rename_wdir(self, prefix="Failed_"):
+        """Rename failed working directory."""
+        fdir = f"{self.wrk}/{prefix}{self.name}"
+        if os.path.isdir(self.wdir):
+            if os.path.exists(fdir):
+                self.logger.debug("%s exists. Remove it", fdir)
+                shutil.rmtree(fdir)
+            shutil.move(self.wdir, fdir)
+            self.logger.info("Renamed %s to %s", self.wdir, fdir)
+
+    def execute(self):
+        """Do nothing for base execute task."""
+        self.logger.warning("Using empty base class execute")
+
+    def prepfix(self):
+        """Do default preparation before execution.
+
+        E.g. clean
+
+        """
+        self.logger.debug("Base class prep")
+        self.logger.info("WDIR=%s", self.wdir)
+        self.create_wdir()
+        self.change_to_wdir()
+        atexit.register(self.rename_wdir)
+
+    def postfix(self):
+        """Do default postfix.
+
+        E.g. clean
+
+        """
+        self.logger.debug("Base class post")
+        # Clean workdir
+        if self.config.get_value("general.keep_workdirs"):
+            self.rename_wdir(prefix=f"Finished_task_{self.pid}_")
+        else:
+            self.remove_wdir()
+
     def run(self):
         """Run task.
 
         Define run sequence.
 
         """
+        self.prepfix()
         self.execute()
         self.postfix()
-
-    def execute(self):
-        """Do nothing for base execute task."""
-        self.logger.warning("Using empty base class execute")
-
-    def postfix(self):
-        """Do default postfix.
-
-        Default is to clean.
-
-        """
-        self.logger.info("Base class postfix")
-        if self.wrk is not None:
-            os.chdir(self.wrk)
-
-        if self.wdir is not None:
-            shutil.rmtree(self.wdir)
 
 
 class PrepareCycle(AbstractTask):
@@ -197,7 +237,7 @@ class PrepareCycle(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "PrepareCycle")
 
     def run(self):
         """Override run."""
@@ -210,7 +250,7 @@ class PrepareCycle(AbstractTask):
 
 
 class QualityControl(AbstractTask):
-    """Perform quakity control of observations.
+    """Perform quality control of observations.
 
     Args:
         AbstractTask (_type_): _description_
@@ -223,7 +263,7 @@ class QualityControl(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "QualityControl")
         print(self.config.get_value("task"))
         self.var_name = self.config.get_value("task.var_name")
         print(self.var_name)
@@ -409,7 +449,7 @@ class OptimalInterpolation(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "OptimalInterpolation")
         self.var_name = self.config.get_value("task.var_name")
 
     def execute(self):
@@ -498,15 +538,20 @@ class FirstGuess(AbstractTask):
 
     Args:
         AbstractTask (AbstractTask): Base class
+
     """
 
-    def __init__(self, config):
+    def __init__(self, config, name=None):
         """Construct a FistGuess task.
 
         Args:
             config (ParsedObject): Parsed configuration
+            name (str, optional): Task name. Defaults to None
+
         """
-        AbstractTask.__init__(self, config)
+        if name is None:
+            name = "FirstGuess"
+        AbstractTask.__init__(self, config, name)
         self.var_name = self.config.get_value("task.var_name", default=None)
 
     def execute(self):
@@ -539,7 +584,7 @@ class CycleFirstGuess(FirstGuess):
             config (ParsedObject): Parsed configuration
 
         """
-        FirstGuess.__init__(self, config)
+        FirstGuess.__init__(self, config, "CycleFirstGuess")
 
     def execute(self):
         """Execute."""
@@ -568,7 +613,7 @@ class Oi2soda(AbstractTask):
         Args:
             config (ParsedObject): Parsed configuration
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "Oi2soda")
         self.var_name = self.config.get_value("task.var_name")
 
     def execute(self):
@@ -638,7 +683,7 @@ class Qc2obsmon(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "Qc2obsmon")
         self.var_name = self.config.get_value("task.var_name")
 
     def execute(self):
@@ -693,7 +738,7 @@ class FirstGuess4OI(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "FirstGuess4OI")
         self.var_name = self.config.get_value("task.var_name")
 
     def execute(self):
@@ -880,7 +925,7 @@ class LogProgress(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "LogProgress")
 
     def execute(self):
         """Execute."""
@@ -910,7 +955,7 @@ class LogProgressPP(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "LogProgressPP")
 
     def execute(self):
         """Execute."""

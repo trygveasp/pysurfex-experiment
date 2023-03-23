@@ -18,7 +18,7 @@ class Forcing(AbstractTask):
             config (dict): Actual configuration dict
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "Forcing")
         self.var_name = self.config.get_value("task.var_name")
         try:
             user_config = self.config.get_value("task.forcing_user_config")
@@ -127,7 +127,7 @@ class ModifyForcing(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "ModifyForcing")
         self.var_name = self.config.get_value("task.var_name")
         try:
             user_config = self.config.get_value("task.forcing_user_config")

@@ -156,7 +156,7 @@ class Gmted(AbstractTask):
             config (Config): Config object
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "Gmted")
 
         self.gmted2010_path = self.fmanager.platform.get_platform_value(
             "gmted2010_data_path"
@@ -351,7 +351,7 @@ class Soil(AbstractTask):
             config (deode.ParsedConfig): Configuration
 
         """
-        AbstractTask.__init__(self, config)
+        AbstractTask.__init__(self, config, "Soil")
         self.logger.debug("Constructed Soil task")
 
     def get_domain_properties(self, config) -> dict:

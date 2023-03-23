@@ -134,7 +134,12 @@ class Exp(ExpFromConfig):
         if exp_dir is None:
             exp_dir = sfx_data
         update = {
-            "general": {"stream": stream, "case": case, "times": times},
+            "general": {
+                "stream": stream,
+                "case": case,
+                "keep_workdirs": False,
+                "times": times,
+            },
             "system": {
                 "joboutdir": system.get_var("joboutdir", host),
                 "wrk": sfx_data + "/@YYYY@@MM@@DD@_@HH@/@RRR@/",

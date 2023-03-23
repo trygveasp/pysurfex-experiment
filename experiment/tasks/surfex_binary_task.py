@@ -13,19 +13,18 @@ class SurfexBinaryTask(AbstractTask):
         AbstractTask (object): Inheritance of base task class
     """
 
-    def __init__(self, config, mode=None):
+    def __init__(self, config, name=None, mode=None):
         """Construct a surfex binary task.
 
         Args:
-            config (_type_): _description_
-            mode (_type_): _description_
-
+            config (ParsedConfig): Parsed config
+            name (str): Task name
+            mode (str): mode
         """
-        AbstractTask.__init__(self, config)
+        if name is None:
+            name = self.__class__.__name__
+        AbstractTask.__init__(self, config, name)
 
-        if mode is None:
-            self.logger.info("No mode provided")
-            return
         self.mode = mode
         self.need_pgd = True
         self.need_prep = True
@@ -319,7 +318,7 @@ class Pgd(SurfexBinaryTask):
             config (ParsedObject): Parsed configuration
 
         """
-        SurfexBinaryTask.__init__(self, config, "pgd")
+        SurfexBinaryTask.__init__(self, config, "Pgd", "pgd")
 
     def execute(self):
         """Execute."""
@@ -347,7 +346,7 @@ class Prep(SurfexBinaryTask):
             config (ParsedObject): Parsed configuration
 
         """
-        SurfexBinaryTask.__init__(self, config, "prep")
+        SurfexBinaryTask.__init__(self, config, "Prep", "prep")
 
     def execute(self):
         """Execute."""
@@ -399,7 +398,7 @@ class Forecast(SurfexBinaryTask):
             config (ParsedObject): Parsed configuration
 
         """
-        SurfexBinaryTask.__init__(self, config, "offline")
+        SurfexBinaryTask.__init__(self, config, "Forecast", "offline")
 
     def execute(self):
         """Execute."""
@@ -451,9 +450,6 @@ class Forecast(SurfexBinaryTask):
         else:
             self.logger.info("Output already exists: %s", output)
 
-    def postfix(self):
-        """Do default postfix."""
-
 
 class PerturbedRun(SurfexBinaryTask):
     """Running a perturbed forecast task.
@@ -470,7 +466,7 @@ class PerturbedRun(SurfexBinaryTask):
             config (ParsedObject): Parsed configuration
 
         """
-        SurfexBinaryTask.__init__(self, config, "perturbed")
+        SurfexBinaryTask.__init__(self, config, "PerturbedRun", "perturbed")
 
     def execute(self):
         """Execute."""
@@ -510,10 +506,6 @@ class PerturbedRun(SurfexBinaryTask):
         else:
             self.logger.info("Output already exists: %s", output)
 
-    # Make sure we don't clean yet
-    def postfix(self):
-        """Do no postfix."""
-
 
 class Soda(SurfexBinaryTask):
     """Running SODA (Surfex Offline Data Assimilation) task.
@@ -529,7 +521,7 @@ class Soda(SurfexBinaryTask):
             config (ParsedObject): Parsed configuration
 
         """
-        SurfexBinaryTask.__init__(self, config, "soda")
+        SurfexBinaryTask.__init__(self, config, "Soda", "soda")
 
     def execute(self):
         """Execute."""
@@ -569,7 +561,3 @@ class Soda(SurfexBinaryTask):
         if os.path.exists(self.fc_start_sfx):
             os.unlink(self.fc_start_sfx)
         os.symlink(output, self.fc_start_sfx)
-
-    # Make sure we don't clean yet
-    def postfix(self):
-        """Do no postfix."""
