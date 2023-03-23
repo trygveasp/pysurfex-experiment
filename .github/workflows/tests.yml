@@ -1,0 +1,123 @@
+#.github/workflows/tests.yaml
+name: Unit Tests
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - '**' # Every branch
+
+env:
+  USER: "github_runner"
+  HOME: "/tmp"
+
+jobs:
+  tests:
+    if: github.repository_owner == 'metno'
+    strategy:
+      fail-fast: true
+      matrix:
+        os: [ "ubuntu-latest" ]
+        env: [ "pytest" ]
+        python-version: [ "3.8" ]
+
+    name: "${{ matrix.os }}, python=${{ matrix.python-version }}"
+    runs-on: ${{ matrix.os }}
+
+    container:
+      image: python:${{ matrix.python-version }}-bullseye
+      env:
+        COVERAGE_FILE: ".coverage.${{ matrix.env }}.${{ matrix.python-version }}"
+
+    steps:
+      #----------------------------------------------
+      #           check-out repo
+      #----------------------------------------------
+      - name: Check out repository
+        uses: actions/checkout@v3
+
+      #----------------------------------------------
+      #           add matrix specifics
+      #----------------------------------------------
+      - name: Install system gdal libs
+        run: |
+          apt-get update
+          apt-get install -y gdal-bin libgdal-dev
+
+      - name: Install pygdal
+        run: |
+          pip install pygdal=="`gdal-config --version`.*"
+
+      - name: Install other pysurfex dependencies
+        run: |
+           apt-get update
+           apt-get install -y libeccodes-dev libproj-dev libudunits2-dev
+
+      #----------------------------------------------
+      #  --- configure poetry & install project  ----
+      #----------------------------------------------
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+
+      - name: Load cached venv (if cache exists)
+        id: cached-poetry-dependencies
+        uses: actions/cache@v3
+        with:
+          path: .venv
+          key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Install dependencies (if venv cache is not found)
+        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
+        run: poetry install --no-interaction --no-root --only main,test
+
+      - name: Install the project itself
+        run: poetry install --no-interaction --only-root
+
+      #----------------------------------------------
+      #      run test suite and report coverage
+      #----------------------------------------------
+      - name: Run tests
+        run: |
+          poetry run pytest
+
+      #- name: Upload test coverage report to Codecov
+      #  uses: codecov/codecov-action@v3
+      #  with:
+      #    token: ${{ secrets.CODECOV_TOKEN }}
+      #    files: ./.coverage.xml
+        
+      - name: Coveralls
+        if: ${{ matrix.python-version == 3.8 }}
+        run: |
+          export COVERALLS_REPO_TOKEN=${{secrets.COVERALLS_REPO_TOKEN}}
+          poetry run coveralls
+
+      - name: Create documentation
+        if: ${{ matrix.python-version == 3.8 }}
+        run: |
+          poetry run sphinx-build . docs/build/html
+      - name: Commit documentation changes
+        if: ${{ matrix.python-version == 3.8 }}
+        run: |
+          git clone https://github.com/metno/pysurfex-experiment.git --branch gh-pages --single-branch gh-pages
+          cp -r docs/build/html/* gh-pages/
+          cd gh-pages
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add .
+          git commit -m "Update documentation" -a || true
+          # The above command will fail if no changes were present, so we ignore
+          # the return code.
+
+      - name: Push changes
+        if: ${{ matrix.python-version == 3.8 }}
+        uses: ad-m/github-push-action@master
+        with:
+          branch: gh-pages
+          directory: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
