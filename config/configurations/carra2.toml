@@ -3,12 +3,19 @@
 inputfile = "@sfx_exp_data@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.nc"
 fileformat = "surfex"
 
-[initial_conditions.fg4oi.surface_snow_thickness]
+[initial_conditions.fg4oi.altitude]
+inputfile = "@sfx_exp_data@/climate/@domain@/PGD.nc"
 converter = "none"
+[initial_conditions.fg4oi.surface_snow_thickness]
+inputfile = "@sfx_exp_data@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.@YYYY@@MM@@DD@_@HH_LL@h00.nc"
+converter = "none"
+[initial_conditions.fg4oi.land_area_fraction]
+inputfile = "@sfx_exp_data@/climate/@domain@/PGD.nc"
+converter = "nature_town"
 
 [SURFEX.IO]
 CTIMESERIES_FILETYPE = "NC"         # Fileformat for timseries. Inline runs use FA
-LSELECT = true                      # Only write selected diagnostics
+LSELECT = false                     # Only write selected diagnostics
 XTSTEP_OUTPUT = 10800.0             # Output interval from the binary OFFLINE
 LSPLIT_PATCH = false                # Split patches into separate variables in output files
 
@@ -36,7 +43,7 @@ NNCV = [0,1,0,1]                             # Active EKF control variables
 XSIGMA_M = [2.0, 2.0, 0.1 , 0.15]            # Background error
 CVAR_M = ["TG1", "TG2", "WG1" , "WG2"]       # Control variables
 XTPRT_M = [0.0001, 0.0001, 0.00001, 0.00001] # Perturbation magnitude
-LLINCHECK = false
+LLINCHECK = true
 
 [SURFEX.ASSIM.ISBA]
 UPDATE_SNOW_CYCLES = ["06"]          # Cycles to update snow depths/SWE in assimilation.

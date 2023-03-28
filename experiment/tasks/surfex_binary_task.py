@@ -91,7 +91,11 @@ class SurfexBinaryTask(AbstractTask):
             pert = int(pert)
         self.pert = pert
         self.logger.debug("Pert %s", self.pert)
-
+        negpert = False
+        pert_sign = kwargs.get("pert_sign")
+        if pert_sign is not None and pert_sign == "neg":
+            negpert = True
+        self.negpert = negpert
         self.ivar = kwargs.get("ivar")
 
         xyz = ".exe"
@@ -242,6 +246,7 @@ class SurfexBinaryTask(AbstractTask):
                     self.ivar,
                     settings,
                     input_data,
+                    negpert=self.negpert,
                     pgdfile=pgdfile,
                     surfout=surffile,
                     archive_data=archive_data,

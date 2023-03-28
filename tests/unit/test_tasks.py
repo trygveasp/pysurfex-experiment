@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Unit tests for the config file parsing module."""
+import os
 import subprocess
 from pathlib import Path
 
@@ -238,6 +239,7 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
     session_mocker.patch("surfex.run.SURFEXBinary", new=new_surfex_binary)
     session_mocker.patch("surfex.dataset_from_file", new=new_dataset_from_file)
     session_mocker.patch("surfex.BatchJob.run", new=new_batchjob_run_method)
+    session_mocker.patch("surfex.obs.get_datasources")
 
     # Create files needed by gmtedsoil tasks
     tif_files_dir = tmp_path_factory.getbasetemp() / "GMTED2010"
@@ -245,6 +247,29 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
     for fname in ["50N000E_20101117_gmted_mea075", "30N000E_20101117_gmted_mea075"]:
         fpath = tif_files_dir / f"{fname}.tif"
         fpath.touch()
+
+    # Create CMake config file
+    cmake_config_dir = (
+        f"{tmp_path_factory.getbasetemp().as_posix()}/source/util/cmake/config/"
+    )
+    print(cmake_config_dir)
+    os.makedirs(cmake_config_dir, exist_ok=True)
+    cmake_config = (
+        tmp_path_factory.getbasetemp()
+        / "source/util/cmake/config/config.my_harmonie_config.json"
+    )
+    cmake_config.touch()
+
+    bin_files = ["PGD-offline", "PREP-offline", "SODA-offline", "OFFLINE-offline"]
+    bin_dir = (
+        f"{tmp_path_factory.getbasetemp().as_posix()}/host0/test_config/lib/offline/bin/"
+    )
+    os.makedirs(bin_dir, exist_ok=True)
+    for bfile in bin_files:
+        bin_file = (
+            tmp_path_factory.getbasetemp() / f"host0/test_config/lib/offline/bin/{bfile}"
+        )
+        bin_file.touch()
 
     # Mock things that we don't want to test here (e.g., external binaries)
     session_mocker.patch("experiment.tasks.gmtedsoil._import_gdal")

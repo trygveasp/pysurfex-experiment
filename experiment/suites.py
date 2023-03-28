@@ -40,6 +40,9 @@ class SurfexSuite:
                                             Defaults to None.
             ecf_micro (str, optional): Ecflow micro. Defaults to "%"
 
+        Raises:
+            NotImplementedError: Not implmented
+
         """
         if dtgbeg is None:
             dtgbeg_str = datetime2ecflow(dtgs[0])
@@ -51,6 +54,7 @@ class SurfexSuite:
         settings = Configuration(config)
         platform = Platform(config)
         exp_dir = f"{platform.get_system_value('exp_dir')}"
+        platform_name = f"{platform.get_platform_value('name')}"
         ecf_include = exp_dir + "/ecf"
         ecf_files = joboutdir
         os.makedirs(ecf_files, exist_ok=True)
@@ -124,35 +128,46 @@ class SurfexSuite:
 
         if config.get_value("compile.build"):
             comp = EcflowSuiteFamily("Compilation", self.suite, ecf_files)
-            sync = EcflowSuiteTask(
-                "SyncSourceCode",
-                comp,
-                config,
-                task_settings,
-                ecf_files,
-                input_template=template,
-            )
-            sync_complete = EcflowSuiteTrigger(sync, mode="complete")
-            configure = EcflowSuiteTask(
-                "ConfigureOfflineBinaries",
-                comp,
-                config,
-                task_settings,
-                ecf_files,
-                input_template=template,
-                triggers=EcflowSuiteTriggers([sync_complete]),
-            )
-            configure_complete = EcflowSuiteTrigger(configure, mode="complete")
-            EcflowSuiteTask(
-                "MakeOfflineBinaries",
-                comp,
-                config,
-                task_settings,
-                ecf_files,
-                input_template=template,
-                triggers=EcflowSuiteTriggers([configure_complete]),
-            )
-            comp_complete = EcflowSuiteTrigger(comp, mode="complete")
+            if config.get_value("compile.cmake"):
+                EcflowSuiteTask(
+                    "CMakeBuild",
+                    comp,
+                    config,
+                    task_settings,
+                    ecf_files,
+                    input_template=template,
+                )
+                comp_complete = EcflowSuiteTrigger(comp, mode="complete")
+            else:
+                sync = EcflowSuiteTask(
+                    "SyncSourceCode",
+                    comp,
+                    config,
+                    task_settings,
+                    ecf_files,
+                    input_template=template,
+                )
+                sync_complete = EcflowSuiteTrigger(sync, mode="complete")
+                configure = EcflowSuiteTask(
+                    "ConfigureOfflineBinaries",
+                    comp,
+                    config,
+                    task_settings,
+                    ecf_files,
+                    input_template=template,
+                    triggers=EcflowSuiteTriggers([sync_complete]),
+                )
+                configure_complete = EcflowSuiteTrigger(configure, mode="complete")
+                EcflowSuiteTask(
+                    "MakeOfflineBinaries",
+                    comp,
+                    config,
+                    task_settings,
+                    ecf_files,
+                    input_template=template,
+                    triggers=EcflowSuiteTriggers([configure_complete]),
+                )
+                comp_complete = EcflowSuiteTrigger(comp, mode="complete")
         else:
             comp_complete = None
 
@@ -335,6 +350,7 @@ class SurfexSuite:
                         )
                         nncv = config.get_value("SURFEX.ASSIM.ISBA.EKF.NNCV")
                         names = config.get_value("SURFEX.ASSIM.ISBA.EKF.CVAR_M")
+                        llincheck = config.get_value("SURFEX.ASSIM.ISBA.EKF.LLINCHECK")
                         triggers = None
                         fgint = settings.get_fgint(realization=realization)
                         fg_dtg = dtg - fgint
@@ -343,46 +359,77 @@ class SurfexSuite:
                                 EcflowSuiteTrigger(cycle_input_dtg_node[fg_dtg])
                             )
 
-                        nivar = 1
+                        name = "REF"
+                        pert = EcflowSuiteFamily(name, perturbations, ecf_files)
+                        args = f"pert=0;name={name};ivar=0"
+                        logger.debug("args: %s", args)
+                        variables = {"ARGS": args}
+                        EcflowSuiteTask(
+                            "PerturbedRun",
+                            pert,
+                            config,
+                            task_settings,
+                            ecf_files,
+                            triggers=triggers,
+                            variables=variables,
+                            input_template=template,
+                        )
+
+                        # Add extra families in case of llincheck
+                        pert_signs = ["none"]
+                        if llincheck:
+                            pert_signs = ["pos", "neg"]
+
+                        pert_families = []
+                        for pert_sign in pert_signs:
+                            if pert_sign == "none":
+                                pert_families.append(perturbations)
+                            elif pert_sign == "pos":
+                                pert_families.append(
+                                    EcflowSuiteFamily(
+                                        "Pos",
+                                        perturbations,
+                                        ecf_files,
+                                        variables=variables,
+                                    )
+                                )
+                            elif pert_sign == "neg":
+                                pert_families.append(
+                                    EcflowSuiteFamily(
+                                        "Neg",
+                                        perturbations,
+                                        ecf_files,
+                                        variables=variables,
+                                    )
+                                )
+                            else:
+                                raise NotImplementedError
+
+                        nivar = 0
                         for ivar, val in enumerate(nncv):
                             logger.debug("ivar %s, nncv[ivar] %s", str(ivar), str(val))
-                            if ivar == 0:
-                                name = "REF"
-                                args = "pert=" + str(ivar) + ";name=" + name + ";ivar=0"
-                                logger.debug("args: %s", args)
-                                variables = {"ARGS": args}
-
-                                pert = EcflowSuiteFamily(
-                                    name, perturbations, ecf_files, variables=variables
-                                )
-                                EcflowSuiteTask(
-                                    "PerturbedRun",
-                                    pert,
-                                    config,
-                                    task_settings,
-                                    ecf_files,
-                                    triggers=triggers,
-                                    input_template=template,
-                                )
                             if val == 1:
+
                                 name = names[ivar]
-                                args = (
-                                    f"pert={str(ivar + 1)};name={name};ivar={str(nivar)}"
-                                )
-                                logger.debug("args: %s", args)
-                                variables = {"ARGS": args}
-                                pert = EcflowSuiteFamily(
-                                    name, perturbations, ecf_files, variables=variables
-                                )
-                                EcflowSuiteTask(
-                                    "PerturbedRun",
-                                    pert,
-                                    config,
-                                    task_settings,
-                                    ecf_files,
-                                    triggers=triggers,
-                                    input_template=template,
-                                )
+                                nfam = 0
+                                for pert_parent in pert_families:
+                                    pivar = str((nfam * len(nncv)) + ivar + 1)
+                                    pert = EcflowSuiteFamily(name, pert_parent, ecf_files)
+                                    pert_sign = pert_signs[nfam]
+                                    args = f"pert={str(pivar)};name={name};ivar={str(nivar)};pert_sign={pert_sign}"
+                                    logger.debug("args: %s", args)
+                                    variables = {"ARGS": args}
+                                    EcflowSuiteTask(
+                                        "PerturbedRun",
+                                        pert,
+                                        config,
+                                        task_settings,
+                                        ecf_files,
+                                        triggers=triggers,
+                                        variables=variables,
+                                        input_template=template,
+                                    )
+                                    nfam += 1
                                 nivar = nivar + 1
 
                     prepare_oi_soil_input = None
@@ -422,14 +469,18 @@ class SurfexSuite:
                     an_variables = {"t2m": False, "rh2m": False, "sd": False}
                     obs_types = config.get_value("SURFEX.ASSIM.OBS.COBS_M")
                     nnco = settings.get_nnco(dtg=dtg)
+                    need_obs = False
                     for t_ind, val in enumerate(obs_types):
                         if nnco[t_ind] == 1:
                             if val == "T2M" or val == "T2M_P":
                                 an_variables.update({"t2m": True})
+                                need_obs = True
                             elif val == "HU2M" or val == "HU2M_P":
                                 an_variables.update({"rh2m": True})
+                                need_obs = True
                             elif val == "SWE":
                                 an_variables.update({"sd": True})
+                                need_obs = True
 
                     analysis = EcflowSuiteFamily("Analysis", initialization, ecf_files)
                     fg4oi = EcflowSuiteTask(
@@ -442,6 +493,19 @@ class SurfexSuite:
                     )
                     fg4oi_complete = EcflowSuiteTrigger(fg4oi)
 
+                    fetchobs_complete = None
+                    if platform_name == "ECMWF-atos":
+                        if need_obs:
+                            fetchobs = EcflowSuiteTask(
+                                "FetchMarsObs",
+                                analysis,
+                                config,
+                                task_settings,
+                                ecf_files,
+                                input_template=template,
+                            )
+                            fetchobs_complete = EcflowSuiteTrigger(fetchobs)
+
                     triggers = []
                     for var, active in an_variables.items():
                         if active:
@@ -451,7 +515,11 @@ class SurfexSuite:
                             )
                             qc_triggers = None
                             if var == "sd":
-                                qc_triggers = EcflowSuiteTriggers(fg4oi_complete)
+                                qc_triggers = EcflowSuiteTriggers(
+                                    [fg4oi_complete, fetchobs_complete]
+                                )
+                            else:
+                                qc_triggers = EcflowSuiteTriggers(fetchobs_complete)
                             qc_task = EcflowSuiteTask(
                                 "QualityControl",
                                 an_var_fam,

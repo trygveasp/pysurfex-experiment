@@ -139,3 +139,78 @@ class MakeOfflineBinaries(AbstractTask):
         cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make installmaster"
         self.logger.debug(cmd)
         surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+
+
+class CMakeBuild(AbstractTask):
+    """Make offline binaries.
+
+    Args:
+        AbstractTask (_type_): _description_
+    """
+
+    def __init__(self, config):
+        """Construct CMakeBuild task.
+
+        Args:
+            config (ParsedObject): Parsed configuration
+
+        """
+        AbstractTask.__init__(self, config, "CMakeBuild")
+
+    def execute(self):
+        """Execute."""
+        rte = {**os.environ}
+        wrapper = ""
+
+        nproc = 8
+        offline_source = self.config.get_value("compile.offline_source")
+        cmake_config = self.platform.get_system_value("surfex_config")
+        cmake_config = f"{offline_source}/util/cmake/config/config.{cmake_config}.json"
+        if not os.path:
+            raise FileNotFoundError(f"CMake config file {cmake_config} not found!")
+        sfx_lib = f"{self.platform.get_system_value('sfx_exp_lib')}"
+        build_dir = f"{sfx_lib}/offline/"
+        install_dir = f"{sfx_lib}/offline/exe"
+        os.makedirs(install_dir, exist_ok=True)
+        prerequisites = ["gribex_370"]
+        for project in prerequisites:
+            self.logger.info("Compiling %s", project)
+            current_project_dir = f"{offline_source}/util/auxlibs/{project}"
+            fproject = project.replace("/", "-")
+            current_build_dir = f"{build_dir}/{fproject}"
+            os.makedirs(current_build_dir, exist_ok=True)
+            os.chdir(current_build_dir)
+            cmake_flags = "-DCMAKE_BUILD_TYPE=Release "
+            cmake_flags += (
+                f"-DCMAKE_INSTALL_PREFIX={install_dir} -DCONFIG_FILE={cmake_config}"
+            )
+            cmd = f"cmake {current_project_dir} {cmake_flags}"
+            surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+            cmd = f"cmake --build . -- -j{nproc}"
+            surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+            cmd = "cmake --build . --target install"
+            surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+
+        cmake_flags = "-DCMAKE_BUILD_TYPE=Release"
+        cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_PREFIX={install_dir}"
+        cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=YES"
+        cmake_flags += f"{cmake_flags} -DCONFIG_FILE={cmake_config}"
+        os.makedirs(build_dir, exist_ok=True)
+        os.chdir(build_dir)
+
+        # Configure
+        cmd = f"cmake {offline_source}/src {cmake_flags}"
+        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+        # Build
+        cmd = f"cmake --build . -- -j{nproc} offline-pgd offline-prep offline-offline offline-soda"
+        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+
+        # Manual installation
+        programs = ["PGD-offline", "PREP-offline", "OFFLINE-offline", "SODA-offline"]
+        for program in programs:
+            self.logger.info("Installing %s", program)
+            shutil.copy(f"{build_dir}/bin/{program}", f"{install_dir}/{program}")
+
+        xyz_file = sfx_lib + "/xyz"
+        with open(xyz_file, mode="w", encoding="utf-8") as fhandler:
+            fhandler.write("-offline")

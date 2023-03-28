@@ -264,9 +264,7 @@ class QualityControl(AbstractTask):
 
         """
         AbstractTask.__init__(self, config, "QualityControl")
-        print(self.config.get_value("task"))
         self.var_name = self.config.get_value("task.var_name")
-        print(self.var_name)
 
     def execute(self):
         """Execute."""
@@ -420,6 +418,8 @@ class QualityControl(AbstractTask):
 
         indent = 2
         blacklist = {}
+        # TODO
+        an_time = an_time.replace(tzinfo=None)
         json.dump(settings, open("settings.json", mode="w", encoding="utf-8"), indent=2)
         tests = surfex.titan.define_quality_control(
             tests, settings, an_time, domain_geo=self.geo, blacklist=blacklist
@@ -506,12 +506,14 @@ class OptimalInterpolation(AbstractTask):
         )
 
         an_time = validtime
+        # TODO
+        an_time = an_time.replace(tzinfo=None)
         # Read OK observations
         obs_file = f"{self.platform.get_system_value('obs_dir')}/qc_{var}.json"
+        self.logger.info("Obs file: %s", obs_file)
         observations = surfex.dataset_from_file(an_time, obs_file, qc_flag=0)
-
         field = surfex.horizontal_oi(
-            geo,
+            self.geo,
             background,
             observations,
             gelevs=gelevs,
@@ -523,13 +525,13 @@ class OptimalInterpolation(AbstractTask):
             epsilon=epsilon,
             minvalue=minvalue,
             maxvalue=maxvalue,
+            interpol="nearest",
         )
-
-        self.logger.debug("Write output file %s", output_file)
+        self.logger.info("Write output file %s", output_file)
         if os.path.exists(output_file):
             os.unlink(output_file)
         surfex.write_analysis_netcdf_file(
-            output_file, field, var, validtime, gelevs, glafs, new_file=True, geo=geo
+            output_file, field, var, validtime, gelevs, glafs, new_file=True, geo=self.geo
         )
 
 
@@ -806,13 +808,14 @@ class FirstGuess4OI(AbstractTask):
 
         Raises:
             KeyError: Converter not found
+            RuntimeError: No valid data read
 
         """
         f_g = None
         for var in variables:
             lvar = var.lower()
             try:
-                identifier = "initial_conditions.fg4oi." + lvar + "#"
+                identifier = "initial_conditions.fg4oi." + lvar + "."
                 inputfile = self.config.get_value(identifier + "inputfile")
             except AttributeError:
                 identifier = "initial_conditions.fg4oi."
@@ -824,7 +827,7 @@ class FirstGuess4OI(AbstractTask):
             )
 
             try:
-                identifier = "initial_conditions.fg4oi." + lvar + "#"
+                identifier = "initial_conditions.fg4oi." + lvar + "."
                 fileformat = self.config.get_value(identifier + "fileformat")
             except AttributeError:
                 identifier = "initial_conditions.fg4oi."
@@ -834,14 +837,14 @@ class FirstGuess4OI(AbstractTask):
             )
 
             try:
-                identifier = "initial_conditions.fg4oi." + lvar + "#"
+                identifier = "initial_conditions.fg4oi." + lvar + "."
                 converter = self.config.get_value(identifier + "converter")
             except AttributeError:
                 identifier = "initial_conditions.fg4oi."
                 converter = self.config.get_value(identifier + "converter")
 
             try:
-                identifier = "initial_conditions.fg4oi." + lvar + "#"
+                identifier = "initial_conditions.fg4oi." + lvar + "."
                 input_geo_file = self.config.get_value(identifier + "input_geo_file")
             except AttributeError:
                 identifier = "initial_conditions.fg4oi."
@@ -858,7 +861,7 @@ class FirstGuess4OI(AbstractTask):
             geo_input = None
             if input_geo_file != "":
                 geo_input = surfex.get_geo_object(
-                    open(input_geo_file, mode="r", encoding="utf-8")
+                    json.load(open(input_geo_file, mode="r", encoding="utf-8"))
                 )
             defs.update({"filepattern": inputfile, "geo_input": geo_input})
 
@@ -881,13 +884,20 @@ class FirstGuess4OI(AbstractTask):
             )
             self.logger.debug("Fileformat: %s", fileformat)
 
+            self.logger.info(
+                "Set up converter. defs=%s converter_conf=%s", defs, converter_conf
+            )
             converter = surfex.read.Converter(
                 converter, initial_basetime, defs, converter_conf, fileformat
             )
+            self.logger.info("Read converted input for var=%s", var)
             field = surfex.read.ConvertedInput(geo, var, converter).read_time_step(
                 validtime, cache
             )
             field = np.reshape(field, [geo.nlons, geo.nlats])
+
+            if np.all(np.isnan(field)):
+                raise RuntimeError("All data read are undefined!")
 
             # Create file
             if f_g is None:
@@ -966,3 +976,49 @@ class LogProgressPP(AbstractTask):
         config = ParsedConfig.from_file(config_file)
         sfx_exp = ExpFromConfig(config.dict(), progress, loglevel=loglevel)
         sfx_exp.dump_json(config_file, indent=2)
+
+
+class FetchMarsObs(AbstractTask):
+    """Fetch observations from Mars.
+
+    Args:
+        AbstractTask (_type_): _description_
+    """
+
+    def __init__(self, config):
+        """Construct the FetchMarsObs task.
+
+        Args:
+            config (ParsedObject): Parsed configuration
+
+        """
+        AbstractTask.__init__(self, config, "FetchMarsObs")
+
+    def execute(self):
+        """Execute."""
+        basetime_str = self.basetime.strftime("%Y%m%d%H")
+        date_str = self.basetime.strftime("%Y%m%d")
+        obfile = f"{self.obsdir}/ob{basetime_str}"
+        request_file = "mars.req"
+        side_window = as_timedelta("PT90M")
+        window = side_window + side_window - as_timedelta("PT1M")
+        window = str(int(window.total_seconds()) / 60)
+        start_time = (self.basetime - side_window).strftime("%H%M")
+        with open(request_file, mode="w", encoding="utf-8") as fhandler:
+            fhandler.write("RETRIEVE,\n")
+            fhandler.write("REPRES   = BUFR,\n")
+            fhandler.write("TYPE     = OB,\n")
+            fhandler.write(f"TIME     = {start_time},\n")
+            fhandler.write(f"RANGE    = {window},\n")
+            fhandler.write("AREA     = 090/-180/041/180,")
+            fhandler.write("OBSTYPE  = LSD/SSD/SLNS/VSNS,\n")
+            fhandler.write(f"DATE     = {date_str},\n")
+            fhandler.write(f"TARGET   = '{obfile}'\n")
+
+        cmd = f"mars {request_file}"
+        try:
+            batch = surfex.BatchJob(os.environ)
+            self.logger.info("Running %s", cmd)
+            batch.run(cmd)
+        except RuntimeError as exc:
+            raise RuntimeError from exc

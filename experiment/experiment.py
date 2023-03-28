@@ -133,6 +133,9 @@ class Exp(ExpFromConfig):
         exp_dir = exp_dependencies.get("exp_dir")
         if exp_dir is None:
             exp_dir = sfx_data
+        platform_name = exp_dependencies.get("platform")
+        if "name" not in system_file_paths:
+            system_file_paths.update({"name": platform_name})
         update = {
             "general": {
                 "stream": stream,
@@ -675,6 +678,7 @@ class ExpFromFiles(Exp):
 
         exp_dependencies.update(
             {
+                "platform": host,
                 "exp_dir": wdir,
                 "exp_name": exp_name,
                 "pysurfex_experiment": pysurfex_experiment,

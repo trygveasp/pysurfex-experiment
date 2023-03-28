@@ -23,6 +23,7 @@ cycle_length = "PT3H"
 ####################################################################################################
 # Compilation settings
 #####################################################################################################
+cmake = true                         # Build with CMake
 build = true                         # Turn on or off the compilation and binary build (true/false)
 
 
