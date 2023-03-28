@@ -513,7 +513,7 @@ class OptimalInterpolation(AbstractTask):
         self.logger.info("Obs file: %s", obs_file)
         observations = surfex.dataset_from_file(an_time, obs_file, qc_flag=0)
         field = surfex.horizontal_oi(
-            self.geo,
+            geo,
             background,
             observations,
             gelevs=gelevs,
@@ -531,7 +531,7 @@ class OptimalInterpolation(AbstractTask):
         if os.path.exists(output_file):
             os.unlink(output_file)
         surfex.write_analysis_netcdf_file(
-            output_file, field, var, validtime, gelevs, glafs, new_file=True, geo=self.geo
+            output_file, field, var, validtime, gelevs, glafs, new_file=True, geo=geo
         )
 
 
