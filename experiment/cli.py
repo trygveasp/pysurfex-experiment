@@ -278,10 +278,14 @@ def parse_submit_cmd_exp(argv):
     )
     parser.add_argument("-task", type=str, help="Task name")
     parser.add_argument(
-        "-task_job", type=str, help="Task job file", required=False, default=None
+        "-task_job", type=str, help="Task job file", required=False, default="Task.job"
     )
     parser.add_argument(
-        "-output", type=str, help="Output file", required=False, default=None
+        "-output",
+        type=str,
+        help="Output file",
+        required=False,
+        default=f"{os.getcwd()}/Task.log",
     )
     parser.add_argument(
         "-template",
@@ -294,6 +298,9 @@ def parse_submit_cmd_exp(argv):
     parser.add_argument("-troika", type=str, help="Troika", required=False, default=None)
     parser.add_argument(
         "--debug", dest="debug", action="store_true", help="Debug information"
+    )
+    parser.add_argument(
+        "--background", dest="background", action="store_true", help="Run in background"
     )
     parser.add_argument("--version", action="version", version=__version__)
 
@@ -353,6 +360,9 @@ def submit_cmd_exp(**kwargs):
     logger.debug("template_job: %s", template_job)
     logger.debug("task_job: %s", task_job)
     logger.debug("output: %s", output)
+    if kwargs.get("background"):
+        update = {"submission": {"default_submit_type": "background"}}
+        config = config.copy(update=update)
     submission_defs = TaskSettings(config)
     sub = NoSchedulerSubmission(submission_defs)
     sub.submit(kwargs.get("task"), config, template_job, task_job, output)
