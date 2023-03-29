@@ -32,17 +32,7 @@ build = true                         # Turn on or off the compilation and binary
 #####################################################################################################
 
 [domain]
-   name = "DRAMMEN"
-   nimax = 50
-   njmax = 60
-   xloncen = 10.0
-   xlatcen = 60.0
-   xdx = 2500.0
-   xdy = 2500.0
-   ilone = 0
-   ilate = 0
-   xlon0 = 10.0
-   xlat0 = 60.0
+name = "DRAMMEN"
 
 
 [initial_conditions]
