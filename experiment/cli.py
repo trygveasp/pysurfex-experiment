@@ -193,8 +193,11 @@ def surfex_script(**kwargs):
 
         # Create and start the suite
         case = config.get_value("general.case")
-        def_file = f"{case}_{suite}.def"
+        sfx_data = config.get_value("system.sfx_exp_data")
+        os.makedirs(sfx_data, exist_ok=True)
+        def_file = f"{sfx_data}/{case}_{suite}.def"
 
+        logger.info("Creating def file: %s", def_file)
         defs = get_defs(config, suite)
         defs.save_as_defs(def_file)
         server = EcflowServerFromConfig(config)
