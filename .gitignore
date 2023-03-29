@@ -121,3 +121,4 @@ pre_commit.sh
 
 # VScode
 .vscode/
+pysurfex-experiment.code-workspace
