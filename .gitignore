@@ -109,9 +109,15 @@ Env_server
 Env_submit
 Env_system
 
+# Default submit task names
 Task.job.orig
 Task.job
 Task.job.jid
 Task.job.submitlog
 Task.log
 
+# Pre-commit script
+pre_commit.sh
+
+# VScode
+.vscode/

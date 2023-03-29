@@ -59,7 +59,7 @@ def parse_surfex_script_setup(argv):
         dest="pysurfex_experiment",
         help="Pysurfex-experiment library",
         type=str,
-        required=True,
+        required=False,
         default=None,
     )
     parser.add_argument(
@@ -140,6 +140,9 @@ def surfex_script_setup(**kwargs):
     wdir = kwargs.get("wd")
     pysurfex = f"{os.path.dirname(surfex.__file__)}/../"
     pysurfex_experiment = kwargs.get("pysurfex_experiment")
+    if pysurfex_experiment is None:
+        pysurfex_experiment = f"{os.path.abspath(os.path.dirname(__file__))}/../.."
+        logger.info("Using pysurfex_experiment from environment: %s", pysurfex_experiment)
     offline_source = kwargs.get("offline_source")
     namelist_dir = kwargs.get("namelist_dir")
     host = kwargs.get("host")

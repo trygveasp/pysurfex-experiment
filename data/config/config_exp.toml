@@ -48,7 +48,7 @@ build = true                         # Turn on or off the compilation and binary
 [initial_conditions]
 anasurf = "gridpp"
 # "/nobackup/prod2/cooper/BD_archive/2020/09/16/00/fc20200916_00+003
-prep_input_file = "@pysurfex_experiment@/nam/prep_from_namelist_values.json"
+prep_input_file = "@pysurfex_experiment@/data/nam/prep_from_namelist_values.json"
 prep_input_filetype = "json"
 prep_pgdfile = ""
 prep_pgdfiletype = ""

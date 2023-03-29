@@ -6,8 +6,8 @@ import shutil
 from pathlib import Path
 
 import pytest
-
 import toml
+
 from experiment.cli import run_submit_cmd_exp, surfex_exp, update_config
 from experiment.scheduler.submission import TaskSettings
 from experiment.setup.setup import surfex_exp_setup

@@ -580,7 +580,7 @@ class ExpFromFiles(Exp):
             )
 
             for key, fname in system_files.items():
-                gname = f"{pysurfex_experiment}/{fname}"
+                gname = f"{pysurfex_experiment}/data/{fname}"
                 found = False
                 if wdir is not None:
                     lname = f"{wdir}/{fname}"
@@ -601,7 +601,7 @@ class ExpFromFiles(Exp):
 
         # Check existence of needed config files
         config = None
-        gconfig = f"{pysurfex_experiment}/config/config.toml"
+        gconfig = f"{pysurfex_experiment}/data/config/config.toml"
         if wdir is not None:
             lconfig = f"{wdir}/config/config.toml"
             if os.path.exists(lconfig):
@@ -621,7 +621,7 @@ class ExpFromFiles(Exp):
         logger.info("Set up toml config files %s", str(c_files))
         cc_files = {}
         for c_f in c_files:
-            gname = f"{pysurfex_experiment}/config/{c_f}"
+            gname = f"{pysurfex_experiment}/data/config/{c_f}"
             if c_f in pysurfex_files:
                 gname = f"{pysurfex}/surfex/cfg/{c_f}"
             found = False
@@ -643,7 +643,7 @@ class ExpFromFiles(Exp):
         logger.info("Set up other config files %s", str(c_files))
         other_files = {}
         for c_f in ["first_guess.yml", "config.yml", "troika_config.yml"]:
-            gname = f"{pysurfex_experiment}/config/{c_f}"
+            gname = f"{pysurfex_experiment}/data/config/{c_f}"
             if c_f in pysurfex_files:
                 gname = f"{pysurfex}/surfex/cfg/{c_f}"
             found = False
@@ -673,7 +673,7 @@ class ExpFromFiles(Exp):
         )
 
         if namelist_dir is None:
-            namelist_dir = f"{pysurfex_experiment}/nam"
+            namelist_dir = f"{pysurfex_experiment}/data/nam"
             logger.info("Using default namelist directory %s", namelist_dir)
 
         exp_dependencies.update(
@@ -722,10 +722,10 @@ class ExpFromFiles(Exp):
         # First priority is config
         if configuration is not None:
             logger.info("Using configuration %s", configuration)
-            gconf = f"{pysurfex_experiment}/config/configurations/{configuration.lower()}.toml"
+            gconf = f"{pysurfex_experiment}/data/config/configurations/{configuration.lower()}.toml"
             found = False
             if wdir is not None:
-                lconf = f"{wdir}/config/configurations/{configuration.lower()}.toml"
+                lconf = f"{wdir}/data/config/configurations/{configuration.lower()}.toml"
                 if os.path.exists(lconf):
                     logger.info("Using local configuration file %s", lconf)
                     configuration = ExpFromFiles.toml_load(lconf)
@@ -761,9 +761,9 @@ class ExpFromFiles(Exp):
         )
 
         logger.debug("Configuration is: %s", configuration)
-        if write_config_files:
+        if wdir is not None and write_config_files:
             for ename, extra_file in other_files.items():
-                fname = f"config/{ename}"
+                fname = f"{wdir}/config/{ename}"
                 if not os.path.exists(fname):
                     logger.info("Copy %s to %s", extra_file, fname)
                     shutil.copy(extra_file, fname)
