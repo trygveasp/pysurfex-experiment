@@ -105,6 +105,13 @@ def get_config(tmp_path_factory):
     )
     merged_config = ExpFromFiles.merge_dict_from_config_dicts(config_files_dict)
 
+    # Update domain
+    domain_file = f"{pysurfex_experiment}/data/config/domains/Harmonie_domains.json"
+    domain = ExpFromFiles.update_domain_from_json_file(
+        domain_file, merged_config["domain"]
+    )
+    merged_config.update({"domain": domain})
+
     # Create Exp/Configuration object
     stream = None
     env_server = {"ECF_HOST": "localhost"}

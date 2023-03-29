@@ -32,10 +32,7 @@ def config(tmp_path_factory):
             "sfx_exp_lib": f"{scratch}/host0/@EXP@/lib",
             "host_name": "",
             "joboutdir": f"{scratch}/host0/job",
-            "hm_cs": "gfortran",
-            "parch": "",
-            "mkdir": "mkdir -p",
-            "rsync": 'rsync -avh -e "ssh -i ~/.ssh/id_rsa"',
+            "rsync": 'rsync -avh"',
             "surfex_config": "my_harmonie_config",
             "login_host": "localhost",
             "scheduler_pythonpath": "",
@@ -87,6 +84,13 @@ def config(tmp_path_factory):
         exp_dependencies["config"]["config_files"], exp_dependencies["config"]["blocks"]
     )
     merged_config = ExpFromFiles.merge_dict_from_config_dicts(config_files_dict)
+
+    # Update domain
+    domain_file = f"{pysurfex_experiment}/data/config/domains/Harmonie_domains.json"
+    domain = ExpFromFiles.update_domain_from_json_file(
+        domain_file, merged_config["domain"]
+    )
+    merged_config.update({"domain": domain})
 
     # Create Exp/Configuration object
     stream = None

@@ -219,6 +219,7 @@ class ExpFromFiles(Exp):
 
         Raises:
             FileNotFoundError: If host file(s) not found
+            KeyError: Key not found
 
         """
         logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
@@ -269,6 +270,46 @@ class ExpFromFiles(Exp):
             )
             config_settings = self.merge_dict_from_config_dicts(config_files_dict)
 
+        domain_file = exp_dependencies.get("domain_file")
+        domain = config_settings["domain"]
+        domain_name = domain["name"]
+        with open(domain_file, mode="r", encoding="utf-8") as fhandler:
+            domain_props = json.load(fhandler)
+            if domain_name in domain_props:
+                fill_domain = domain_props[domain_name]
+                try:
+                    gsize = fill_domain["GSIZE"]
+                    lat0 = fill_domain["LAT0"]
+                    latc = fill_domain["LATC"]
+                    lon0 = fill_domain["LON0"]
+                    lonc = fill_domain["LONC"]
+                    nlat = fill_domain["NLAT"]
+                    nlon = fill_domain["NLON"]
+                    if "EZONE" in fill_domain:
+                        ezone = fill_domain["EZONE"]
+                    else:
+                        ezone = 11
+                except KeyError as exc:
+                    raise KeyError from exc
+
+                domain_from_file = {
+                    "name": domain_name,
+                    "nimax": nlon,
+                    "njmax": nlat,
+                    "xloncen": lonc,
+                    "xlatcen": latc,
+                    "xdx": gsize,
+                    "xdy": gsize,
+                    "ilone": ezone,
+                    "ilate": ezone,
+                    "xlon0": lon0,
+                    "xlat0": lat0,
+                }
+                domain = self.merge_dict(domain_from_file, domain)
+                config_settings.update({"domain": domain})
+            else:
+                raise KeyError("Domain definition not found")
+
         Exp.__init__(
             self,
             exp_dependencies,
@@ -281,6 +322,75 @@ class ExpFromFiles(Exp):
             stream=stream,
             json_schema=json_schema,
         )
+
+    @staticmethod
+    def update_domain_from_json_file(domain_file, keep_domain):
+        """Update domain info from a json file with HM domains.
+
+        Args:
+            domain_file (str): File name
+            keep_domain (str): Original domain information to keep
+
+        Raises:
+            KeyError: Key not found
+
+        Returns:
+            dict: Updated domain
+        """
+        with open(domain_file, mode="r", encoding="utf-8") as fhandler:
+            domain_props = json.load(fhandler)
+            domain_name = keep_domain["name"]
+            if domain_name in domain_props:
+                fill_domain = domain_props[domain_name]
+                return ExpFromFiles.update_domain(keep_domain, fill_domain, hm_mode=True)
+            else:
+                raise KeyError("Domain definition not found")
+
+    @staticmethod
+    def update_domain(keep_doman, fill_domain, hm_mode=True):
+        """Update domain information.
+
+        Args:
+            keep_doman (dict): Domain properties to keep
+            fill_domain (dict): Domain properties to fill in
+            hm_mode (bool, optional): Properties are in HM syntax. Defaults to True.
+
+        Raises:
+            KeyError: Key not found
+
+        Returns:
+            dict: Updated domain
+        """
+        if hm_mode:
+            try:
+                gsize = fill_domain["GSIZE"]
+                lat0 = fill_domain["LAT0"]
+                latc = fill_domain["LATC"]
+                lon0 = fill_domain["LON0"]
+                lonc = fill_domain["LONC"]
+                nlat = fill_domain["NLAT"]
+                nlon = fill_domain["NLON"]
+                if "EZONE" in fill_domain:
+                    ezone = fill_domain["EZONE"]
+                else:
+                    ezone = 11
+            except KeyError as exc:
+                raise KeyError from exc
+
+            fill_domain = {
+                "nimax": nlon,
+                "njmax": nlat,
+                "xloncen": lonc,
+                "xlatcen": latc,
+                "xdx": gsize,
+                "xdy": gsize,
+                "ilone": ezone,
+                "ilate": ezone,
+                "xlon0": lon0,
+                "xlat0": lat0,
+            }
+        keep_doman = ExpFromFiles.merge_dict(fill_domain, keep_doman)
+        return keep_doman
 
     @staticmethod
     def toml_load(fname):
@@ -598,6 +708,20 @@ class ExpFromFiles(Exp):
                         raise FileNotFoundError(
                             f"No host file found for lname={lname} or gname={gname}"
                         )
+
+        fname = "config/domains/Harmonie_domains.json"
+        gname = f"{pysurfex_experiment}/data/{fname}"
+        found = False
+        if wdir is not None:
+            lname = f"{wdir}/{fname}"
+            if os.path.exists(lname):
+                logger.info("Using local host specific domain file %s", lname)
+                exp_dependencies.update({"domain_file": lname})
+                found = True
+        if not found:
+            if os.path.exists(gname):
+                logger.info("Using general host specific domain file %s", gname)
+                exp_dependencies.update({"domain_file": gname})
 
         # Check existence of needed config files
         config = None

@@ -28,7 +28,6 @@ class System:
             "sfx_exp_data",
             "sfx_exp_lib",
             "joboutdir",
-            "mkdir",
             "rsync",
             "hosts",
             "troika",
