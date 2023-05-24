@@ -85,7 +85,6 @@ def get_config(tmp_path_factory):
         "prep_input_file": f"{tmp_path_factory.getbasetemp().as_posix()}"
         + "/demo/ECMWF/archive/2023/02/18/18/fc20230218_18+006",
         "gmted2010_data_path": f"{tmp_path_factory.getbasetemp().as_posix()}/GMTED2010",
-        "namelists": "{WORKING_DIR}/deode/data/namelists",
     }
 
     env_submit = {

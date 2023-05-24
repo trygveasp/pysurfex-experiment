@@ -1,16 +1,12 @@
 """Tasks running surfex binaries."""
+import json
 import os
 
-from pysurfex.binary_input import JsonOutputData
-from pysurfex.binary_input_legacy import (
-    OfflineInputData,
-    PgdInputData,
-    PrepInputData,
-    SodaInputData,
-)
+import yaml
+from pysurfex.binary_input import InputDataFromNamelist, JsonOutputData
 from pysurfex.configuration import Configuration
 from pysurfex.file import PGDFile, PREPFile, SURFFile
-from pysurfex.namelist_legacy import BaseNamelist
+from pysurfex.namelist import NamelistGenerator
 from pysurfex.platform_deps import SystemFilePaths
 from pysurfex.run import BatchJob, PerturbedOffline, SURFEXBinary
 
@@ -130,14 +126,8 @@ class SurfexBinaryTask(AbstractTask):
         pgd_file_path=None,
         prep_file_path=None,
         archive_data=None,
-        forc_zs=False,
-        masterodb=True,
-        perturbed_file_pattern=None,
-        fcint=3,
         prep_file=None,
-        prep_filetype=None,
         prep_pgdfile=None,
-        prep_pgdfiletype=None,
     ):
         """Execute the surfex binary.
 
@@ -148,79 +138,36 @@ class SurfexBinaryTask(AbstractTask):
             prep_file_path (str, optional): _description_. Defaults to None.
             archive_data (surfex.OutputDataFromSurfexBinaries, optional): A mapping of produced
                 files and where to archive them. Defaults to None.
-            forc_zs (bool, optional): _description_. Defaults to False.
-            masterodb (bool, optional): _description_. Defaults to True.
-            perturbed_file_pattern (_type_, optional): _description_. Defaults to None.
-            fcint (int, optional): _description_. Defaults to 3.
             prep_file (_type_, optional): _description_. Defaults to None.
-            prep_filetype (_type_, optional): _description_. Defaults to None.
             prep_pgdfile (_type_, optional): _description_. Defaults to None.
-            prep_pgdfiletype (_type_, optional): _description_. Defaults to None.
 
-        Raises:
-            NotImplementedError: Unknown implementation.
         """
         rte = os.environ
-        if self.mode == "pgd":
-            self.pgd = True
-            self.need_pgd = False
-            self.need_prep = False
-            input_data = PgdInputData(
-                self.sfx_config, self.exp_file_paths, check_existence=self.check_existence
-            )
-        elif self.mode == "prep":
-            self.prep = True
-            self.need_prep = False
-            input_data = PrepInputData(
-                self.sfx_config,
-                self.exp_file_paths,
-                check_existence=self.check_existence,
-                prep_file=prep_file,
-                prep_pgdfile=prep_pgdfile,
-            )
-        elif self.mode == "offline":
-            input_data = OfflineInputData(
-                self.sfx_config, self.exp_file_paths, check_existence=self.check_existence
-            )
-        elif self.mode == "soda":
-            self.soda = True
-            input_data = SodaInputData(
-                self.sfx_config,
-                self.exp_file_paths,
-                check_existence=self.check_existence,
-                dtg=self.dtg,
-                masterodb=masterodb,
-                perturbed_file_pattern=perturbed_file_pattern,
-            )
-        elif self.mode == "perturbed":
-            self.perturbed = True
-            input_data = OfflineInputData(
-                self.sfx_config, self.exp_file_paths, check_existence=self.check_existence
-            )
-        else:
-            raise NotImplementedError(self.mode + " is not implemented!")
 
-        self.logger.debug("pgd %s", pgd_file_path)
-        self.logger.debug("self.perturbed %s, self.pert %s", self.perturbed, self.pert)
+        self.sfx_config.update_setting("SURFEX#PREP#FILE", prep_file)
+        self.sfx_config.update_setting("SURFEX#PREP#FILEPGD", prep_pgdfile)
+        if self.dtg is not None:
+            self.sfx_config.update_setting("SURFEX#SODA#HH", f"{self.dtg:02d}")
 
-        self.namelist = BaseNamelist(
+        # TODO file handling should be in pysurfex
+        with open(self.namelist_defs, mode="r", encoding="utf-8") as fhandler:
+            definitions = yaml.safe_load(fhandler)
+        namelist = NamelistGenerator(self.mode, self.sfx_config, definitions)
+        settings = namelist.get_namelist()
+
+        with open(self.binary_input_files, mode="r", encoding="utf-8") as fhandler:
+            input_data = json.load(fhandler)
+
+        input_data = InputDataFromNamelist(
+            settings,
+            input_data,
             self.mode,
-            self.sfx_config,
-            self.input_path,
-            forc_zs=forc_zs,
-            prep_file=prep_file,
-            prep_filetype=prep_filetype,
-            prep_pgdfile=prep_pgdfile,
-            prep_pgdfiletype=prep_pgdfiletype,
-            dtg=self.dtg,
-            fcint=fcint,
+            self.exp_file_paths,
+            basetime=self.dtg,
+            validtime=self.dtg,
         )
 
-        self.logger.debug("rte %s", str(rte))
         batch = BatchJob(rte, wrapper=self.wrapper)
-
-        settings = self.namelist.get_namelist()
-        self.geo.update_namelist(settings)
 
         # Create input
         filetype = settings["nam_io_offline"]["csurf_filetype"]
@@ -368,9 +315,7 @@ class Prep(SurfexBinaryTask):
         prep_file = self.platform.substitute(
             prep_file, validtime=self.dtg, basetime=self.fg_dtg
         )
-        prep_filetype = self.config.get_value("initial_conditions.prep_input_filetype")
         prep_pgdfile = self.config.get_value("initial_conditions.prep_pgdfile")
-        prep_pgdfiletype = self.config.get_value("initial_conditions.prep_pgdfiletype")
         prepfile = self.config.get_value("SURFEX.IO.CPREPFILE") + self.suffix
         archive = self.platform.get_system_value("archive_dir")
         output = f"{self.platform.substitute(archive, basetime=self.dtg)}/{prepfile}"
@@ -383,9 +328,7 @@ class Prep(SurfexBinaryTask):
                 output,
                 pgd_file_path=pgd_file_path,
                 prep_file=prep_file,
-                prep_filetype=prep_filetype,
                 prep_pgdfile=prep_pgdfile,
-                prep_pgdfiletype=prep_pgdfiletype,
             )
         else:
             self.logger.info("Output already exists: %s", output)
@@ -417,7 +360,6 @@ class Forecast(SurfexBinaryTask):
         pgdfile = self.config.get_value("SURFEX.IO.CPGDFILE") + self.suffix
         pgd_file_path = f"{self.platform.get_system_value('climdir')}/{pgdfile}"
         binary = self.bindir + "/OFFLINE" + self.xyz
-        forc_zs = self.config.get_value("forecast.forc_zs")
 
         output = (
             self.archive
@@ -456,7 +398,6 @@ class Forecast(SurfexBinaryTask):
                 output,
                 pgd_file_path=pgd_file_path,
                 prep_file_path=self.fc_start_sfx,
-                forc_zs=forc_zs,
                 archive_data=archive_data,
             )
         else:
@@ -486,7 +427,6 @@ class PerturbedRun(SurfexBinaryTask):
         pgd_file_path = f"{self.platform.get_system_value('climdir')}/{pgdfile}"
         bindir = self.platform.get_system_value("bin_dir")
         binary = bindir + "/OFFLINE" + self.xyz
-        forc_zs = self.config.get_value("forecast.forc_zs")
 
         # PREP file is previous analysis unless first assimilation cycle
         if self.fg_dtg == self.dtgbeg:
@@ -512,7 +452,6 @@ class PerturbedRun(SurfexBinaryTask):
                 binary,
                 output,
                 pgd_file_path=pgd_file_path,
-                forc_zs=forc_zs,
                 prep_file_path=prep_file_path,
             )
         else:
@@ -545,7 +484,6 @@ class Soda(SurfexBinaryTask):
 
         prep_file_path = self.fg_guess_sfx
         output = self.archive + "/ANALYSIS" + self.suffix
-        perturbed_file_pattern = None
         if self.settings.setting_is("SURFEX.ASSIM.SCHEMES.ISBA", "EKF"):
             # TODO If pertubed runs moved to pp it should be a diffenent dtg
             archive_dir = self.config.get_value("system.archive_dir")
@@ -554,9 +492,6 @@ class Soda(SurfexBinaryTask):
             first_guess_dir = self.platform.substitute(archive_dir, basetime=self.fg_dtg)
             self.exp_file_paths.add_system_file_path("first_guess_dir", first_guess_dir)
 
-            csurffile = self.config.get_value("SURFEX.IO.CSURFFILE")
-            perturbed_file_pattern = csurffile + "_PERT@PERT@" + self.suffix
-
         if not os.path.exists(output) or self.force:
             SurfexBinaryTask.execute_binary(
                 self,
@@ -564,7 +499,6 @@ class Soda(SurfexBinaryTask):
                 output,
                 pgd_file_path=pgd_file_path,
                 prep_file_path=prep_file_path,
-                perturbed_file_pattern=perturbed_file_pattern,
             )
         else:
             self.logger.info("Output already exists: %s", output)

@@ -72,8 +72,16 @@ def parse_surfex_script_setup(argv):
     )
     parser.add_argument(
         "-namelist",
-        dest="namelist_dir",
-        help="Namelist directory",
+        dest="namelist_defs",
+        help="Namelist definitions",
+        type=str,
+        required=False,
+        default=None,
+    )
+    parser.add_argument(
+        "-i",
+        dest="binary_input_files",
+        help="Binary input files",
         type=str,
         required=False,
         default=None,
@@ -144,7 +152,8 @@ def surfex_script_setup(**kwargs):
         pysurfex_experiment = f"{os.path.abspath(os.path.dirname(__file__))}/../.."
         logger.info("Using pysurfex_experiment from environment: %s", pysurfex_experiment)
     offline_source = kwargs.get("offline_source")
-    namelist_dir = kwargs.get("namelist_dir")
+    namelist_defs = kwargs.get("namelist_defs")
+    binary_input_files = kwargs.get("binary_input_files")
     host = kwargs.get("host")
     if host is None:
         raise RuntimeError("You must set a host")
@@ -178,7 +187,8 @@ def surfex_script_setup(**kwargs):
         pysurfex_path,
         pysurfex_experiment,
         offline_source=offline_source,
-        namelist_dir=namelist_dir,
+        namelist_defs=namelist_defs,
+        binary_input_files=binary_input_files,
         loglevel=loglevel,
     )
 
@@ -203,7 +213,8 @@ def surfex_script_setup(**kwargs):
             pysurfex_path,
             pysurfex_experiment,
             offline_source=offline_source,
-            namelist_dir=namelist_dir,
+            namelist_defs=namelist_defs,
+            binary_input_files=binary_input_files,
             loglevel=talk_level,
         )
 

@@ -152,7 +152,8 @@ class Exp(ExpFromConfig):
                 "extrarch_dir": sfx_data + "/archive/extract/",
                 "forcing_dir": sfx_data + "/forcing/@YYYY@@MM@@DD@@HH@/@RRR@/",
                 "obs_dir": f"{sfx_data}/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@RRR@/",
-                "namelist_dir": exp_dependencies.get("namelist_dir"),
+                "namelist_defs": exp_dependencies.get("namelist_defs"),
+                "binary_input_files": exp_dependencies.get("binary_input_files"),
                 "exp_dir": exp_dir,
                 "sfx_exp_lib": system.get_var("sfx_exp_lib", host),
                 "sfx_exp_data": system.get_var("sfx_exp_data", host),
@@ -648,7 +649,8 @@ class ExpFromFiles(Exp):
         pysurfex,
         pysurfex_experiment,
         offline_source=None,
-        namelist_dir=None,
+        namelist_defs=None,
+        binary_input_files=None,
         loglevel="INFO",
     ):
         """Set up the files for an experiment.
@@ -660,7 +662,8 @@ class ExpFromFiles(Exp):
             pysurfex (str): Pysurfex path
             pysurfex_experiment (str): Pysurfex experiment script system path
             offline_source (str, optional): Offline source code. Defaults to None.
-            namelist_dir (str, optional): Namelist directory. Defaults to None.
+            namelist_defs (str, optional): Namelist directory. Defaults to None.
+            binary_input_files (str, optional): Binary input files. Defaults to None.
             loglevel(str, optional): Loglevel. Default to "INFO"
 
         Raises:
@@ -796,9 +799,15 @@ class ExpFromFiles(Exp):
             }
         )
 
-        if namelist_dir is None:
-            namelist_dir = f"{pysurfex_experiment}/data/nam"
-            logger.info("Using default namelist directory %s", namelist_dir)
+        if namelist_defs is None:
+            namelist_defs = f"{pysurfex_experiment}/data/nam/surfex_namelists.yml"
+            logger.info("Using default namelist directory %s", namelist_defs)
+
+        if binary_input_files is None:
+            binary_input_files = (
+                f"{pysurfex_experiment}/data/input/binary_input_data.json"
+            )
+            logger.info("Using default binary input %s", binary_input_files)
 
         exp_dependencies.update(
             {
@@ -808,7 +817,8 @@ class ExpFromFiles(Exp):
                 "pysurfex_experiment": pysurfex_experiment,
                 "pysurfex": pysurfex,
                 "offline_source": offline_source,
-                "namelist_dir": namelist_dir,
+                "namelist_defs": namelist_defs,
+                "binary_input_files": binary_input_files,
             }
         )
         return exp_dependencies

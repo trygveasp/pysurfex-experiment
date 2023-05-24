@@ -143,7 +143,8 @@ class AbstractTask(object):
         first_guess_dir = self.platform.get_system_value("archive_dir")
         first_guess_dir = self.platform.substitute(first_guess_dir, basetime=self.fg_dtg)
         self.first_guess_dir = first_guess_dir
-        self.input_path = self.platform.get_system_value("namelist_dir")
+        self.namelist_defs = self.platform.get_system_value("namelist_defs")
+        self.binary_input_files = self.platform.get_system_value("binary_input_files")
         ###########################################################################
 
         self.pid = str(os.getpid())
