@@ -144,10 +144,29 @@ class SurfexBinaryTask(AbstractTask):
         """
         rte = os.environ
 
+        if self.mode == "pgd":
+            self.pgd = True
+            self.need_pgd = False
+            self.need_prep = False
+        elif self.mode == "prep":
+            self.prep = True
+            self.need_prep = False
+        elif self.mode == "offline":
+            pass
+        elif self.mode == "soda":
+            self.soda = True
+        elif self.mode == "perturbed":
+            self.perturbed = True
+
         self.sfx_config.update_setting("SURFEX#PREP#FILE", prep_file)
         self.sfx_config.update_setting("SURFEX#PREP#FILEPGD", prep_pgdfile)
         if self.dtg is not None:
-            self.sfx_config.update_setting("SURFEX#SODA#HH", f"{self.dtg:02d}")
+            self.sfx_config.update_setting("SURFEX#SODA#HH", f"{self.dtg.hour:02d}")
+            self.sfx_config.update_setting("SURFEX#PREP#NDAY", self.dtg.day)
+            self.sfx_config.update_setting("SURFEX#PREP#NMONTH", self.dtg.month)
+            self.sfx_config.update_setting("SURFEX#PREP#NYEAR", self.dtg.year)
+            xtime = (self.dtg - self.dtg.replace(hour=0, second=0, microsecond=0)).total_seconds()
+            self.sfx_config.update_setting("SURFEX#PREP#XTIME", xtime)
 
         # TODO file handling should be in pysurfex
         with open(self.namelist_defs, mode="r", encoding="utf-8") as fhandler:
@@ -311,11 +330,17 @@ class Prep(SurfexBinaryTask):
         """Execute."""
         pgdfile = self.config.get_value("SURFEX.IO.CPGDFILE") + self.suffix
         pgd_file_path = f"{self.platform.get_system_value('climdir')}/{pgdfile}"
-        prep_file = self.config.get_value("initial_conditions.prep_input_file")
+        try:
+            prep_file = self.config.get_value("initial_conditions.prep_input_file")
+        except AttributeError:
+            prep_file = None
         prep_file = self.platform.substitute(
             prep_file, validtime=self.dtg, basetime=self.fg_dtg
         )
-        prep_pgdfile = self.config.get_value("initial_conditions.prep_pgdfile")
+        try:
+            prep_pgdfile = self.config.get_value("initial_conditions.prep_pgdfile")
+        except AttributeError:
+            prep_pgdfile = None
         prepfile = self.config.get_value("SURFEX.IO.CPREPFILE") + self.suffix
         archive = self.platform.get_system_value("archive_dir")
         output = f"{self.platform.substitute(archive, basetime=self.dtg)}/{prepfile}"
