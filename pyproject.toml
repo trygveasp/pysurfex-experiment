@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "experiment"
-version = "0.1.0"
+version = "0.1.1"
 description = "pysurfex-experiment"
 authors = ["Trygve Aspelien <trygveasp@met.no>"]
 readme = "README.rst"
