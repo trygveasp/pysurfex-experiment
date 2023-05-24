@@ -4,8 +4,8 @@ import json
 import os
 import shutil
 
-import surfex
 import tomlkit
+from pysurfex.configuration import Configuration
 
 from . import PACKAGE_NAME
 from .config_parser import ParsedConfig
@@ -127,7 +127,7 @@ class Exp(ExpFromConfig):
             except RuntimeError:
                 logger.warning("Troika not found!")
 
-        sfx_config = surfex.Configuration(merged_config)
+        sfx_config = Configuration(merged_config)
 
         sfx_data = system.get_var("sfx_exp_data", host)
         exp_dir = exp_dependencies.get("exp_dir")
@@ -147,7 +147,7 @@ class Exp(ExpFromConfig):
                 "joboutdir": system.get_var("joboutdir", host),
                 "wrk": sfx_data + "/@YYYY@@MM@@DD@_@HH@/@RRR@/",
                 "bin_dir": sfx_data + "/lib/offline/exe/",
-                "climdir": sfx_data + "/climate/@domain@",
+                "climdir": sfx_data + "/climate/",
                 "archive_dir": sfx_data + "/archive/@YYYY@/@MM@/@DD@/@HH@/@RRR@/",
                 "extrarch_dir": sfx_data + "/archive/extract/",
                 "forcing_dir": sfx_data + "/forcing/@YYYY@@MM@@DD@@HH@/@RRR@/",

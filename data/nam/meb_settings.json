@@ -6,8 +6,7 @@
     "LSOC":  true
  },
  "NAM_MEB_ISBA":{
-    "LMEB_PATCH(1)":  false,
-    "LMEB_PATCH(2)":  true,
+    "LMEB_PATCH":  [false, true],
     "LMEB_LITTER": false
   }
 }

@@ -4,8 +4,8 @@ import logging
 import os
 from pathlib import Path
 
+import pysurfex
 import pytest
-import surfex
 
 from experiment.datetime_utils import as_datetime
 from experiment.experiment import Exp, ExpFromFiles
@@ -18,11 +18,16 @@ def sfx_exp_config(tmp_path_factory):
     wdir = f"{tmp_path_factory.getbasetemp().as_posix()}"
     exp_name = "test_config"
     pysurfex_experiment = f"{str(((Path(__file__).parent).parent).parent)}"
-    pysurfex = f"{str((Path(surfex.__file__).parent).parent)}"
+    pysurfex_path = f"{str((Path(pysurfex.__file__).parent).parent)}"
     offline_source = f"{tmp_path_factory.getbasetemp().as_posix()}/source"
 
     exp_dependencies = ExpFromFiles.setup_files(
-        wdir, exp_name, None, pysurfex, pysurfex_experiment, offline_source=offline_source
+        wdir,
+        exp_name,
+        None,
+        pysurfex_path,
+        pysurfex_experiment,
+        offline_source=offline_source,
     )
 
     scratch = f"{tmp_path_factory.getbasetemp().as_posix()}"

@@ -2,8 +2,8 @@
 import logging
 from pathlib import Path
 
+import pysurfex
 import pytest
-import surfex
 
 from experiment.configuration import Configuration
 from experiment.experiment import ExpFromFiles
@@ -21,11 +21,16 @@ def exp_dependencies(pysurfex_experiment, tmp_path_factory):
     exp_name = "test_config"
     host = "ECMWF-atos"
 
-    pysurfex = f"{str((Path(surfex.__file__).parent).parent)}"
+    pysurfex_path = f"{str((Path(pysurfex.__file__).parent).parent)}"
     offline_source = f"{tmpdir}/source"
 
     return ExpFromFiles.setup_files(
-        wdir, exp_name, host, pysurfex, pysurfex_experiment, offline_source=offline_source
+        wdir,
+        exp_name,
+        host,
+        pysurfex_path,
+        pysurfex_experiment,
+        offline_source=offline_source,
     )
 
 

@@ -4,9 +4,9 @@ import sys
 from argparse import ArgumentParser
 
 try:
-    import surfex
+    import pysurfex
 except:  # noqa
-    surfex = None
+    pysurfex = None
 
 
 from experiment import PACKAGE_NAME, __version__
@@ -138,7 +138,7 @@ def surfex_script_setup(**kwargs):
     # Setup
     exp_name = kwargs.get("exp")
     wdir = kwargs.get("wd")
-    pysurfex = f"{os.path.dirname(surfex.__file__)}/../"
+    pysurfex_path = f"{os.path.dirname(pysurfex.__file__)}/../"
     pysurfex_experiment = kwargs.get("pysurfex_experiment")
     if pysurfex_experiment is None:
         pysurfex_experiment = f"{os.path.abspath(os.path.dirname(__file__))}/../.."
@@ -175,7 +175,7 @@ def surfex_script_setup(**kwargs):
         wdir,
         exp_name,
         host,
-        pysurfex,
+        pysurfex_path,
         pysurfex_experiment,
         offline_source=offline_source,
         namelist_dir=namelist_dir,
@@ -200,7 +200,7 @@ def surfex_script_setup(**kwargs):
             wdir,
             exp_name,
             host,
-            pysurfex,
+            pysurfex_path,
             pysurfex_experiment,
             offline_source=offline_source,
             namelist_dir=namelist_dir,

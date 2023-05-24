@@ -2,7 +2,7 @@
 import os
 import shutil
 
-import surfex
+from pysurfex.run import BatchJob
 
 from ..tasks.tasks import AbstractTask
 
@@ -37,10 +37,10 @@ class SyncSourceCode(AbstractTask):
         if os.path.exists(ifsaux):
             cmd = f"{rsync} {ifsaux}/* {ifsaux_copy}"
             self.logger.info(cmd)
-            surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+            BatchJob(rte, wrapper=wrapper).run(cmd)
         cmd = f"{rsync} {offline_source}/ {sfx_lib}"
         self.logger.info(cmd)
-        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+        BatchJob(rte, wrapper=wrapper).run(cmd)
 
         # Add system files if not existing
         scripts = self.platform.get_system_value("pysurfex_experiment")
@@ -93,7 +93,7 @@ class ConfigureOfflineBinaries(AbstractTask):
             f"./configure OfflineNWP ../conf//system.{flavour}"
         )
         self.logger.debug(cmd)
-        surfex.BatchJob(rte, wrapper=self.wrapper).run(cmd)
+        BatchJob(rte, wrapper=self.wrapper).run(cmd)
 
         conf_file = sfx_lib + "/offline/conf/profile_surfex-" + flavour
         xyz_file = sfx_lib + "/xyz"
@@ -133,12 +133,12 @@ class MakeOfflineBinaries(AbstractTask):
 
         cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make -j 4"
         self.logger.debug(cmd)
-        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+        BatchJob(rte, wrapper=wrapper).run(cmd)
 
         os.makedirs(f"{sfx_lib}/offline/exe", exist_ok=True)
         cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make installmaster"
         self.logger.debug(cmd)
-        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+        BatchJob(rte, wrapper=wrapper).run(cmd)
 
 
 class CMakeBuild(AbstractTask):
@@ -185,13 +185,13 @@ class CMakeBuild(AbstractTask):
                 f"-DCMAKE_INSTALL_PREFIX={install_dir} -DCONFIG_FILE={cmake_config}"
             )
             cmd = f"cmake {current_project_dir} {cmake_flags}"
-            surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+            BatchJob(rte, wrapper=wrapper).run(cmd)
             cmd = f"cmake --build . -- -j{nproc}"
-            surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+            BatchJob(rte, wrapper=wrapper).run(cmd)
             cmd = "cmake --build . --target install"
-            surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+            BatchJob(rte, wrapper=wrapper).run(cmd)
 
-        cmake_flags = "-DCMAKE_BUILD_TYPE=Release"
+        cmake_flags = "-DCMAKE_BUILD_TYPE=Release "
         cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_PREFIX={install_dir}"
         cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=YES"
         cmake_flags += f"{cmake_flags} -DCONFIG_FILE={cmake_config}"
@@ -200,10 +200,10 @@ class CMakeBuild(AbstractTask):
 
         # Configure
         cmd = f"cmake {offline_source}/src {cmake_flags}"
-        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+        BatchJob(rte, wrapper=wrapper).run(cmd)
         # Build
         cmd = f"cmake --build . -- -j{nproc} offline-pgd offline-prep offline-offline offline-soda"
-        surfex.BatchJob(rte, wrapper=wrapper).run(cmd)
+        BatchJob(rte, wrapper=wrapper).run(cmd)
 
         # Manual installation
         programs = ["PGD-offline", "PREP-offline", "OFFLINE-offline", "SODA-offline"]

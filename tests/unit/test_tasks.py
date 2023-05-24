@@ -5,9 +5,10 @@ import subprocess
 from pathlib import Path
 
 import numpy as np
+import pysurfex
 import pytest
-import surfex
-from surfex import BatchJob
+from pysurfex.geo import ConfProj
+from pysurfex.run import BatchJob
 
 import experiment
 from experiment.config_parser import ParsedConfig
@@ -33,11 +34,16 @@ def get_config(tmp_path_factory):
     wdir = f"{tmp_path_factory.getbasetemp().as_posix()}"
     exp_name = "test_config"
     pysurfex_experiment = f"{str(((Path(__file__).parent).parent).parent)}"
-    pysurfex = f"{str((Path(surfex.__file__).parent).parent)}"
+    pysurfex_path = f"{str((Path(pysurfex.__file__).parent).parent)}"
     offline_source = f"{wdir}/source"
 
     exp_dependencies = ExpFromFiles.setup_files(
-        wdir, exp_name, None, pysurfex, pysurfex_experiment, offline_source=offline_source
+        wdir,
+        exp_name,
+        None,
+        pysurfex_path,
+        pysurfex_experiment,
+        offline_source=offline_source,
     )
 
     scratch = f"{tmp_path_factory.getbasetemp().as_posix()}"
@@ -179,9 +185,6 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
     def new_horizontal_oi(*args, **kwargs):
         pass
 
-    def new_get_system_path(*args, **kwargs):
-        pass
-
     def new_read_first_guess_netcdf_file(*args, **kwargs):
         geo_dict = {
             "nam_pgd_grid": {"cgrid": "CONF PROJ"},
@@ -197,7 +200,7 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
                 "xdy": 2500.0,
             },
         }
-        geo = surfex.ConfProj(geo_dict)
+        geo = ConfProj(geo_dict)
         validtime = as_datetime("2023-01-01 T03:00:00Z")
         dummy = np.empty([60, 50])
         return geo, validtime, dummy, dummy, dummy
@@ -210,7 +213,6 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
 
     def new_converted_input(*args, **kwargs):
         return np.empty([3000])
-        # surfex.read.ConvertedInput
 
     def new_surfex_binary(*args, **kwargs):
         pass
@@ -223,30 +225,45 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
             original_batchjob_run_method(
                 self, cmd="echo 'Running a dummy command' >| output"
             )
+            os.system("touch PGD.nc")  # noqa S605
+            os.system("touch PREP.nc")  # noqa S605
+            os.system("touch SURFOUT.nc")  # noqa S605
 
     # Do the actual mocking
-    session_mocker.patch("surfex.BatchJob.__init__", new=new_batchjob_init_method)
+    session_mocker.patch("pysurfex.run.BatchJob.__init__", new=new_batchjob_init_method)
     session_mocker.patch(
-        "surfex.write_obsmon_sqlite_file", new=new_write_obsmon_sqlite_file
+        "pysurfex.obsmon.write_obsmon_sqlite_file", new=new_write_obsmon_sqlite_file
     )
-    session_mocker.patch("surfex.read.Converter", new=new_converter)
-    session_mocker.patch("surfex.oi2soda", new=new_oi2soda)
+    session_mocker.patch("pysurfex.read.Converter", new=new_converter)
+    session_mocker.patch("pysurfex.netcdf.oi2soda", new=new_oi2soda)
     session_mocker.patch(
-        "surfex.read.ConvertedInput.read_time_step", new=new_converted_input
-    )
-    session_mocker.patch(
-        "surfex.read_first_guess_netcdf_file", new=new_read_first_guess_netcdf_file
+        "pysurfex.read.ConvertedInput.read_time_step", new=new_converted_input
     )
     session_mocker.patch(
-        "surfex.write_analysis_netcdf_file", new=new_write_analysis_netcdf_file
+        "experiment.tasks.tasks.read_first_guess_netcdf_file",
+        new=new_read_first_guess_netcdf_file,
     )
-    session_mocker.patch("surfex.horizontal_oi", new=new_horizontal_oi)
-    session_mocker.patch("surfex.PgdInputData", new=new_get_system_path)
-    session_mocker.patch("surfex.run.PerturbedOffline", new=new_surfex_binary)
-    session_mocker.patch("surfex.run.SURFEXBinary", new=new_surfex_binary)
-    session_mocker.patch("surfex.dataset_from_file", new=new_dataset_from_file)
-    session_mocker.patch("surfex.BatchJob.run", new=new_batchjob_run_method)
-    session_mocker.patch("surfex.obs.get_datasources")
+    session_mocker.patch(
+        "experiment.tasks.tasks.dataset_from_file", new=new_dataset_from_file
+    )
+    session_mocker.patch("experiment.tasks.tasks.horizontal_oi", new=new_horizontal_oi)
+    session_mocker.patch(
+        "experiment.tasks.tasks.write_analysis_netcdf_file",
+        new=new_write_analysis_netcdf_file,
+    )
+    session_mocker.patch(
+        "experiment.tasks.tasks.write_obsmon_sqlite_file",
+        new=new_write_obsmon_sqlite_file,
+    )
+    session_mocker.patch("experiment.tasks.tasks.oi2soda", new=new_oi2soda)
+
+    session_mocker.patch(
+        "experiment.tasks.surfex_binary_task.PerturbedOffline", new=new_surfex_binary
+    )
+    session_mocker.patch(
+        "experiment.tasks.surfex_binary_task.SURFEXBinary", new=new_surfex_binary
+    )
+    session_mocker.patch("pysurfex.run.BatchJob.run", new=new_batchjob_run_method)
 
     # Create files needed by gmtedsoil tasks
     tif_files_dir = tmp_path_factory.getbasetemp() / "GMTED2010"
@@ -280,7 +297,6 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
 
     # Mock things that we don't want to test here (e.g., external binaries)
     session_mocker.patch("experiment.tasks.gmtedsoil._import_gdal")
-    session_mocker.patch("surfex.SURFEXBinary")
 
 
 class TestTasks:

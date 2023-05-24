@@ -7,8 +7,22 @@ import shutil
 import socket
 
 import numpy as np
-import surfex
 import yaml
+from pysurfex.cache import Cache
+from pysurfex.file import SurfFileTypeExtension
+from pysurfex.geo import ConfProj, get_geo_object
+from pysurfex.input_methods import get_datasources
+from pysurfex.interpolation import horizontal_oi
+from pysurfex.netcdf import (
+    create_netcdf_first_guess_template,
+    oi2soda,
+    read_first_guess_netcdf_file,
+    write_analysis_netcdf_file,
+)
+from pysurfex.obsmon import write_obsmon_sqlite_file
+from pysurfex.read import ConvertedInput, Converter
+from pysurfex.run import BatchJob
+from pysurfex.titan import TitanDataSet, dataset_from_file, define_quality_control
 
 from ..config_parser import ParsedConfig
 from ..configuration import Configuration
@@ -31,13 +45,7 @@ class AbstractTask(object):
             config (ParsedObject): Parsed configuration
             name (str): Task name
 
-        Raises:
-            RuntimeError: Surfex not loaded
-
         """
-        if surfex is None:
-            raise RuntimeError("Surfex module not properly loaded!")
-
         self.config = config
         self.name = name
         self.logger = get_logger_from_config(config)
@@ -90,7 +98,7 @@ class AbstractTask(object):
             },
         }
 
-        self.geo = surfex.ConfProj(conf_proj)
+        self.geo = ConfProj(conf_proj)
         self.fmanager = FileManager(config)
         self.platform = self.fmanager.platform
         wrapper = self.config.get_value("task.wrapper")
@@ -104,7 +112,7 @@ class AbstractTask(object):
         except AttributeError:
             lfagmap = False
         self.csurf_filetype = self.config.get_value("SURFEX.IO.CSURF_FILETYPE")
-        self.suffix = surfex.SurfFileTypeExtension(
+        self.suffix = SurfFileTypeExtension(
             self.csurf_filetype, lfagmap=lfagmap, masterodb=masterodb
         ).suffix
 
@@ -421,14 +429,12 @@ class QualityControl(AbstractTask):
         # TODO
         an_time = an_time.replace(tzinfo=None)
         json.dump(settings, open("settings.json", mode="w", encoding="utf-8"), indent=2)
-        tests = surfex.titan.define_quality_control(
+        tests = define_quality_control(
             tests, settings, an_time, domain_geo=self.geo, blacklist=blacklist
         )
 
-        datasources = surfex.obs.get_datasources(an_time, settings["sets"])
-        data_set = surfex.TitanDataSet(
-            self.var_name, settings, tests, datasources, an_time
-        )
+        datasources = get_datasources(an_time, settings["sets"])
+        data_set = TitanDataSet(self.var_name, settings, tests, datasources, an_time)
         data_set.perform_tests()
 
         self.logger.debug("Write to %s", output)
@@ -501,7 +507,7 @@ class OptimalInterpolation(AbstractTask):
         output_file = self.archive + "/an_" + var + ".nc"
 
         # Get input fields
-        geo, validtime, background, glafs, gelevs = surfex.read_first_guess_netcdf_file(
+        geo, validtime, background, glafs, gelevs = read_first_guess_netcdf_file(
             input_file, var
         )
 
@@ -511,8 +517,8 @@ class OptimalInterpolation(AbstractTask):
         # Read OK observations
         obs_file = f"{self.platform.get_system_value('obs_dir')}/qc_{var}.json"
         self.logger.info("Obs file: %s", obs_file)
-        observations = surfex.dataset_from_file(an_time, obs_file, qc_flag=0)
-        field = surfex.horizontal_oi(
+        observations = dataset_from_file(an_time, obs_file, qc_flag=0)
+        field = horizontal_oi(
             geo,
             background,
             observations,
@@ -530,7 +536,7 @@ class OptimalInterpolation(AbstractTask):
         self.logger.info("Write output file %s", output_file)
         if os.path.exists(output_file):
             os.unlink(output_file)
-        surfex.write_analysis_netcdf_file(
+        write_analysis_netcdf_file(
             output_file, field, var, validtime, gelevs, glafs, new_file=True, geo=geo
         )
 
@@ -668,7 +674,7 @@ class Oi2soda(AbstractTask):
         self.logger.debug("rh2m %s", rh2m)
         self.logger.debug("sd   %s", s_d)
         self.logger.debug("Write to %s", output)
-        surfex.oi2soda(self.dtg, t2m=t2m, rh2m=rh2m, s_d=s_d, output=output)
+        oi2soda(self.dtg, t2m=t2m, rh2m=rh2m, s_d=s_d, output=output)
 
 
 class Qc2obsmon(AbstractTask):
@@ -715,7 +721,7 @@ class Qc2obsmon(AbstractTask):
                         q_c = self.obsdir + "/qc_" + var_name + ".json"
                         fg_file = self.archive + "/raw_" + var_name + ".nc"
                         an_file = self.archive + "/an_" + var_name + ".nc"
-                        surfex.write_obsmon_sqlite_file(
+                        write_obsmon_sqlite_file(
                             dtg=self.dtg,
                             output=output,
                             qc=q_c,
@@ -784,7 +790,7 @@ class FirstGuess4OI(AbstractTask):
 
         output = self.archive + "/raw" + extra + ".nc"
         cache_time = 3600
-        cache = surfex.cache.Cache(cache_time)
+        cache = Cache(cache_time)
         if os.path.exists(output):
             self.logger.info("Output already exists %s", output)
         else:
@@ -860,7 +866,7 @@ class FirstGuess4OI(AbstractTask):
             defs = config[fileformat]
             geo_input = None
             if input_geo_file != "":
-                geo_input = surfex.get_geo_object(
+                geo_input = get_geo_object(
                     json.load(open(input_geo_file, mode="r", encoding="utf-8"))
                 )
             defs.update({"filepattern": inputfile, "geo_input": geo_input})
@@ -887,13 +893,11 @@ class FirstGuess4OI(AbstractTask):
             self.logger.info(
                 "Set up converter. defs=%s converter_conf=%s", defs, converter_conf
             )
-            converter = surfex.read.Converter(
+            converter = Converter(
                 converter, initial_basetime, defs, converter_conf, fileformat
             )
             self.logger.info("Read converted input for var=%s", var)
-            field = surfex.read.ConvertedInput(geo, var, converter).read_time_step(
-                validtime, cache
-            )
+            field = ConvertedInput(geo, var, converter).read_time_step(validtime, cache)
             field = np.reshape(field, [geo.nlons, geo.nlats])
 
             if np.all(np.isnan(field)):
@@ -903,9 +907,7 @@ class FirstGuess4OI(AbstractTask):
             if f_g is None:
                 n_x = geo.nlons
                 n_y = geo.nlats
-                f_g = surfex.create_netcdf_first_guess_template(
-                    variables, n_x, n_y, output
-                )
+                f_g = create_netcdf_first_guess_template(variables, n_x, n_y, output)
                 f_g.variables["time"][:] = float(validtime.strftime("%s"))
                 f_g.variables["longitude"][:] = np.transpose(geo.lons)
                 f_g.variables["latitude"][:] = np.transpose(geo.lats)
@@ -1017,7 +1019,7 @@ class FetchMarsObs(AbstractTask):
 
         cmd = f"mars {request_file}"
         try:
-            batch = surfex.BatchJob(os.environ)
+            batch = BatchJob(os.environ)
             self.logger.info("Running %s", cmd)
             batch.run(cmd)
         except RuntimeError as exc:

@@ -2,8 +2,8 @@
 import json
 import os
 
-import surfex
 import yaml
+from pysurfex.forcing import modify_forcing, run_time_loop, set_forcing_config
 
 from ..tasks.tasks import AbstractTask
 
@@ -113,8 +113,8 @@ class Forcing(AbstractTask):
         if os.path.exists(output):
             self.logger.info("Output already exists: %s", output)
         else:
-            options, var_objs, att_objs = surfex.forcing.set_forcing_config(**kwargs)
-            surfex.forcing.run_time_loop(options, var_objs, att_objs)
+            options, var_objs, att_objs = set_forcing_config(**kwargs)
+            run_time_loop(options, var_objs, att_objs)
 
 
 class ModifyForcing(AbstractTask):
@@ -154,6 +154,6 @@ class ModifyForcing(AbstractTask):
         kwargs.update({"time_step": time_step})
         kwargs.update({"variables": variables})
         if os.path.exists(output_file) and os.path.exists(input_file):
-            surfex.forcing.modify_forcing(**kwargs)
+            modify_forcing(**kwargs)
         else:
             self.logger.info("Output or input is missing: %s", output_file)

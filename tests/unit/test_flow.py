@@ -2,8 +2,8 @@
 import json
 from pathlib import Path
 
+import pysurfex
 import pytest
-import surfex
 
 from experiment.config_parser import ParsedConfig
 from experiment.datetime_utils import as_datetime
@@ -35,10 +35,15 @@ def get_exp_from_files(tmp_path_factory):
     exp_name = "test_config"
     host = "ECMWF-atos"
     pysurfex_experiment = f"{str(((Path(__file__).parent).parent).parent)}"
-    pysurfex = f"{str((Path(surfex.__file__).parent).parent)}"
+    pysurfex_path = f"{str((Path(pysurfex.__file__).parent).parent)}"
     offline_source = f"{tmpdir}/source"
     exp_dependencies = ExpFromFiles.setup_files(
-        wdir, exp_name, host, pysurfex, pysurfex_experiment, offline_source=offline_source
+        wdir,
+        exp_name,
+        host,
+        pysurfex_path,
+        pysurfex_experiment,
+        offline_source=offline_source,
     )
     stream = None
     sfx_exp = ExpFromFiles(exp_dependencies, stream=stream)

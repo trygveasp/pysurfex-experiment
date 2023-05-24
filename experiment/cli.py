@@ -11,6 +11,7 @@ from .logs import get_logger
 from .scheduler.scheduler import EcflowServerFromConfig
 from .scheduler.submission import NoSchedulerSubmission, TaskSettings
 from .suites import get_defs
+from .toolbox import Platform
 
 
 def parse_surfex_script(argv):
@@ -193,7 +194,7 @@ def surfex_script(**kwargs):
 
         # Create and start the suite
         case = config.get_value("general.case")
-        sfx_data = config.get_value("system.sfx_exp_data")
+        sfx_data = Platform(config).get_system_value("sfx_exp_data")
         os.makedirs(sfx_data, exist_ok=True)
         def_file = f"{sfx_data}/{case}_{suite}.def"
 
