@@ -28,7 +28,7 @@ SubmitTask = "experiment.cli:run_submit_cmd_exp"
     pyyaml = "^6.0"
     tomlkit = "^0.11.6"
     troika = {git = "https://git.ecmwf.int/scm/ecsdk/troika.git", tag="0.1.8"}
-    pysurfex = {git = "https://github.com/trygveasp/pysurfex.git", develop=true, branch="master", extras=["points", "formats"]}
+    pysurfex = {git = "https://github.com/metno/pysurfex.git", develop=true, branch="master", extras=["points", "formats"]}
 
 [tool.poetry.group.dev.dependencies]
     jupyterlab = "^3.6.1"
