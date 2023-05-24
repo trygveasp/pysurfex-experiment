@@ -1,8 +1,8 @@
 """Tasks running surfex binaries."""
 import os
 
-from pysurfex.binary_input import (
-    JsonOutputData,
+from pysurfex.binary_input import JsonOutputData
+from pysurfex.binary_input_legacy import (
     OfflineInputData,
     PgdInputData,
     PrepInputData,
@@ -10,8 +10,8 @@ from pysurfex.binary_input import (
 )
 from pysurfex.configuration import Configuration
 from pysurfex.file import PGDFile, PREPFile, SURFFile
-from pysurfex.namelist import BaseNamelist
-from pysurfex.platform import SystemFilePaths
+from pysurfex.namelist_legacy import BaseNamelist
+from pysurfex.platform_deps import SystemFilePaths
 from pysurfex.run import BatchJob, PerturbedOffline, SURFEXBinary
 
 from ..tasks.tasks import AbstractTask

@@ -747,7 +747,7 @@ class ExpFromFiles(Exp):
         for c_f in c_files:
             gname = f"{pysurfex_experiment}/data/config/{c_f}"
             if c_f in pysurfex_files:
-                gname = f"{pysurfex}/surfex/cfg/{c_f}"
+                gname = f"{pysurfex}/pysurfex/cfg/{c_f}"
             found = False
             if wdir is not None:
                 lname = f"{wdir}/config/{c_f}"
@@ -769,7 +769,7 @@ class ExpFromFiles(Exp):
         for c_f in ["first_guess.yml", "config.yml", "troika_config.yml"]:
             gname = f"{pysurfex_experiment}/data/config/{c_f}"
             if c_f in pysurfex_files:
-                gname = f"{pysurfex}/surfex/cfg/{c_f}"
+                gname = f"{pysurfex}/pysurfex/cfg/{c_f}"
             found = False
             if wdir is not None:
                 lname = f"{wdir}/config/{c_f}"
