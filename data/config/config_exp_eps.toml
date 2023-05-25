@@ -9,5 +9,3 @@ ISBA = {  0 = "OI", 1 = "OI", 2 = "OI" }
 PERTFLUX  = { 0 = "none" }
 [eps.member_settings.SURFEX.ISBA]
 PERTSURF = { 0 = "none" }
-
-

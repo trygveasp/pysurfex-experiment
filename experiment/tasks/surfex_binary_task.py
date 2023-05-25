@@ -165,7 +165,9 @@ class SurfexBinaryTask(AbstractTask):
             self.sfx_config.update_setting("SURFEX#PREP#NDAY", self.dtg.day)
             self.sfx_config.update_setting("SURFEX#PREP#NMONTH", self.dtg.month)
             self.sfx_config.update_setting("SURFEX#PREP#NYEAR", self.dtg.year)
-            xtime = (self.dtg - self.dtg.replace(hour=0, second=0, microsecond=0)).total_seconds()
+            xtime = (
+                self.dtg - self.dtg.replace(hour=0, second=0, microsecond=0)
+            ).total_seconds()
             self.sfx_config.update_setting("SURFEX#PREP#XTIME", xtime)
 
         # TODO file handling should be in pysurfex
@@ -173,6 +175,9 @@ class SurfexBinaryTask(AbstractTask):
             definitions = yaml.safe_load(fhandler)
         namelist = NamelistGenerator(self.mode, self.sfx_config, definitions)
         settings = namelist.get_namelist()
+
+        if self.mode == "pgd":
+            settings = self.geo.update_namelist(settings)
 
         with open(self.binary_input_files, mode="r", encoding="utf-8") as fhandler:
             input_data = json.load(fhandler)

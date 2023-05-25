@@ -34,7 +34,7 @@ io:
     LFAGMAP: true
     LRESTART: true
     LRESTART_2M: true
-    LSET_FORC_ZS: false
+    LSET_FORC_ZS: true
     NHALO: 0
     XTSTEP_OUTPUT: '${SURFEX#IO#XTSTEP_OUTPUT}'
     XTSTEP_SURF: '${SURFEX#IO#XTSTEP}'
@@ -7659,7 +7659,7 @@ offline_isba_dif:
   NAM_SGH_ISBAn:
     CHORT: DEF
     CRAIN: SGH
-    CRUNOFF: DT92
+    #CRUNOFF: DT92
     LSOC: true
   NAM_ISBA:
     CPEDO_FUNCTION: CO84
