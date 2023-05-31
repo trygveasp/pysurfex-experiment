@@ -105,7 +105,7 @@ class Forcing(AbstractTask):
         kwargs.update({"wind_converter": wind_converter})
         kwargs.update({"wind_dir_converter": wind_dir_converter})
         kwargs.update({"ps_converter": ps_converter})
-        kwargs.update({"debug": True})
+        kwargs.update({"debug": debug})
         kwargs.update({"timestep": timestep})
         kwargs.update({"analysis": analysis})
         kwargs.update({"interpolation": interpolation})
