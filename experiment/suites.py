@@ -405,7 +405,7 @@ class SurfexSuite:
                             else:
                                 raise NotImplementedError
 
-                        nivar = 0
+                        nivar = 1
                         for ivar, val in enumerate(nncv):
                             logger.debug("ivar %s, nncv[ivar] %s", str(ivar), str(val))
                             if val == 1:

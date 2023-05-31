@@ -45,34 +45,19 @@ class SurfexBinaryTask(AbstractTask):
         sfx_config = {"SURFEX": cfg}
         self.sfx_config = Configuration(sfx_config)
 
-        # Get paths from file manager (example)
-        ecosg_dir = self.fmanager.platform.get_platform_value("ecosg_data_path")
-        pgd_dir = self.fmanager.platform.get_platform_value("pgd_data_path")
-        climdir = self.fmanager.platform.get_system_value("climdir")
-
         # TODO get all needed paths
-        exp_file_paths = self.config.get_value("system").dict()
+        system_paths = self.config.get_value("system").dict()
+        platform_paths = self.config.get_value("platform").dict()
+        exp_file_paths = {}
+        for key, val in system_paths.items():
+            exp_file_paths.update({key: val})
+        for key, val in platform_paths.items():
+            exp_file_paths.update({key: val})
         obs_dir = self.platform.get_system_value("obs_dir")
         # To sub EEE/RRR
         obs_dir = self.platform.substitute(obs_dir)
-        exp_file_paths.update(
-            {
-                "obs_dir": obs_dir,
-                "tree_height_dir": f"{ecosg_dir}/HT/",
-                "flake_dir": f"{pgd_dir}",
-                "sand_dir": f"{climdir}",
-                "clay_dir": f"{climdir}",
-                "soc_top_dir": f"{climdir}",
-                "soc_sub_dir": f"{climdir}",
-                "ecoclimap_sg_cover_dir": f"{ecosg_dir}/COVER/",
-                "albnir_soil_dir": f"{ecosg_dir}/ALB/ALB_SAT/",
-                "albvis_soil_dir": f"{ecosg_dir}/ALB/ALB_SAT/",
-                "albnir_veg_dir": f"{ecosg_dir}/ALB/ALB_SAT/",
-                "albvis_veg_dir": f"{ecosg_dir}/ALB/ALB_SAT/",
-                "lai_dir": f"{ecosg_dir}/LAI/LAI_SAT/",
-                "oro_dir": f"{climdir}",
-            }
-        )
+
+        self.logger.debug("exp_file_paths: %s", exp_file_paths)
         self.exp_file_paths = SystemFilePaths(exp_file_paths)
 
         kwargs = self.config.get_value("task.args").dict()
@@ -169,6 +154,14 @@ class SurfexBinaryTask(AbstractTask):
                 self.dtg - self.dtg.replace(hour=0, second=0, microsecond=0)
             ).total_seconds()
             self.sfx_config.update_setting("SURFEX#PREP#XTIME", xtime)
+        if self.perturbed:
+            nvar = 0
+            for __, val in enumerate(
+                self.sfx_config.get_setting("SURFEX#ASSIM#ISBA#EKF#NNCV")
+            ):
+                if val == 1:
+                    nvar += 1
+            self.sfx_config.update_setting("SURFEX#SODA#NVAR", nvar)
 
         # TODO file handling should be in pysurfex
         with open(self.namelist_defs, mode="r", encoding="utf-8") as fhandler:
@@ -339,12 +332,18 @@ class Prep(SurfexBinaryTask):
             prep_file = self.config.get_value("initial_conditions.prep_input_file")
         except AttributeError:
             prep_file = None
-        prep_file = self.platform.substitute(
-            prep_file, validtime=self.dtg, basetime=self.fg_dtg
-        )
+        if prep_file is not None:
+            if prep_file == "":
+                prep_file = None
+            else:
+                prep_file = self.platform.substitute(
+                    prep_file, validtime=self.dtg, basetime=self.fg_dtg
+                )
         try:
             prep_pgdfile = self.config.get_value("initial_conditions.prep_pgdfile")
         except AttributeError:
+            prep_pgdfile = None
+        if prep_pgdfile == "":
             prep_pgdfile = None
         prepfile = self.config.get_value("SURFEX.IO.CPREPFILE") + self.suffix
         archive = self.platform.get_system_value("archive_dir")

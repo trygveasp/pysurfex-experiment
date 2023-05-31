@@ -828,7 +828,6 @@ class FirstGuess4OI(AbstractTask):
                 identifier = "initial_conditions.fg4oi."
                 inputfile = self.config.get_value(identifier + "inputfile")
 
-            print(inputfile)
             inputfile = self.platform.substitute(
                 inputfile, basetime=self.fg_dtg, validtime=self.dtg
             )
@@ -897,7 +896,9 @@ class FirstGuess4OI(AbstractTask):
             converter = Converter(
                 converter, initial_basetime, defs, converter_conf, fileformat
             )
-            self.logger.info("Read converted input for var=%s", var)
+            self.logger.info(
+                "Read converted input for var=%s validtime=%s", var, validtime
+            )
             field = ConvertedInput(geo, var, converter).read_time_step(validtime, cache)
             field = np.reshape(field, [geo.nlons, geo.nlats])
 
