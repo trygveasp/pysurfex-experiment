@@ -4,24 +4,24 @@ constants:
   NAM_SURF_ATM:
     XRIMAX: '${SURFEX#PARAMETERS#XRIMAX}'
   NAM_SURF_CSTS:
-    xz0hsn: 0.0003
-    xz0sn: 0.003
+    XZ0HSN: 0.0003
+    XZ0SN: 0.003
 
 flake:
-  nam_flaken:
-    lsediments: false
+  NAM_FLAKEN:
+    LSEDIMENTS: false
 
 treedrag:
   NAM_TREEDRAG:
     LFAKETREE: '${SURFEX#TREEDRAG#FAKETREES}'
-    xallen_term: 2.5
-    xforfrac1: 1.0
-    xforfrac2: 0.0
-    xforlat1: 1.0
-    xforlat2: 0.0
-    xgrass_h_dnm: 3.0
-    xz0_max_limit: 1.6
-    xz0_min_limit: 0.0
+    XALLEN_TERM: 2.5
+    XFORFRAC1: 1.0
+    XFORFRAC2: 0.0
+    XFORLAT1: 1.0
+    XFORLAT2: 0.0
+    XGRASS_H_DNM: 3.0
+    XZ0_MAX_LIMIT: 1.6
+    XZ0_MIN_LIMIT: 0.0
 
 io:
   NAM_IO_OFFLINE:
@@ -54,10 +54,10 @@ pgd_meb:
     CRAIN: SGH
     CRUNOFF: DT92
     LSOC: true
-  nam_isba:
-    cpedo_function: CO84
-    cphoto: NON
-    xunif_runoffb: 0.2
+  NAM_ISBA:
+    CPEDO_FUNCTION: CO84
+    CPHOTO: NON
+    XUNIF_RUNOFFB: 0.2
 
 pgd:
   NAM_FRAC:
@@ -7468,8 +7468,8 @@ pgd_rsmin_sg:
 pgd_rsmin_sg_mod: {}
 
 pgd_sea:
-  nam_seabathy:
-    xunif_seabathy: 0.0
+  NAM_SEABATHY:
+    XUNIF_SEABATHY: 0.0
 
 pgd_zs:
   NAM_ZS:
@@ -7534,13 +7534,15 @@ prep_flake:
 prep_isba:
   NAM_FRAC:
     LECOSG: '${SURFEX#COVER#SG}'
+  NAM_ISBA:
+    LMEB: '${SURFEX#ISBA#MEB}'
   NAM_PREP_ISBA:
     LISBA_CANOPY: false
     LEXTRAP_SN: true
     LEXTRAP_TG: true
     LEXTRAP_WG: true
     LEXTRAP_WGI: true
-  nam_diag_isban:
+  NAM_DIAG_ISBAN:
     LPATCH_BUDGET: true
 
 prep_isba_dif:
@@ -7555,7 +7557,7 @@ prep_isba_dif:
     LSOC: TRUE
 
 prep_isba_snow:
-  nam_prep_isba_snow:
+  NAM_PREP_ISBA_SNOW:
     CSNOW: '${SURFEX#ISBA#SNOW}'
     LSWEMAX: true
 
@@ -7672,8 +7674,8 @@ offline_teb: {}
 offline_watflux: {}
 
 offline_selected_output:
-  nam_write_diag_surfn:
-    cselect:
+  NAM_WRITE_DIAG_SURFN:
+    CSELECT:
     - FMU
     - FMV
     - T2M
@@ -7800,7 +7802,7 @@ offline_selected_output:
     - CD
     - CH
     - CE
-    lselect: true
+    LSELECT: true
 
 # SODA
 
@@ -7825,9 +7827,8 @@ soda:
     LRELCLIMSNOW: false
     LWATERTG2: '${SURFEX#ASSIM#INLAND_WATER#LWATERTG2}'
     NPRINTLEV: 0
-    LPATCH1: False
   NAM_DIAG_ISBAn:
-    lsurf_misc_budget: true
+    LSURF_MISC_BUDGET: true
 
 soda_sice:
   NAM_SEAICE_SICE:

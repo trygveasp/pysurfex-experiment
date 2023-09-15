@@ -12,32 +12,32 @@
                 },
                 "NAM_DATA_ISBA#CFTYP_ALBNIR_SOIL": {
                     "DIRTYP": {
-                        "NAM_DATA_ISBA#CFNAM_ALBNIR_SOIL": "@ecosg_data_path@/ALB/ALB_SAT/ALB_SAT_NI_@DECADE@_c.dir"
+                        "NAM_DATA_ISBA#CFNAM_ALBNIR_SOIL": "@albnir_soil_dir@/ALB_SAT_NI_@DECADE@_c.dir"
                     }
                 },
                 "NAM_DATA_ISBA#CFTYP_ALBNIR_VEG": {
                     "DIRTYP": {
-                        "NAM_DATA_ISBA#CFNAM_ALBNIR_VEG": "@ecosg_data_path@/ALB/ALB_SAT/ALB_SAT_NI_@DECADE@_c.dir"
+                        "NAM_DATA_ISBA#CFNAM_ALBNIR_VEG": "@albnir_veg_dir@/ALB_SAT_NI_@DECADE@_c.dir"
                     }
                 },
                 "NAM_DATA_ISBA#CFTYP_ALBVIS_SOIL": {
                     "DIRTYP": {
-                        "NAM_DATA_ISBA#CFNAM_ALBVIS_SOIL": "@ecosg_data_path@/ALB/ALB_SAT/ALB_SAT_VI_@DECADE@_c.dir"
+                        "NAM_DATA_ISBA#CFNAM_ALBVIS_SOIL": "@albvis_soil_dir@/ALB_SAT_VI_@DECADE@_c.dir"
                     }
                 },
                 "NAM_DATA_ISBA#CFTYP_ALBVIS_VEG": {
                     "DIRTYP": {
-                        "NAM_DATA_ISBA#CFNAM_ALBVIS_VEG": "@ecosg_data_path@/ALB/ALB_SAT/ALB_SAT_VI_@DECADE@_c.dir"
+                        "NAM_DATA_ISBA#CFNAM_ALBVIS_VEG": "@albvis_veg_dir@/ALB_SAT_VI_@DECADE@_c.dir"
                     }
                 },
                 "NAM_DATA_ISBA#CFTYP_LAI": {
                     "DIRTYP": {
-                        "NAM_DATA_ISBA#CFNAM_LAI": "@ecosg_data_path@/LAI/LAI_SAT/LAI_SAT_@DECADE@_c.dir"
+                        "NAM_DATA_ISBA#CFNAM_LAI": "@lai_dir@/LAI_SAT_@DECADE@_c.dir"
                     }
                 },
                 "NAM_DATA_ISBA#CFTYP_H_TREE": {
                     "DIRTYP": {
-                        "NAM_DATA_ISBA#CFNAM_H_TREE": "@ecosg_data_path@/HT/new_ht_c.dir"
+                        "NAM_DATA_ISBA#CFNAM_H_TREE": "@tree_height_dir@/new_ht_c.dir"
                     }
                 },
                 "NAM_COVER#YCOVERFILETYPE": {
@@ -84,8 +84,8 @@
         },
         "NAM_DATA_FLAKE#YWATER_DEPTHFILETYPE": {
             "DIRECT": {
-                "NAM_DATA_FLAKE#YWATER_DEPTH": "@flake_dir@/GlobalLakeDepth.dir",
-                "NAM_DATA_FLAKE#YWATER_DEPTH_STATUS": "@flake_dir@/GlobalLakeStatus.dir"
+                "NAM_DATA_FLAKE#YWATER_DEPTH": "@flake_dir@/GlobalLakeDepth_V3.0.dir",
+                "NAM_DATA_FLAKE#YWATER_DEPTH_STATUS": "@flake_dir@/GlobalLakeStatus_V3.0.dir"
             }
         }
     },
@@ -100,21 +100,21 @@
         },
         "NAM_PREP_SURF_ATM#CFILETYPE": {
             "GRIB": {
-                "NAM_PREP_SURF_ATM#CFILE": ""
+                "NAM_PREP_SURF_ATM#CFILE": "@PREPFILE_WITH_PATH@"
             },
             "FA": {
-                "NAM_PREP_SURF_ATM#CFILE": ""
+                "NAM_PREP_SURF_ATM#CFILE": "@PREPFILE_WITH_PATH@"
             }
         },
         "NAM_PREP_SURF_ATM#CFILEPGDTYPE": {
             "NC": {
-                "NAM_PREP_SURF_ATM#CPGDFILE": ""
+                "NAM_PREP_SURF_ATM#CPGDFILE": "@PREP_PGDFILE_WITH_PATH@"
             },
             "ASCII": {
-                "NAM_PREP_SURF_ATM#CPGDFILE": ""
+                "NAM_PREP_SURF_ATM#CPGDFILE": "@PREP_PGDFILE_WITH_PATH@"
             },
             "FA": {
-                "NAM_PREP_SURF_ATM#CPGDFILE": ""
+                "NAM_PREP_SURF_ATM#CPGDFILE": "@PREP_PGDFILE_WITH_PATH@"
             }
         },
         "NAM_PGD_SCHEMES#CWATER": {
@@ -167,6 +167,11 @@
                 "OBSERVATIONS_@YY@@MM_LL@@DD_LL@H@HH_LL@.DAT": "@obs_dir@/OBSERVATIONS_@YY@@MM_LL@@DD_LL@H@HH_LL@.DAT"
             }
         },
+        "NAM_ASSIM#CFILE_FORMAT_SST": {
+            "FA": {
+                "SST_SIC": "@archive_dir@/SST_SIC_@YYYY_LL@@MM_LL@@DD_LL@_@HH_LL@"
+            }
+        },
         "NAM_ASSIM#CASSIM_ISBA": {
             "OI": {
                 "NAM_ASSIM#CASSIM_ISBA": {
@@ -177,7 +182,7 @@
                 },
                 "NAM_ASSIM#CFILE_FORMAT_LSM": {
                     "FA": {
-                        "FG_OI_MAIN": "@first_guess_dir@/FG_OI_MAIN"
+                        "FG_OI_MAIN": "@oi_first_guess_dir@/FG_OI_MAIN"
                     },
                     "ASCII": {
                         "LSM.DAT": "@climdir@/LSM.DAT"
@@ -185,7 +190,7 @@
                 },
                 "NAM_ASSIM#CFILE_FORMAT_FG": {
                     "FA": {
-                        "FG_OI_MAIN": "@first_guess_dir@/FG_OI_MAIN"
+                        "FG_OI_MAIN": "@oi_first_guess_dir@/FG_OI_MAIN"
                     },
                     "ASCII": {
                         "FIRST_GUESS_@YY@@MM@@DD@H@HH@.DAT": "@first_guess_dir@/FIRST_GUESS_@YY@@MM@@DD@H@HH@.DAT"
@@ -203,8 +208,8 @@
                 },
                 "NAM_IO_OFFLINE#CSURF_FILETYPE": {
                     "FA": {
-                        "PREP_INIT.fa": "@first_guess_dir@/PREP_INIT.fa",
-                        "PREP_@FG_YY@@FG_MM@@FG_DD@H@FG_HH@_EKF_PERT@PERT@.fa": "@first_guess_dir@/PREP_@FG_YY@@FG_MM@@FG_DD@H@FG_HH@_EKF_PERT@PERT@.fa"
+                        "PREP_INIT.fa": "@first_guess_dir@/ICMSHHARM+@LLLL@.sfx",
+                        "PREP_@YY@@MM_LL@@DD_LL@H@HH_LL@_EKF_PERT@PERT@.fa": "@archive_dir@/PREP_PERT@PERT@.fa"
                     },
                     "NC": {
                         "PREP_INIT.nc": "@first_guess_dir@/SURFOUT.nc",
