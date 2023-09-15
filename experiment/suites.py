@@ -493,6 +493,19 @@ class SurfexSuite:
                     )
                     fg4oi_complete = EcflowSuiteTrigger(fg4oi)
 
+                    cryo_trigger = EcflowSuiteTriggers(fg4oi_complete)
+
+                    cryo2json = EcflowSuiteTask(
+                        "CryoClim2json",
+                        analysis,
+                        config,
+                        task_settings,
+                        ecf_files,
+                        triggers=cryo_trigger,
+                        input_template=template,
+                    )
+                    cryo2json_complete = EcflowSuiteTrigger(cryo2json)
+
                     fetchobs_complete = None
                     if platform_name == "ECMWF-atos":
                         if need_obs:
@@ -516,7 +529,7 @@ class SurfexSuite:
                             qc_triggers = None
                             if var == "sd":
                                 qc_triggers = EcflowSuiteTriggers(
-                                    [fg4oi_complete, fetchobs_complete]
+                                    [fg4oi_complete, fetchobs_complete, cryo2json_complete]
                                 )
                             else:
                                 qc_triggers = EcflowSuiteTriggers(fetchobs_complete)
