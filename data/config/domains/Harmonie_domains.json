@@ -1057,5 +1057,16 @@
     "NLON": 50,
     "TSTEP": 600,
     "EZONE": 0
-  }
+  },
+   "SOR_TEST": {
+    "TSTEP": 60.0,
+    "NLON": 250,
+    "NLAT": 250,
+    "LONC": 10.0,
+    "LATC": 60.0,
+    "LON0": 15.0,
+    "LAT0": 63.0,
+    "GSIZE": 2500.0,
+    "EZONE": 0
+   }
 }
