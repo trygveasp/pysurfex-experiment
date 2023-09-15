@@ -186,7 +186,7 @@ class CMakeBuild(AbstractTask):
             )
             cmd = f"cmake {current_project_dir} {cmake_flags}"
             BatchJob(rte, wrapper=wrapper).run(cmd)
-            cmd = f"cmake --build . -- -j{nproc}"
+            cmd = f"cmake --build . -j{nproc} --target gribex"
             BatchJob(rte, wrapper=wrapper).run(cmd)
             cmd = "cmake --build . --target install"
             BatchJob(rte, wrapper=wrapper).run(cmd)
