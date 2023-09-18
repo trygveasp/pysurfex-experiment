@@ -12,6 +12,11 @@ netatmo_obs_rh2m = true          # 2m relative humidity observations from Netatm
 netatmo_filepattern = "@sfx_exp_data@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@RRR@"
 # netatmo_filepattern = "/lustre/storeB/project/metproduction/products/netatmo/@YYYY@/@MM@/@DD@/@YYYY@@MM@@DD@T@HH@@mm@01Z.json"
 # netatmo_filepattern = "/tmp/host1/testdata/@YYYY@@MM@@DD@T@HH@@mm@*Z_all.json"
+cryo_filepattern = "@sfx_exp_data@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@RRR@/daily-avhrr-sce-nhl_ease-50_@YYYY@@MM@@DD@@HH@"
+cryo_laf_threshold = 0.1
+cryo_step = 2
+cryo_fg_threshold = 0.4
+cryo_new_snow = 0.1
 
 [observations.qc]
 # QC_TESTS = ["domain", "blacklist", "nometa", "redundancy", "plausibility", "sct"]

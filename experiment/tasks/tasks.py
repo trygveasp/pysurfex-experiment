@@ -18,14 +18,12 @@ from pysurfex.netcdf import (
     oi2soda,
     read_first_guess_netcdf_file,
     write_analysis_netcdf_file,
-    read_cryoclim_nc
 )
 from pysurfex.obsmon import write_obsmon_sqlite_file
+from pysurfex.pseudoobs import CryoclimObservationSet
 from pysurfex.read import ConvertedInput, Converter
 from pysurfex.run import BatchJob
 from pysurfex.titan import TitanDataSet, dataset_from_file, define_quality_control
-from pysurfex.titan import QCDataSet
-from pysurfex.obs import snow_pseudo_obs_cryoclim
 
 from ..config_parser import ParsedConfig
 from ..configuration import Configuration
@@ -444,15 +442,13 @@ class QualityControl(AbstractTask):
 
         try:
             tests = self.config.get_value(f"observations.qc.{lname}.tests")
-            self.logger.info(f"Using observations.qc.{lname}.tests")
+            self.logger.info("Using observations.qc.%s.tests", lname)
         except AttributeError:
             self.logger.info("Using default test observations.qc.tests")
             tests = self.config.get_value("observations.qc.tests")
 
         indent = 2
         blacklist = {}
-        # TODO
-        an_time = an_time.replace(tzinfo=None)
         json.dump(settings, open("settings.json", mode="w", encoding="utf-8"), indent=2)
         tests = define_quality_control(
             tests, settings, an_time, domain_geo=self.geo, blacklist=blacklist
@@ -561,7 +557,7 @@ class OptimalInterpolation(AbstractTask):
             minvalue=minvalue,
             maxvalue=maxvalue,
             interpol="bilinear",
-            only_diff=only_diff
+            only_diff=only_diff,
         )
         self.logger.info("Write output file %s", output_file)
         if os.path.exists(output_file):
@@ -607,6 +603,7 @@ class FirstGuess(AbstractTask):
             os.unlink(self.fg_guess_sfx)
         os.symlink(fg_file, self.fg_guess_sfx)
 
+
 class CryoClim2json(AbstractTask):
     """Find first guess.
 
@@ -630,28 +627,45 @@ class CryoClim2json(AbstractTask):
 
     def execute(self):
         """Execute."""
-
         var = "surface_snow_thickness"
-
         input_file = self.archive + "/raw_" + var + ".nc"
 
         # Get input fields
         geo, validtime, background, glafs, gelevs = read_first_guess_netcdf_file(
             input_file, var
         )
-        an_time = validtime
-        an_time = an_time.replace(tzinfo=None)
 
-        #cryo_time = str(an_time.year) + str(an_time.month) + str(an_time.day)
-        cryo_time = "{:%Y%m%d}".format(an_time)
-
-        obs_file = f"{self.platform.get_system_value('obs_dir')}/daily-avhrr-sce-nhl_ease-50_%s06"%cryo_time
-
-        grid_lons, grid_lats, grid_snow_class = read_cryoclim_nc([obs_file])
-
-        qc = snow_pseudo_obs_cryoclim(validtime,grid_snow_class,grid_lons,grid_lats,1,geo,background,gelevs,fg_threshold=0.4,new_snow_depth=0.1)
-
-        qc.write_output(f"{self.platform.get_system_value('obs_dir')}/cryo.json")
+        obs_file = self.config.get_value("observations.cryo_filepattern")
+        obs_file = [self.platform.substitute(obs_file)]
+        try:
+            laf_threshold = self.config.get_value("observations.cryo_laf_threshold")
+        except AttributeError:
+            laf_threshold = 0.1
+        try:
+            step = self.config.get_value("observations.cryo_step")
+        except AttributeError:
+            step = 2
+        try:
+            fg_threshold = self.config.get_value("observations.cryo_fg_threshold")
+        except AttributeError:
+            fg_threshold = 0.4
+        try:
+            new_snow_depth = self.config.get_value("observations.cryo_new_snow")
+        except AttributeError:
+            new_snow_depth = 0.1
+        obs_set = CryoclimObservationSet(
+            [obs_file],
+            validtime,
+            geo,
+            background,
+            gelevs,
+            step=step,
+            fg_threshold=fg_threshold,
+            new_snow_depth=new_snow_depth,
+            glaf=glafs,
+            laf_threshold=laf_threshold,
+        )
+        obs_set.write_json_file(f"{self.platform.get_system_value('obs_dir')}/cryo.json")
 
 
 class CycleFirstGuess(FirstGuess):

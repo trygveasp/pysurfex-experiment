@@ -201,8 +201,14 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
         }
         geo = ConfProj(geo_dict)
         validtime = as_datetime("2023-01-01 T03:00:00Z")
-        dummy = np.empty([60, 50])
+        dummy = np.empty([50, 60])
         return geo, validtime, dummy, dummy, dummy
+
+    def new_read_cryoclim_nc(infiles):
+        lons = np.ma.array([[10, 10, 10], [10.1, 10.1, 10.1]])
+        lats = np.ma.array([[60, 60, 60], [60.1, 60.1, 60.1]])
+        vals = np.ma.array([[[0, 1, 2], [3, 4, 5]]])
+        return lons, lats, vals
 
     def new_write_analysis_netcdf_file(*args, **kwargs):
         pass
@@ -250,6 +256,7 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
         "experiment.tasks.tasks.write_analysis_netcdf_file",
         new=new_write_analysis_netcdf_file,
     )
+    session_mocker.patch("pysurfex.pseudoobs.read_cryoclim_nc", new=new_read_cryoclim_nc)
     session_mocker.patch(
         "experiment.tasks.tasks.write_obsmon_sqlite_file",
         new=new_write_obsmon_sqlite_file,

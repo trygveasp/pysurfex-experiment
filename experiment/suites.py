@@ -529,7 +529,11 @@ class SurfexSuite:
                             qc_triggers = None
                             if var == "sd":
                                 qc_triggers = EcflowSuiteTriggers(
-                                    [fg4oi_complete, fetchobs_complete, cryo2json_complete]
+                                    [
+                                        fg4oi_complete,
+                                        fetchobs_complete,
+                                        cryo2json_complete,
+                                    ]
                                 )
                             else:
                                 qc_triggers = EcflowSuiteTriggers(fetchobs_complete)
