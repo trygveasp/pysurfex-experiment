@@ -412,7 +412,6 @@ class QualityControl(AbstractTask):
                 )
 
             if cryo_obs:
-                print("inside cryo")
                 cryo_tests = default_tests
                 cryo_tests.update(
                     {
