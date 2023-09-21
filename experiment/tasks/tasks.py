@@ -314,7 +314,7 @@ class QualityControl(AbstractTask):
                         "bufr": {
                             "filepattern": filepattern,
                             "filetype": "bufr",
-                            "varname": ["airTemperatureAt2M"],
+                            "varname": "airTemperatureAt2M",
                             "tests": bufr_tests,
                         }
                     }
@@ -357,7 +357,7 @@ class QualityControl(AbstractTask):
                         "bufr": {
                             "filepattern": filepattern,
                             "filetype": "bufr",
-                            "varname": ["relativeHumidityAt2M"],
+                            "varname": "relativeHumidityAt2M",
                             "tests": bufr_tests,
                         }
                     }
@@ -405,7 +405,7 @@ class QualityControl(AbstractTask):
                         "bufr": {
                             "filepattern": filepattern,
                             "filetype": "bufr",
-                            "varname": ["totalSnowDepth"],
+                            "varname": "totalSnowDepth",
                             "tests": bufr_tests,
                         }
                     }
@@ -425,7 +425,7 @@ class QualityControl(AbstractTask):
                         "cryo": {
                             "filepattern": filepattern,
                             "filetype": "json",
-                            "varname": ["totalSnowDepth"],
+                            "varname": "totalSnowDepth",
                             "tests": cryo_tests,
                         }
                     }
