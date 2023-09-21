@@ -652,6 +652,10 @@ class CryoClim2json(AbstractTask):
             new_snow_depth = self.config.get_value("observations.cryo_new_snow")
         except AttributeError:
             new_snow_depth = 0.1
+        try:
+            cryo_varname = self.config.get_value("observations.cryo_varname")
+        except AttributeError:
+            cryo_varname = None
         obs_set = CryoclimObservationSet(
             [obs_file],
             validtime,
@@ -663,6 +667,7 @@ class CryoClim2json(AbstractTask):
             new_snow_depth=new_snow_depth,
             glaf=glafs,
             laf_threshold=laf_threshold,
+            cryo_varname=cryo_varname,
         )
         obs_set.write_json_file(f"{self.platform.get_system_value('obs_dir')}/cryo.json")
 

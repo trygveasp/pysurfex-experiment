@@ -508,7 +508,6 @@ class SurfexSuite:
                         )
                         cryo2json_complete = EcflowSuiteTrigger(cryo2json)
 
-
                     fetchobs_complete = None
                     if platform_name == "ECMWF-atos":
                         if need_obs:

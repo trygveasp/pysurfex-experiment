@@ -204,7 +204,7 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
         dummy = np.empty([50, 60])
         return geo, validtime, dummy, dummy, dummy
 
-    def new_read_cryoclim_nc(infiles):
+    def new_read_cryoclim_nc(infiles, cryo_varname=""):
         lons = np.ma.array([[10, 10, 10], [10.1, 10.1, 10.1]])
         lats = np.ma.array([[60, 60, 60], [60.1, 60.1, 60.1]])
         vals = np.ma.array([[[0, 1, 2], [3, 4, 5]]])
