@@ -117,7 +117,7 @@ jobs:
           # the return code.
 
       - name: Push changes
-        if: ${{ matrix.python-version == 3.8 }}
+        if: ${{ matrix.python-version == 3.8  && github.event_name != 'pull_request' }}
         uses: ad-m/github-push-action@master
         with:
           branch: gh-pages
