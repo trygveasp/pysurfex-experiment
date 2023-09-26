@@ -1,7 +1,11 @@
 """PySurfexExpSetup functionality."""
 import os
+import shutil
 import sys
 from argparse import ArgumentParser
+from pathlib import Path
+
+import troika
 
 try:
     import pysurfex
@@ -231,3 +235,17 @@ def surfex_script_setup(**kwargs):
             exp_dependencies, config_settings=merged_config, loglevel=loglevel
         )
         sfx_exp.dump_json(output_file, indent=2)
+
+    files = [
+        f
+        for f in (Path(pysurfex_experiment) / "experiment" / "troika" / "sites").iterdir()
+        if f.is_file()
+    ]
+    troika_path = Path(troika.__path__[0]) / "sites"
+    for fobj in files:
+        target = Path(troika_path) / fobj.name
+        if not target.exists():
+            logger.info("Copy %s to %s", fobj, target)
+            shutil.copy(fobj, target)
+        else:
+            logger.debug("Taget %s exists", target)
