@@ -20,6 +20,7 @@ from pysurfex.netcdf import (
     write_analysis_netcdf_file,
 )
 from pysurfex.obsmon import write_obsmon_sqlite_file
+from pysurfex.pseudoobs import CryoclimObservationSet
 from pysurfex.read import ConvertedInput, Converter
 from pysurfex.run import BatchJob
 from pysurfex.titan import TitanDataSet, dataset_from_file, define_quality_control
@@ -388,6 +389,7 @@ class QualityControl(AbstractTask):
         # Snow Depth
         elif self.var_name == "sd":
             synop_obs = self.config.get_value("observations.synop_obs_sd")
+            cryo_obs = self.config.get_value("observations.cryo_obs_sd")
             data_sets = {}
             if synop_obs:
                 bufr_tests = default_tests
@@ -409,6 +411,25 @@ class QualityControl(AbstractTask):
                     }
                 )
 
+            if cryo_obs:
+                cryo_tests = default_tests
+                cryo_tests.update(
+                    {
+                        "plausibility": {"do_test": True, "maxval": 1000, "minval": 0},
+                        "firstguess": {"do_test": True, "negdiff": 0.5, "posdiff": 0.5},
+                    }
+                )
+                filepattern = self.obsdir + "/cryo.json"
+                data_sets.update(
+                    {
+                        "cryo": {
+                            "filepattern": filepattern,
+                            "filetype": "json",
+                            "varname": "totalSnowDepth",
+                            "tests": cryo_tests,
+                        }
+                    }
+                )
             settings.update({"sets": data_sets})
         else:
             raise NotImplementedError
@@ -420,15 +441,13 @@ class QualityControl(AbstractTask):
 
         try:
             tests = self.config.get_value(f"observations.qc.{lname}.tests")
-            self.logger.info("Using observations.qc.{lname}.tests")
+            self.logger.info("Using observations.qc.%s.tests", lname)
         except AttributeError:
             self.logger.info("Using default test observations.qc.tests")
             tests = self.config.get_value("observations.qc.tests")
 
         indent = 2
         blacklist = {}
-        # TODO
-        an_time = an_time.replace(tzinfo=None)
         json.dump(settings, open("settings.json", mode="w", encoding="utf-8"), indent=2)
         tests = define_quality_control(
             tests, settings, an_time, domain_geo=self.geo, blacklist=blacklist
@@ -472,6 +491,7 @@ class OptimalInterpolation(AbstractTask):
         max_locations = 20
         elev_gradient = 0
         epsilon = 0.25
+        only_diff = False
 
         lname = self.var_name.lower()
         hlength = self.config.get_value(
@@ -491,6 +511,9 @@ class OptimalInterpolation(AbstractTask):
         )
         epsilon = self.config.get_value(
             f"observations.oi.{lname}.epsilon", default=epsilon
+        )
+        only_diff = self.config.get_value(
+            f"observations.oi.{lname}.only_diff", default=only_diff
         )
         try:
             minvalue = self.config.get_value(
@@ -532,7 +555,8 @@ class OptimalInterpolation(AbstractTask):
             epsilon=epsilon,
             minvalue=minvalue,
             maxvalue=maxvalue,
-            interpol="nearest",
+            interpol="bilinear",
+            only_diff=only_diff,
         )
         self.logger.info("Write output file %s", output_file)
         if os.path.exists(output_file):
@@ -577,6 +601,75 @@ class FirstGuess(AbstractTask):
         if os.path.islink(self.fg_guess_sfx) or os.path.exists(self.fg_guess_sfx):
             os.unlink(self.fg_guess_sfx)
         os.symlink(fg_file, self.fg_guess_sfx)
+
+
+class CryoClim2json(AbstractTask):
+    """Find first guess.
+
+    Args:
+        AbstractTask (AbstractTask): Base class
+
+    """
+
+    def __init__(self, config, name=None):
+        """Construct a FistGuess task.
+
+        Args:
+            config (ParsedObject): Parsed configuration
+            name (str, optional): Task name. Defaults to None
+
+        """
+        if name is None:
+            name = "CryoClim2json"
+        AbstractTask.__init__(self, config, name)
+        self.var_name = self.config.get_value("task.var_name", default=None)
+
+    def execute(self):
+        """Execute."""
+        var = "surface_snow_thickness"
+        input_file = self.archive + "/raw_" + var + ".nc"
+
+        # Get input fields
+        geo, validtime, background, glafs, gelevs = read_first_guess_netcdf_file(
+            input_file, var
+        )
+
+        obs_file = self.config.get_value("observations.cryo_filepattern")
+        obs_file = [self.platform.substitute(obs_file)]
+        try:
+            laf_threshold = self.config.get_value("observations.cryo_laf_threshold")
+        except AttributeError:
+            laf_threshold = 0.1
+        try:
+            step = self.config.get_value("observations.cryo_step")
+        except AttributeError:
+            step = 2
+        try:
+            fg_threshold = self.config.get_value("observations.cryo_fg_threshold")
+        except AttributeError:
+            fg_threshold = 0.4
+        try:
+            new_snow_depth = self.config.get_value("observations.cryo_new_snow")
+        except AttributeError:
+            new_snow_depth = 0.1
+        try:
+            cryo_varname = self.config.get_value("observations.cryo_varname")
+        except AttributeError:
+            cryo_varname = None
+        obs_set = CryoclimObservationSet(
+            [obs_file],
+            validtime,
+            geo,
+            background,
+            gelevs,
+            step=step,
+            fg_threshold=fg_threshold,
+            new_snow_depth=new_snow_depth,
+            glaf=glafs,
+            laf_threshold=laf_threshold,
+            cryo_varname=cryo_varname,
+        )
+        obs_set.write_json_file(f"{self.platform.get_system_value('obs_dir')}/cryo.json")
 
 
 class CycleFirstGuess(FirstGuess):

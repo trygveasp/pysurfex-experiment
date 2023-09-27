@@ -93,6 +93,8 @@ jobs:
         
       - name: Coveralls
         if: ${{ matrix.python-version == 3.8 }}
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
         run: |
           export COVERALLS_REPO_TOKEN=${{secrets.COVERALLS_REPO_TOKEN}}
           poetry run coveralls
@@ -102,7 +104,7 @@ jobs:
         run: |
           poetry run sphinx-build . docs/build/html
       - name: Commit documentation changes
-        if: ${{ matrix.python-version == 3.8 }}
+        if: ${{ matrix.python-version == 3.8 && github.event_name != 'pull_request' }}
         run: |
           git clone https://github.com/metno/pysurfex-experiment.git --branch gh-pages --single-branch gh-pages
           cp -r docs/build/html/* gh-pages/
@@ -115,7 +117,7 @@ jobs:
           # the return code.
 
       - name: Push changes
-        if: ${{ matrix.python-version == 3.8 }}
+        if: ${{ matrix.python-version == 3.8  && github.event_name != 'pull_request' }}
         uses: ad-m/github-push-action@master
         with:
           branch: gh-pages
