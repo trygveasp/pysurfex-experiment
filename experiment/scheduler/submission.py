@@ -1,11 +1,11 @@
 """Job submission setup."""
 import collections.abc
 import json
-import logging
 import os
 import subprocess  # noqa S404
 import sys
 
+from ..logs import GLOBAL_LOGLEVEL, logger
 from ..tasks.discover_tasks import get_task
 
 
@@ -28,7 +28,7 @@ class TaskSettings(object):
             if isinstance(val, collections.abc.Mapping):
                 dic[key] = TaskSettings._update_task_setting(dic.get(key, {}), val)
             else:
-                logging.debug("key=%s value=%s", key, val)
+                logger.debug("key={} value={}", key, val)
                 dic[key] = val
         return dic
 
@@ -57,14 +57,14 @@ class TaskSettings(object):
 
         if task_submit_type in all_defs:
             for __ in all_defs[task_submit_type]:
-                logging.debug("task_submit_type for task %s: %s", task, task_submit_type)
+                logger.debug("task_submit_type for task {}: {}", task, task_submit_type)
                 task_settings = self._update_task_setting(
                     task_settings, all_defs[task_submit_type]
                 )
 
         if "task_exceptions" in all_defs:
             if task in all_defs["task_exceptions"]:
-                logging.debug("Task task_exceptions for task %s", task)
+                logger.debug("Task task_exceptions for task {}", task)
                 task_settings = self._update_task_setting(
                     task_settings, all_defs["task_exceptions"][task]
                 )
@@ -72,7 +72,7 @@ class TaskSettings(object):
         if "SCHOST" in task_settings:
             self.job_type = task_settings["SCHOST"]
 
-        logging.debug("Task settings for task %s: %s", task, task_settings)
+        logger.debug("Task settings for task {}: {}", task, task_settings)
         return task_settings
 
     def get_task_settings(self, task, key=None, variables=None, ecf_micro="%"):
@@ -93,18 +93,18 @@ class TaskSettings(object):
         else:
             if key in task_settings:
                 m_task_settings = {}
-                logging.debug(type(task_settings[key]))
+                logger.debug(type(task_settings[key]))
                 if isinstance(task_settings[key], dict):
                     for setting, value in task_settings[key].items():
-                        logging.debug("%s %s variables: %s", setting, value, variables)
+                        logger.debug("{} {} variables: {}", setting, value, variables)
                         if variables is not None:
                             if setting in variables:
                                 value = f"{ecf_micro}{setting}{ecf_micro}"
-                                logging.debug(value)
+                                logger.debug(value)
                         if isinstance(value, str):
                             value = value.replace("@NAME@", task)
                         m_task_settings.update({setting: value})
-                    logging.debug(m_task_settings)
+                    logger.debug(m_task_settings)
                     return m_task_settings
                 else:
                     value = task_settings[key]
@@ -144,13 +144,13 @@ class TaskSettings(object):
         keys = []
         for key, value in self.recursive_items(task_settings):
             if isinstance(value, str):
-                logging.debug(key)
+                logger.debug(key)
                 keys.append(key)
-        logging.debug(keys)
+        logger.debug(keys)
         for key, value in self.recursive_items(task_settings):
-            logging.debug("key=%s value=%s", key, value)
+            logger.debug("key={} value={}", key, value)
             if key in keys:
-                logging.debug("update %s %s", key, value)
+                logger.debug("update {} {}", key, value)
                 settings.update({key: value})
         return settings
 
@@ -169,11 +169,11 @@ class TaskSettings(object):
 
         """
         interpreter = self.get_task_settings(task, "INTERPRETER")
-        logging.debug(interpreter)
+        logger.debug(interpreter)
         if interpreter is None:
             interpreter = f"#!{sys.executable}"
 
-        logging.debug(interpreter)
+        logger.debug(interpreter)
         with open(input_template_job, mode="r", encoding="utf-8") as file_handler:
             input_content = file_handler.read()
         dir_name = os.path.dirname(os.path.realpath(task_job))
@@ -184,14 +184,14 @@ class TaskSettings(object):
             batch_settings = self.get_task_settings(
                 task, "BATCH", variables=variables, ecf_micro=ecf_micro
             )
-            logging.debug("batch settings %s", batch_settings)
+            logger.debug("batch settings {}", batch_settings)
             for __, b_setting in batch_settings.items():
                 file_handler.write(f"{b_setting}\n")
             env_settings = self.get_task_settings(
                 task, "ENV", variables=variables, ecf_micro=ecf_micro
             )
-            logging.debug("Env settings for task %s %s", task, env_settings)
-            logging.debug("Variables for task %s %s", task, variables)
+            logger.debug("Env settings for task {} {}", task, env_settings)
+            logger.debug("Variables for task {} {}", task, variables)
             python_task_env = ""
             for __, e_setting in env_settings.items():
                 python_task_env = python_task_env + f"{e_setting}\n"
@@ -206,10 +206,9 @@ class TaskSettings(object):
                 input_content = input_content.replace(
                     "@STAND_ALONE_TASK_CONFIG@", str(config_file)
                 )
-            loglevel = self.get_task_settings(task, "LOGLEVEL")
-            if loglevel is None:
-                loglevel = "INFO"
-            input_content = input_content.replace("@STAND_ALONE_TASK_LOGLEVEL@", loglevel)
+            input_content = input_content.replace(
+                "@STAND_ALONE_TASK_LOGLEVEL@", GLOBAL_LOGLEVEL
+            )
             file_handler.write(input_content)
         # Make file executable for user
         os.chmod(task_job, 0o744)

@@ -8,11 +8,15 @@ from pathlib import Path
 import pytest
 import toml
 
+from experiment import PACKAGE_NAME
 from experiment.cli import run_submit_cmd_exp, surfex_exp, update_config
+from experiment.logs import logger
 from experiment.scheduler.submission import TaskSettings
 from experiment.setup.setup import surfex_exp_setup
 
 WORKING_DIR = Path.cwd()
+
+logger.enable(PACKAGE_NAME)
 
 
 @pytest.fixture(scope="module")
@@ -110,8 +114,9 @@ def setup_experiment(tmp_path_factory, pysurfex_experiment, _create_unit_test_fi
     tmpdir = f"{tmp_path_factory.getbasetemp().as_posix()}/exp"
     os.makedirs(tmpdir, exist_ok=True)
     os.chdir(tmpdir)
+    os.environ["PYSURFEX_EXPERIMENT_LOGLEVEL"] = "DEBUG"
     _create_unit_test_files
-    surfex_exp_setup(["-experiment", pysurfex_experiment, "-host", "unittest", "--debug"])
+    surfex_exp_setup(["-experiment", pysurfex_experiment, "-host", "unittest"])
     return tmpdir + "/exp_dependencies.json"
 
 
@@ -150,15 +155,9 @@ def test_run_suite_command(tmp_path_factory, setup_experiment):
     __ = setup_experiment  # noqa F841
     tmpdir = f"{tmp_path_factory.getbasetemp().as_posix()}/exp"
     os.chdir(tmpdir)
+    os.environ["PYSURFEX_EXPERIMENT_LOGLEVEL"] = "DEBUG"
     surfex_exp(
-        [
-            "start",
-            "-dtg",
-            "2023-01-01T03:00:00Z",
-            "-dtgend",
-            "2023-01-01T06:00:00Z",
-            "--debug",
-        ]
+        ["start", "-dtg", "2023-01-01T03:00:00Z", "-dtgend", "2023-01-01T06:00:00Z"]
     )
 
 
@@ -171,6 +170,7 @@ def test_run_submit_task_command(
     tmpdir = f"{tmp_path_factory.getbasetemp().as_posix()}/exp"
     os.makedirs(tmpdir, exist_ok=True)
     os.chdir(tmpdir)
+    os.environ["PYSURFEX_EXPERIMENT_LOGLEVEL"] = "DEBUG"
     job = tmpdir + "/Task.job"
     log = tmpdir + "/Task.log"
     template = WORKING_DIR.as_posix() + "/experiment/templates/stand_alone.py"
@@ -187,7 +187,6 @@ def test_run_submit_task_command(
             log,
             "-template",
             template,
-            "--debug",
         ]
     )
 

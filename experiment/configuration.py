@@ -1,7 +1,7 @@
 """Experiment configuration."""
 
 from .datetime_utils import ProgressFromConfig, as_timedelta
-from .logs import get_logger_from_config
+from .logs import logger
 
 NO_DEFAULT_PROVIDED = object()
 
@@ -17,7 +17,6 @@ class Configuration:
 
         """
         self.config = config
-        self.logger = get_logger_from_config(config)
 
     def get_setting(self, setting, sep="#", realization=None):
         """Get setting.
@@ -32,7 +31,7 @@ class Configuration:
 
         """
         items = setting.replace(sep, ".")
-        self.logger.info("Could check realization %s", realization)
+        logger.info("Could check realization {}", realization)
         return self.config.get_value(items)
 
     def get_total_unique_cycle_list(self):
@@ -278,13 +277,13 @@ class Configuration:
                 ival = 1
                 if obs_types[ivar] == "SWE":
                     if not snow_ass_done:
-                        self.logger.info(
-                            "Disabling snow assimilation since cycle is not in %s",
+                        logger.info(
+                            "Disabling snow assimilation since cycle is not in {}",
                             snow_ass,
                         )
                         ival = 0
-            self.logger.debug("ivar=%s ival=%s", ivar, ival)
+            logger.debug("ivar={} ival={}", ivar, ival)
             nnco.append(ival)
 
-        self.logger.debug("NNCO: %s", nnco)
+        logger.debug("NNCO: {}", nnco)
         return nnco

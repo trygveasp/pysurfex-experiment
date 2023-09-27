@@ -1,12 +1,15 @@
 """Unit testing."""
-import logging
 from pathlib import Path
 
 import pysurfex
 import pytest
 
+from experiment import PACKAGE_NAME
 from experiment.configuration import Configuration
 from experiment.experiment import ExpFromFiles
+from experiment.logs import logger
+
+logger.enable(PACKAGE_NAME)
 
 
 @pytest.fixture(scope="module")
@@ -72,7 +75,7 @@ class TestConfig:
 
     def test_read_setting(self, settings):
         """Read normal settings."""
-        logging.debug("Read setting")
+        logger.debug("Read setting")
         build = settings.get_setting("compile#test_true")
         assert build is True
 

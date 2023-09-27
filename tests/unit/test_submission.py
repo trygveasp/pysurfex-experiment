@@ -5,10 +5,14 @@ from pathlib import Path
 import pysurfex
 import pytest
 
+from experiment import PACKAGE_NAME
 from experiment.config_parser import ParsedConfig
 from experiment.experiment import Exp, ExpFromFiles
+from experiment.logs import logger
 from experiment.scheduler.submission import NoSchedulerSubmission, TaskSettings
 from experiment.system import System
+
+logger.enable(PACKAGE_NAME)
 
 
 @pytest.fixture(scope="module")

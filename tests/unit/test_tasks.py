@@ -11,14 +11,18 @@ from pysurfex.geo import ConfProj
 from pysurfex.run import BatchJob
 
 import experiment
+from experiment import PACKAGE_NAME
 from experiment.config_parser import ParsedConfig
 from experiment.datetime_utils import as_datetime
 from experiment.experiment import Exp, ExpFromFiles
+from experiment.logs import logger
 from experiment.system import System
 from experiment.tasks.discover_tasks import discover, get_task
 from experiment.tasks.tasks import AbstractTask
 
 WORKING_DIR = Path.cwd()
+
+logger.enable(PACKAGE_NAME)
 
 
 def classes_to_be_tested():

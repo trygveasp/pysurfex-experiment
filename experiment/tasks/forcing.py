@@ -5,6 +5,7 @@ import os
 import yaml
 from pysurfex.forcing import modify_forcing, run_time_loop, set_forcing_config
 
+from ..logs import logger
 from ..tasks.tasks import AbstractTask
 
 
@@ -111,7 +112,7 @@ class Forcing(AbstractTask):
         kwargs.update({"interpolation": interpolation})
 
         if os.path.exists(output):
-            self.logger.info("Output already exists: %s", output)
+            logger.info("Output already exists: {}", output)
         else:
             options, var_objs, att_objs = set_forcing_config(**kwargs)
             run_time_loop(options, var_objs, att_objs)
@@ -139,7 +140,7 @@ class ModifyForcing(AbstractTask):
         """Execute the forcing task."""
         dtg = self.dtg
         dtg_prev = dtg - self.fcint
-        self.logger.debug("modify forcing dtg=%s dtg_prev=%s", dtg, dtg_prev)
+        logger.debug("modify forcing dtg={} dtg_prev={}", dtg, dtg_prev)
         forcing_dir = self.platform.get_system_value("forcing_dir")
         input_dir = self.platform.substitute(forcing_dir, basetime=dtg_prev)
         output_dir = self.platform.substitute(forcing_dir, basetime=dtg)
@@ -156,4 +157,4 @@ class ModifyForcing(AbstractTask):
         if os.path.exists(output_file) and os.path.exists(input_file):
             modify_forcing(**kwargs)
         else:
-            self.logger.info("Output or input is missing: %s", output_file)
+            logger.info("Output or input is missing: {}", output_file)

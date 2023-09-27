@@ -3,7 +3,7 @@ import os
 import re
 
 from .datetime_utils import as_datetime
-from .logs import get_logger_from_config
+from .logs import logger
 
 
 class ArchiveError(Exception):
@@ -26,12 +26,11 @@ class Provider:
             fetch (bool, optional): Fetch data. Defaults to False.
 
         """
-        self.logger = get_logger_from_config(config)
         self.config = config
         self.identifier = identifier
         self.fetch = fetch
-        self.logger.debug(
-            "Constructed Base Provider object. %s %s ", self.identifier, self.fetch
+        logger.debug(
+            "Constructed Base Provider object. {} {} ", self.identifier, self.fetch
         )
 
     def create_resource(self, resource):
@@ -56,7 +55,6 @@ class Platform:
             config (deode.ParsedConfig): Config.
 
         """
-        self.logger = get_logger_from_config(config)
         self.config = config
 
     def get_system_value(self, role):
@@ -129,7 +127,7 @@ class Platform:
         macros = self.config.get_value("platform").dict()
         for macro in macros:
             macro_list.append(macro)
-        self.logger.debug("Platform macro list: %s", macro_list)
+        logger.debug("Platform macro list: {}", macro_list)
         return macro_list
 
     def get_system_macros(self):
@@ -143,7 +141,7 @@ class Platform:
         macros = self.config.get_value("system").dict()
         for macro in macros:
             macro_list.append(macro)
-        self.logger.debug("System macro list: %s", macro_list)
+        logger.debug("System macro list: {}", macro_list)
         return macro_list
 
     def get_os_macros(self):
@@ -196,8 +194,8 @@ class Platform:
             str: Replaces string
         """
         # create the list.
-        self.logger.debug("Pattern: %s", pattern)
-        self.logger.debug("key=%s value=%s", key, value)
+        logger.debug("Pattern: {}", pattern)
+        logger.debug("key={} value={}", key, value)
 
         if ci:
             compiled = re.compile(re.escape(f"{micro}{key}{micro}"), re.IGNORECASE)
@@ -205,7 +203,7 @@ class Platform:
             compiled = re.compile(re.escape(f"{micro}{key}{micro}"))
         res = compiled.sub(value, pattern)
 
-        self.logger.debug("Substituted string: %s", res)
+        logger.debug("Substituted string: {}", res)
         return res
 
     def substitute(self, pattern, basetime=None, validtime=None):
@@ -225,54 +223,48 @@ class Platform:
             os_macros = self.get_os_macros()
             system_macros = self.get_system_macros()
 
-            self.logger.debug("pattern before: %s", pattern)
+            logger.debug("pattern before: {}", pattern)
             for macro in macros:
-                self.logger.debug("Checking platform macro: %s", macro)
+                logger.debug("Checking platform macro: {}", macro)
                 try:
                     val = self.config.get_value(f"platform.{macro}")
-                    self.logger.debug("macro=%s pattern=%s val=%s", macro, pattern, val)
+                    logger.debug("macro={} pattern={} val={}", macro, pattern, val)
                 except KeyError:
                     val = None
                 if val is not None:
-                    self.logger.debug(
-                        "before replace macro=%s pattern=%s", macro, pattern
-                    )
+                    logger.debug("before replace macro={} pattern={}", macro, pattern)
                     pattern = self.sub_value(pattern, macro, val)
-                    self.logger.debug("after replace macro=%s pattern=%s", macro, pattern)
+                    logger.debug("after replace macro={} pattern={}", macro, pattern)
 
-            self.logger.debug("pattern before: %s", pattern)
+            logger.debug("pattern before: {}", pattern)
             for macro in system_macros:
-                self.logger.debug("Checking system macro: %s", macro)
+                logger.debug("Checking system macro: {}", macro)
                 try:
                     val = self.config.get_value(f"system.{macro}")
-                    self.logger.debug("macro=%s pattern=%s val=%s", macro, pattern, val)
+                    logger.debug("macro={} pattern={} val={}", macro, pattern, val)
                 except KeyError:
                     val = None
                 if val is not None:
-                    self.logger.debug(
-                        "before replace macro=%s pattern=%s", macro, pattern
-                    )
+                    logger.debug("before replace macro={} pattern={}", macro, pattern)
                     pattern = self.sub_value(pattern, macro, val)
-                    self.logger.debug("after replace macro=%s pattern=%s", macro, pattern)
+                    logger.debug("after replace macro={} pattern={}", macro, pattern)
 
             for macro in os_macros:
-                self.logger.debug("Checking macro: %s", macro)
+                logger.debug("Checking macro: {}", macro)
                 try:
                     val = os.environ[macro]
-                    self.logger.debug(
-                        "macro=%s, value=%s pattern=%s", macro, val, pattern
-                    )
+                    logger.debug("macro={}, value={} pattern={}", macro, val, pattern)
                 except KeyError:
                     val = None
                 if val is not None:
                     pattern = self.sub_value(pattern, macro, val)
-                    self.logger.debug("macro=%s pattern=%s", macro, pattern)
+                    logger.debug("macro={} pattern={}", macro, pattern)
 
             domain = self.config.get_value("domain.name")
             pattern = self.sub_value(pattern, "domain", domain)
             exp_case = self.config.get_value("general.case")
             pattern = self.sub_value(pattern, "case", exp_case)
-            self.logger.debug("Substituted domain: %s pattern=%s", domain, pattern)
+            logger.debug("Substituted domain: {} pattern={}", domain, pattern)
             realization = self.config.get_value("general.realization")
             if isinstance(realization, str):
                 if realization == "":
@@ -288,9 +280,7 @@ class Platform:
                 pattern = self.sub_value(pattern, "RRR", "")
                 pattern = self.sub_value(pattern, "MRRR", "")
 
-            self.logger.debug(
-                "Substituted realization: %s pattern=%s", realization, pattern
-            )
+            logger.debug("Substituted realization: {} pattern={}", realization, pattern)
 
             # Time handling
             if basetime is None:
@@ -308,8 +298,8 @@ class Platform:
             pattern = self.sub_value(pattern, "HH", basetime.strftime("%H"))
             pattern = self.sub_value(pattern, "mm", basetime.strftime("%M"), ci=False)
             if basetime is not None and validtime is not None:
-                self.logger.debug(
-                    "Substituted date/time info: basetime=%s validtime=%s",
+                logger.debug(
+                    "Substituted date/time info: basetime={} validtime={}",
                     basetime.strftime("%Y%m%d%H%M"),
                     validtime.strftime("%Y%m%d%H%M"),
                 )
@@ -348,9 +338,9 @@ class Platform:
             cnmexp = self.config.get_value("general.cnmexp")
             if cnmexp is not None:
                 pattern = self.sub_value(pattern, "CNMEXP", cnmexp)
-                self.logger.debug("Substituted CNMEXP: %s pattern=%s", cnmexp, pattern)
+                logger.debug("Substituted CNMEXP: {} pattern={}", cnmexp, pattern)
 
-        self.logger.debug("Return pattern=%s", pattern)
+        logger.debug("Return pattern={}", pattern)
         return pattern
 
 
@@ -370,10 +360,9 @@ class FileManager:
             config (deode.ParsedConfig): Configuration
 
         """
-        self.logger = get_logger_from_config(config)
         self.config = config
         self.platform = Platform(config)
-        self.logger.debug("Constructed FileManager object.")
+        logger.debug("Constructed FileManager object.")
 
     def get_input(
         self,
@@ -406,20 +395,20 @@ class FileManager:
         )
 
         dest_file = destination.identifier
-        self.logger.debug("Set input for target=%s to destination=%s", target, dest_file)
+        logger.debug("Set input for target={} to destination={}", target, dest_file)
 
         if os.path.exists(dest_file):
-            self.logger.debug("Destination file already exists.")
+            logger.debug("Destination file already exists.")
             return None, destination
         else:
-            self.logger.info("Checking provider_id %s", provider_id)
+            logger.info("Checking provider_id {}", provider_id)
             sub_target = self.platform.substitute(
                 target, basetime=basetime, validtime=validtime
             )
             provider = self.platform.get_provider(provider_id, sub_target)
 
             if provider.create_resource(destination):
-                self.logger.debug("Using provider_id %s", provider_id)
+                logger.debug("Using provider_id {}", provider_id)
                 return provider, destination
 
         # Try archive
@@ -434,14 +423,14 @@ class FileManager:
                     target, basetime=basetime, validtime=validtime
                 )
 
-                self.logger.info("Checking archiving provider_id %s", provider_id)
+                logger.info("Checking archiving provider_id {}", provider_id)
                 provider = self.platform.get_provider(provider_id, sub_target)
 
                 if provider.create_resource(destination):
-                    self.logger.debug("Using provider_id %s", provider_id)
+                    logger.debug("Using provider_id {}", provider_id)
                     return provider, destination
                 else:
-                    self.logger.info("Could not archive %s", destination.identifier)
+                    logger.info("Could not archive {}", destination.identifier)
 
         # Else raise exception
         raise ProviderError(
@@ -509,20 +498,20 @@ class FileManager:
         sub_destination = self.platform.substitute(
             destination, basetime=basetime, validtime=validtime
         )
-        self.logger.debug(
-            "Set output for target=%s to destination=%s", sub_target, sub_destination
+        logger.debug(
+            "Set output for target={} to destination={}", sub_target, sub_destination
         )
         target_resource = LocalFileOnDisk(
             self.config, sub_target, basetime=basetime, validtime=validtime
         )
-        self.logger.info(
-            "Checking provider_id=%s for destination=%s ", provider_id, sub_destination
+        logger.info(
+            "Checking provider_id={} for destination={} ", provider_id, sub_destination
         )
         provider = self.platform.get_provider(provider_id, sub_destination, fetch=False)
 
         if provider.create_resource(target_resource):
             target = destination
-            self.logger.debug("Using provider_id %s", provider_id)
+            logger.debug("Using provider_id {}", provider_id)
 
         aprovider = None
         if archive:
@@ -537,17 +526,17 @@ class FileManager:
                 destination, basetime=basetime, validtime=validtime
             )
 
-            self.logger.debug(
-                "Set output for target=%s to destination=%s", sub_target, sub_destination
+            logger.debug(
+                "Set output for target={} to destination={}", sub_target, sub_destination
             )
 
-            self.logger.info("Checking archive provider_id %s", provider_id)
+            logger.info("Checking archive provider_id {}", provider_id)
             aprovider = self.platform.get_provider(
                 provider_id, sub_destination, fetch=False
             )
 
             if aprovider.create_resource(target_resource):
-                self.logger.debug("Using provider_id %s", provider_id)
+                logger.debug("Using provider_id {}", provider_id)
             else:
                 raise ArchiveError("Could not archive data")
 
@@ -593,9 +582,7 @@ class FileManager:
         """
         for ftype, fobj in res_dict.items():
             for target, settings in fobj.items():
-                self.logger.debug(
-                    "ftype=%s target=%s, settings=%s", ftype, target, settings
-                )
+                logger.debug("ftype={} target={}, settings={}", ftype, target, settings)
                 kwargs = {"basetime": None, "validtime": None, "provider_id": None}
                 keys = []
                 if ftype == "input":
@@ -609,7 +596,7 @@ class FileManager:
                 for key in keys:
                     if key in settings:
                         kwargs.update({key: settings[key]})
-                self.logger.debug("kwargs=%s", kwargs)
+                logger.debug("kwargs={}", kwargs)
                 if ftype == "input":
                     self.input(target, destination, **kwargs)
                 elif ftype == "output":
@@ -646,19 +633,19 @@ class LocalFileSystemSymlink(Provider):
         """
         if self.fetch:
             if os.path.exists(self.identifier):
-                self.logger.info("ln -sf %s %s ", self.identifier, resource.identifier)
+                logger.info("ln -sf {} {} ", self.identifier, resource.identifier)
                 os.system(f"ln -sf {self.identifier} {resource.identifier}")  # noqa S605
                 return True
             else:
-                self.logger.warning("File is missing %s ", self.identifier)
+                logger.warning("File is missing {} ", self.identifier)
                 return False
         else:
             if os.path.exists(resource.identifier):
-                self.logger.info("ln -sf %s %s ", resource.identifier, self.identifier)
+                logger.info("ln -sf {} {} ", resource.identifier, self.identifier)
                 os.system(f"ln -sf {resource.identifier} {self.identifier}")  # noqa S605
                 return True
             else:
-                self.logger.warning("File is missing %s ", resource.identifier)
+                logger.warning("File is missing {} ", resource.identifier)
                 return False
 
 
@@ -688,19 +675,19 @@ class LocalFileSystemCopy(Provider):
         """
         if self.fetch:
             if os.path.exists(self.identifier):
-                self.logger.info("cp %s %s ", self.identifier, resource.identifier)
+                logger.info("cp {} {} ", self.identifier, resource.identifier)
                 os.system(f"cp {self.identifier} {resource.identifier}")  # noqa S605
                 return True
             else:
-                self.logger.warning("File is missing %s ", self.identifier)
+                logger.warning("File is missing {} ", self.identifier)
                 return False
         else:
             if os.path.exists(resource.identifier):
-                self.logger.info("cp %s %s ", resource.identifier, self.identifier)
+                logger.info("cp {} {} ", resource.identifier, self.identifier)
                 os.system(f"cp {resource.identifier} {self.identifier}")  # noqa S605
                 return True
             else:
-                self.logger.warning("File is missing %s ", resource.identifier)
+                logger.warning("File is missing {} ", resource.identifier)
                 return False
 
 
@@ -730,19 +717,19 @@ class LocalFileSystemMove(Provider):
         """
         if self.fetch:
             if os.path.exists(self.identifier):
-                self.logger.info("mv %s %s ", self.identifier, resource.identifier)
+                logger.info("mv {} {} ", self.identifier, resource.identifier)
                 os.system(f"mv {self.identifier} {resource.identifier}")  # noqa S605
                 return True
             else:
-                self.logger.warning("File is missing %s ", self.identifier)
+                logger.warning("File is missing {} ", self.identifier)
                 return False
         else:
             if os.path.exists(resource.identifier):
-                self.logger.info("mv %s %s ", resource.identifier, self.identifier)
+                logger.info("mv {} {} ", resource.identifier, self.identifier)
                 os.system(f"mv {resource.identifier} {self.identifier}")  # noqa S605
                 return True
             else:
-                self.logger.warning("File is missing %s ", resource.identifier)
+                logger.warning("File is missing {} ", resource.identifier)
                 return False
 
 
@@ -798,10 +785,10 @@ class ECFS(ArchiveProvider):
 
         """
         if self.fetch:
-            self.logger.info("ecp ecfs:%s %s", self.identifier, resource.identifier)
+            logger.info("ecp ecfs:{} {}", self.identifier, resource.identifier)
             # os.system(f"ecp ecfs:{self.identifier} {resource.identifier}")  # noqa S605, E800
         else:
-            self.logger.info("ecp %s ecfs:%s", resource.identifier, self.identifier)
+            logger.info("ecp {} ecfs:{}", resource.identifier, self.identifier)
             # os.system(f"ecp {resource.identifier} ecfs:{self.identifier}")  # noqa S605, E800
         return True
 
@@ -817,9 +804,8 @@ class Resource:
             identifier (str): Resource identifier
 
         """
-        self.logger = get_logger_from_config(config)
         self.identifier = identifier
-        self.logger.debug("Base resource")
+        logger.debug("Base resource")
 
 
 class LocalFileOnDisk(Resource):

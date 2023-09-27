@@ -3,26 +3,23 @@ import os
 
 import toml
 
-from . import PACKAGE_NAME
-from .logs import get_logger
+from .logs import logger
 
 
 class System:
     """Main system class."""
 
-    def __init__(self, host_system, exp_name, loglevel="INFO"):
+    def __init__(self, host_system, exp_name):
         """Constuct a system object.
 
         Args:
             host_system (dict): Dict describing the system
             exp_name (str): Experiment name.
-            loglevel(str, optional): Loglevel. Default to "INFO"
 
         Raises:
             KeyError: Setting not found
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         logger.debug(str(host_system))
         self.system_variables = [
             "sfx_exp_data",
@@ -109,22 +106,20 @@ class System:
 class SystemFromFile(System):
     """Create a system from a toml file."""
 
-    def __init__(self, env_system_file, exp_name, loglevel="INFO"):
+    def __init__(self, env_system_file, exp_name):
         """Construct the System object from a system file.
 
         Args:
             env_system_file (str): System toml file.
             exp_name (str): Name of the experiment.
-            loglevel(str, optional): Loglevel. Default to "INFO"
 
         Raises:
             FileNotFoundError: If system file not found.
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
-        logger.debug("Env_system_file: %s", env_system_file)
+        logger.debug("Env_system_file: {}", env_system_file)
         if os.path.exists(env_system_file):
             host_system = toml.load(open(env_system_file, mode="r", encoding="utf-8"))
         else:
             raise FileNotFoundError(env_system_file)
-        System.__init__(self, host_system, exp_name, loglevel=loglevel)
+        System.__init__(self, host_system, exp_name)

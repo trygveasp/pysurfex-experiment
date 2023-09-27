@@ -10,6 +10,7 @@ from pysurfex.namelist import NamelistGenerator
 from pysurfex.platform_deps import SystemFilePaths
 from pysurfex.run import BatchJob, PerturbedOffline, SURFEXBinary
 
+from ..logs import logger
 from ..tasks.tasks import AbstractTask
 
 
@@ -57,11 +58,11 @@ class SurfexBinaryTask(AbstractTask):
         # To sub EEE/RRR
         obs_dir = self.platform.substitute(obs_dir)
 
-        self.logger.debug("exp_file_paths: %s", exp_file_paths)
+        logger.debug("exp_file_paths: {}", exp_file_paths)
         self.exp_file_paths = SystemFilePaths(exp_file_paths)
 
         kwargs = self.config.get_value("task.args").dict()
-        self.logger.debug("kwargs: %s", kwargs)
+        logger.debug("kwargs: {}", kwargs)
         print_namelist = kwargs.get("print_namelist")
         if print_namelist is None:
             print_namelist = True
@@ -71,7 +72,7 @@ class SurfexBinaryTask(AbstractTask):
         if check_existence is None:
             check_existence = True
         self.check_existence = check_existence
-        self.logger.debug("check_existence %s", check_existence)
+        logger.debug("check_existence {}", check_existence)
 
         force = kwargs.get("force")
         if force is None:
@@ -82,7 +83,7 @@ class SurfexBinaryTask(AbstractTask):
         if pert is not None:
             pert = int(pert)
         self.pert = pert
-        self.logger.debug("Pert %s", self.pert)
+        logger.debug("Pert {}", self.pert)
         negpert = False
         pert_sign = kwargs.get("pert_sign")
         if pert_sign is not None and pert_sign == "neg":
@@ -97,12 +98,12 @@ class SurfexBinaryTask(AbstractTask):
             with open(xyz_file, mode="r", encoding="utf-8") as zyz_fh:
                 xyz = zyz_fh.read().rstrip()
         else:
-            self.logger.info("%s not found. Assume XYZ=%s", xyz_file, xyz)
+            logger.info("{} not found. Assume XYZ={}", xyz_file, xyz)
         self.xyz = xyz
 
     def execute(self):
         """Execute task."""
-        self.logger.debug("Using empty class execute")
+        logger.debug("Using empty class execute")
 
     def execute_binary(
         self,
@@ -360,7 +361,7 @@ class Prep(SurfexBinaryTask):
                 prep_pgdfile=prep_pgdfile,
             )
         else:
-            self.logger.info("Output already exists: %s", output)
+            logger.info("Output already exists: {}", output)
 
         # PREP should prepare for forecast
         if os.path.exists(self.fc_start_sfx):
@@ -401,7 +402,7 @@ class Forecast(SurfexBinaryTask):
         if self.config.get_value("SURFEX.IO.CTIMESERIES_FILETYPE") == "NC":
             last_ll = self.dtg + self.fcint
 
-            self.logger.debug("LAST_LL: %s", last_ll)
+            logger.debug("LAST_LL: {}", last_ll)
             fname = (
                 "SURFOUT."
                 + last_ll.strftime("%Y%m%d")
@@ -411,9 +412,9 @@ class Forecast(SurfexBinaryTask):
                 + last_ll.strftime("%M")
                 + ".nc"
             )
-            self.logger.debug("Filename: %s", fname)
+            logger.debug("Filename: {}", fname)
             archive_data = JsonOutputData({fname: self.archive + "/" + fname})
-            self.logger.debug("archive_data=%s", archive_data)
+            logger.debug("archive_data={}", archive_data)
 
         # Forcing dir
         forcing_dir = self.platform.get_system_value("forcing_dir")
@@ -430,7 +431,7 @@ class Forecast(SurfexBinaryTask):
                 archive_data=archive_data,
             )
         else:
-            self.logger.info("Output already exists: %s", output)
+            logger.info("Output already exists: {}", output)
 
 
 class PerturbedRun(SurfexBinaryTask):
@@ -484,7 +485,7 @@ class PerturbedRun(SurfexBinaryTask):
                 prep_file_path=prep_file_path,
             )
         else:
-            self.logger.info("Output already exists: %s", output)
+            logger.info("Output already exists: {}", output)
 
 
 class Soda(SurfexBinaryTask):
@@ -530,7 +531,7 @@ class Soda(SurfexBinaryTask):
                 prep_file_path=prep_file_path,
             )
         else:
-            self.logger.info("Output already exists: %s", output)
+            logger.info("Output already exists: {}", output)
 
         # SODA should prepare for forecast
         if os.path.exists(self.fc_start_sfx):

@@ -29,7 +29,7 @@ from ..config_parser import ParsedConfig
 from ..configuration import Configuration
 from ..datetime_utils import as_datetime, as_timedelta, datetime_as_string
 from ..experiment import ExpFromConfig
-from ..logs import get_logger_from_config
+from ..logs import logger
 from ..toolbox import FileManager
 
 
@@ -49,8 +49,7 @@ class AbstractTask(object):
         """
         self.config = config
         self.name = name
-        self.logger = get_logger_from_config(config)
-        self.logger.debug("Create task")
+        logger.debug("Create task")
         self.fmanager = FileManager(self.config)
         self.platform = self.fmanager.platform
         self.settings = Configuration(self.config)
@@ -69,9 +68,7 @@ class AbstractTask(object):
 
         self.surfex_config = self.platform.get_system_value("surfex_config")
         self.sfx_exp_vars = None
-        self.logger.debug(
-            "   config: %s", json.dumps(config.dict(), sort_keys=True, indent=2)
-        )
+        logger.debug("   config: {}", json.dumps(config.dict(), sort_keys=True, indent=2))
 
         mbr = self.config.get_value("general.realization")
         if isinstance(mbr, str) and mbr == "":
@@ -165,7 +162,7 @@ class AbstractTask(object):
         self.nnco = self.settings.get_nnco(dtg=self.basetime)
         update = {"SURFEX": {"ASSIM": {"OBS": {"NNCO": self.nnco}}}}
         self.config = self.config.copy(update=update)
-        self.logger.debug("NNCO: %s", self.nnco)
+        logger.debug("NNCO: {}", self.nnco)
 
     def create_wdir(self):
         """Create task working directory."""
@@ -179,21 +176,21 @@ class AbstractTask(object):
         """Remove working directory."""
         os.chdir(self.wrk)
         shutil.rmtree(self.wdir)
-        self.logger.debug("Remove %s", self.wdir)
+        logger.debug("Remove {}", self.wdir)
 
     def rename_wdir(self, prefix="Failed_"):
         """Rename failed working directory."""
         fdir = f"{self.wrk}/{prefix}{self.name}"
         if os.path.isdir(self.wdir):
             if os.path.exists(fdir):
-                self.logger.debug("%s exists. Remove it", fdir)
+                logger.debug("{} exists. Remove it", fdir)
                 shutil.rmtree(fdir)
             shutil.move(self.wdir, fdir)
-            self.logger.info("Renamed %s to %s", self.wdir, fdir)
+            logger.info("Renamed {} to {}", self.wdir, fdir)
 
     def execute(self):
         """Do nothing for base execute task."""
-        self.logger.warning("Using empty base class execute")
+        logger.warning("Using empty base class execute")
 
     def prepfix(self):
         """Do default preparation before execution.
@@ -201,8 +198,8 @@ class AbstractTask(object):
         E.g. clean
 
         """
-        self.logger.debug("Base class prep")
-        self.logger.info("WDIR=%s", self.wdir)
+        logger.debug("Base class prep")
+        logger.info("WDIR={}", self.wdir)
         self.create_wdir()
         self.change_to_wdir()
         atexit.register(self.rename_wdir)
@@ -213,7 +210,7 @@ class AbstractTask(object):
         E.g. clean
 
         """
-        self.logger.debug("Base class post")
+        logger.debug("Base class post")
         # Clean workdir
         if self.config.get_value("general.keep_workdirs"):
             self.rename_wdir(prefix=f"Finished_task_{self.pid}_")
@@ -434,16 +431,16 @@ class QualityControl(AbstractTask):
         else:
             raise NotImplementedError
 
-        self.logger.debug("Settings %s", json.dumps(settings, indent=2, sort_keys=True))
+        logger.debug("Settings {}", json.dumps(settings, indent=2, sort_keys=True))
 
         output = self.obsdir + "/qc_" + self.translation[self.var_name] + ".json"
         lname = self.var_name.lower()
 
         try:
             tests = self.config.get_value(f"observations.qc.{lname}.tests")
-            self.logger.info("Using observations.qc.%s.tests", lname)
+            logger.info("Using observations.qc.{lname}.tests")
         except AttributeError:
-            self.logger.info("Using default test observations.qc.tests")
+            logger.info("Using default test observations.qc.tests")
             tests = self.config.get_value("observations.qc.tests")
 
         indent = 2
@@ -457,7 +454,7 @@ class QualityControl(AbstractTask):
         data_set = TitanDataSet(self.var_name, settings, tests, datasources, an_time)
         data_set.perform_tests()
 
-        self.logger.debug("Write to %s", output)
+        logger.debug("Write to {}", output)
         data_set.write_output(output, indent=indent)
 
 
@@ -540,7 +537,7 @@ class OptimalInterpolation(AbstractTask):
         an_time = an_time.replace(tzinfo=None)
         # Read OK observations
         obs_file = f"{self.platform.get_system_value('obs_dir')}/qc_{var}.json"
-        self.logger.info("Obs file: %s", obs_file)
+        logger.info("Obs file: {}", obs_file)
         observations = dataset_from_file(an_time, obs_file, qc_flag=0)
         field = horizontal_oi(
             geo,
@@ -558,7 +555,7 @@ class OptimalInterpolation(AbstractTask):
             interpol="bilinear",
             only_diff=only_diff,
         )
-        self.logger.info("Write output file %s", output_file)
+        logger.info("Write output file {}", output_file)
         if os.path.exists(output_file):
             os.unlink(output_file)
         write_analysis_netcdf_file(
@@ -590,14 +587,14 @@ class FirstGuess(AbstractTask):
     def execute(self):
         """Execute."""
         firstguess = self.config.get_value("SURFEX.IO.CSURFFILE") + self.suffix
-        self.logger.debug("DTG: %s BASEDTG: %s", self.dtg, self.fg_dtg)
+        logger.debug("DTG: {} BASEDTG: {}", self.dtg, self.fg_dtg)
         fg_dir = self.config.get_value("system.archive_dir")
         fg_dir = self.platform.substitute(
             fg_dir, basetime=self.fg_dtg, validtime=self.dtg
         )
         fg_file = f"{fg_dir}/{firstguess}"
 
-        self.logger.info("Use first guess: %s", fg_file)
+        logger.info("Use first guess: {}", fg_file)
         if os.path.islink(self.fg_guess_sfx) or os.path.exists(self.fg_guess_sfx):
             os.unlink(self.fg_guess_sfx)
         os.symlink(fg_file, self.fg_guess_sfx)
@@ -733,10 +730,10 @@ class Oi2soda(AbstractTask):
 
         an_variables = {"t2m": False, "rh2m": False, "sd": False}
         obs_types = self.obs_types
-        self.logger.debug("NNCO: %s", self.nnco)
+        logger.debug("NNCO: {}", self.nnco)
         for ivar, __ in enumerate(obs_types):
-            self.logger.debug(
-                "ivar=%s NNCO[ivar]=%s obtype=%s", ivar, self.nnco[ivar], obs_types[ivar]
+            logger.debug(
+                "ivar={} NNCO[ivar]={} obtype={}", ivar, self.nnco[ivar], obs_types[ivar]
             )
             if self.nnco[ivar] == 1:
                 if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
@@ -764,10 +761,10 @@ class Oi2soda(AbstractTask):
                         "file": self.archive + "/an_" + var_name + ".nc",
                         "var": var_name,
                     }
-        self.logger.debug("t2m  %s ", t2m)
-        self.logger.debug("rh2m %s", rh2m)
-        self.logger.debug("sd   %s", s_d)
-        self.logger.debug("Write to %s", output)
+        logger.debug("t2m  {} ", t2m)
+        logger.debug("rh2m {}", rh2m)
+        logger.debug("sd   {}", s_d)
+        logger.debug("Write to {}", output)
         oi2soda(self.dtg, t2m=t2m, rh2m=rh2m, s_d=s_d, output=output)
 
 
@@ -794,7 +791,7 @@ class Qc2obsmon(AbstractTask):
         os.makedirs(outdir, exist_ok=True)
         output = outdir + "/ecma.db"
 
-        self.logger.debug("Write to %s", output)
+        logger.debug("Write to {}", output)
         if os.path.exists(output):
             os.unlink(output)
         obs_types = self.obs_types
@@ -886,7 +883,7 @@ class FirstGuess4OI(AbstractTask):
         cache_time = 3600
         cache = Cache(cache_time)
         if os.path.exists(output):
-            self.logger.info("Output already exists %s", output)
+            logger.info("Output already exists {}", output)
         else:
             self.write_file(output, variables, self.geo, validtime, cache=cache)
 
@@ -949,13 +946,13 @@ class FirstGuess4OI(AbstractTask):
                 identifier = "initial_conditions.fg4oi."
                 input_geo_file = self.config.get_value(identifier + "input_geo_file")
 
-            self.logger.info("inputfile=%s, fileformat=%s", inputfile, fileformat)
-            self.logger.info("converter=%s, input_geo_file=%s", converter, input_geo_file)
+            logger.info("inputfile={}, fileformat={}", inputfile, fileformat)
+            logger.info("converter={}, input_geo_file={}", converter, input_geo_file)
 
             config_file = self.platform.get_system_value("first_guess_yml")
             with open(config_file, mode="r", encoding="utf-8") as file_handler:
                 config = yaml.safe_load(file_handler)
-            self.logger.info("config_file=%s", config_file)
+            logger.info("config_file={}", config_file)
             defs = config[fileformat]
             geo_input = None
             if input_geo_file != "":
@@ -972,26 +969,24 @@ class FirstGuess4OI(AbstractTask):
 
             defs.update({"fcint": self.fcint.total_seconds()})
             initial_basetime = validtime - self.fgint
-            self.logger.debug("Converter=%s", str(converter))
-            self.logger.debug("Converter_conf=%s", str(converter_conf))
-            self.logger.debug("Defs=%s", defs)
-            self.logger.debug(
-                "valitime=%s fcint=%s initial_basetime=%s",
+            logger.debug("Converter={}", str(converter))
+            logger.debug("Converter_conf={}", str(converter_conf))
+            logger.debug("Defs={}", defs)
+            logger.debug(
+                "valitime={} fcint={} initial_basetime={}",
                 str(validtime),
                 str(self.fcint),
                 str(initial_basetime),
             )
-            self.logger.debug("Fileformat: %s", fileformat)
+            logger.debug("Fileformat: {}", fileformat)
 
-            self.logger.info(
-                "Set up converter. defs=%s converter_conf=%s", defs, converter_conf
+            logger.info(
+                "Set up converter. defs={} converter_conf={}", defs, converter_conf
             )
             converter = Converter(
                 converter, initial_basetime, defs, converter_conf, fileformat
             )
-            self.logger.info(
-                "Read converted input for var=%s validtime=%s", var, validtime
-            )
+            logger.info("Read converted input for var={} validtime={}", var, validtime)
             field = ConvertedInput(geo, var, converter).read_time_step(validtime, cache)
             field = np.reshape(field, [geo.nlons, geo.nlats])
 
@@ -1040,11 +1035,9 @@ class LogProgress(AbstractTask):
             "basetime": datetime_as_string(self.next_dtg),
             "validtime": datetime_as_string(self.next_dtg),
         }
-        loglevel = self.config.get_value("general.loglevel")
-
         config_file = self.config.get_value("metadata.source_file_path")
         config = ParsedConfig.from_file(config_file)
-        sfx_exp = ExpFromConfig(config.dict(), progress, loglevel=loglevel)
+        sfx_exp = ExpFromConfig(config.dict(), progress)
         sfx_exp.dump_json(config_file, indent=2)
 
 
@@ -1067,11 +1060,10 @@ class LogProgressPP(AbstractTask):
     def execute(self):
         """Execute."""
         progress = {"basetime_pp": datetime_as_string(self.next_dtg)}
-        loglevel = self.config.get_value("general.loglevel")
 
         config_file = self.config.get_value("metadata.source_file_path")
         config = ParsedConfig.from_file(config_file)
-        sfx_exp = ExpFromConfig(config.dict(), progress, loglevel=loglevel)
+        sfx_exp = ExpFromConfig(config.dict(), progress)
         sfx_exp.dump_json(config_file, indent=2)
 
 
@@ -1115,7 +1107,7 @@ class FetchMarsObs(AbstractTask):
         cmd = f"mars {request_file}"
         try:
             batch = BatchJob(os.environ)
-            self.logger.info("Running %s", cmd)
+            logger.info("Running {}", cmd)
             batch.run(cmd)
         except RuntimeError as exc:
             raise RuntimeError from exc

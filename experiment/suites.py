@@ -3,7 +3,7 @@ import os
 
 from .configuration import Configuration
 from .datetime_utils import ProgressFromConfig, as_datetime, as_timedelta, datetime2ecflow
-from .logs import get_logger_from_config
+from .logs import GLOBAL_LOGLEVEL, logger
 from .scheduler.submission import TaskSettings, TroikaSettings
 from .scheduler.suites import (
     EcflowSuite,
@@ -50,7 +50,6 @@ class SurfexSuite:
             dtgbeg_str = datetime2ecflow(dtgbeg)
 
         self.config = config
-        logger = get_logger_from_config(self.config)
         settings = Configuration(config)
         platform = Platform(config)
         exp_dir = f"{platform.get_system_value('exp_dir')}"
@@ -63,7 +62,7 @@ class SurfexSuite:
         ecf_out = joboutdir
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
         os.makedirs(ecf_out, exist_ok=True)
-        logger.debug("ECF_HOME: %s", ecf_home)
+        logger.debug("ECF_HOME: {}", ecf_home)
 
         # Commands started from the scheduler does not have full environment
         ecf_job_cmd = (
@@ -91,7 +90,8 @@ class SurfexSuite:
             config_file = config.get_value("metadata.source_file_path")
         except AttributeError:
             config_file = "NO_CONFIG_FOUND"
-        loglevel = "INFO"
+        loglevel = GLOBAL_LOGLEVEL
+        logger.debug("Setting ecflow loglevel to={}", loglevel)
         variables = {
             "ECF_EXTN": ".py",
             "ECF_FILES": ecf_files,
@@ -123,7 +123,7 @@ class SurfexSuite:
         }
         realization = None
         self.suite_name = suite_name
-        logger.debug("variables: %s", variables)
+        logger.debug("variables: {}", variables)
         self.suite = EcflowSuite(self.suite_name, ecf_files, variables=variables)
 
         if config.get_value("compile.build"):
@@ -337,7 +337,7 @@ class SurfexSuite:
 
                     perturbations = None
                     logger.debug(
-                        "Perturbations: %s",
+                        "Perturbations: {}",
                         settings.setting_is(
                             "SURFEX.ASSIM.SCHEMES.ISBA", "EKF", realization=realization
                         ),
@@ -362,7 +362,7 @@ class SurfexSuite:
                         name = "REF"
                         pert = EcflowSuiteFamily(name, perturbations, ecf_files)
                         args = f"pert=0;name={name};ivar=0"
-                        logger.debug("args: %s", args)
+                        logger.debug("args: {}", args)
                         variables = {"ARGS": args}
                         EcflowSuiteTask(
                             "PerturbedRun",
@@ -407,7 +407,7 @@ class SurfexSuite:
 
                         nivar = 1
                         for ivar, val in enumerate(nncv):
-                            logger.debug("ivar %s, nncv[ivar] %s", str(ivar), str(val))
+                            logger.debug("ivar {}, nncv[ivar] {}", str(ivar), str(val))
                             if val == 1:
 
                                 name = names[ivar]
@@ -417,7 +417,7 @@ class SurfexSuite:
                                     pert = EcflowSuiteFamily(name, pert_parent, ecf_files)
                                     pert_sign = pert_signs[nfam]
                                     args = f"pert={str(pivar)};name={name};ivar={str(nivar)};pert_sign={pert_sign}"
-                                    logger.debug("args: %s", args)
+                                    logger.debug("args: {}", args)
                                     variables = {"ARGS": args}
                                     EcflowSuiteTask(
                                         "PerturbedRun",
@@ -692,8 +692,7 @@ class SurfexSuite:
         Args:
             def_file (_type_): _description_
         """
-        logger = get_logger_from_config(self.config)
-        logger.debug("SurfexSuiteDefinition: Saving def file %s", def_file)
+        logger.debug("SurfexSuiteDefinition: Saving def file {}", def_file)
         self.suite.save_as_defs(def_file)
 
 
@@ -710,13 +709,12 @@ def get_defs(config, suite_type):
     Returns:
         SuiteDefinition: A suite definitition
     """
-    logger = get_logger_from_config(config)
     name = config.get_value("general.case")
     settings = Configuration(config)
     suite_name = name.replace("-", "_")
     suite_name = suite_name.replace(".", "_")
-    logger.debug("Config name %s", name)
-    logger.debug("Get defs for %s", suite_name)
+    logger.debug("Config name {}", name)
+    logger.debug("Get defs for {}", suite_name)
 
     progress = ProgressFromConfig(config)
     platform = Platform(config)
@@ -727,7 +725,7 @@ def get_defs(config, suite_type):
     basetime = progress.basetime
     starttime = progress.starttime
     endtime = progress.endtime
-    logger.debug("DTGSTART: %s DTGBEG: %s DTGEND: %s", basetime, starttime, endtime)
+    logger.debug("DTGSTART: {} DTGBEG: {} DTGEND: {}", basetime, starttime, endtime)
     basetime_list = []
     dtg = basetime
     logger.debug("Building list of DTGs")
@@ -736,12 +734,12 @@ def get_defs(config, suite_type):
         for cycle in unique_cycles:
             while dtg <= endtime:
                 basetime_list.append(dtg)
-                logger.debug("DTG: %s, fcint: %s", dtg, cycle)
+                logger.debug("DTG: {}, fcint: {}", dtg, cycle)
                 dtg = dtg + cycle
             if dtg >= endtime:
                 cont = False
 
-    logger.debug("Built DTGS: %s", basetime_list)
+    logger.debug("Built DTGS: {}", basetime_list)
     if suite_type == "surfex":
         return SurfexSuite(
             suite_name, config, joboutdir, task_settings, basetime_list, dtgbeg=starttime

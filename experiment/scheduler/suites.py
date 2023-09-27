@@ -1,5 +1,4 @@
 """Ecflow suites."""
-import logging
 import os
 import sys
 
@@ -8,6 +7,9 @@ try:
 except ImportError:
     Defs = None
     Defstatus = None
+
+
+from ..logs import logger
 
 
 class EcflowNode:
@@ -71,7 +73,7 @@ class EcflowNode:
         self.ecf_container_path = ecf_files + self.path
         if variables is not None:
             for key, value in variables.items():
-                logging.debug("key=%s value=%s", key, value)
+                logger.debug("key={} value={}", key, value)
                 if self.ecf_node is not None:
                     self.ecf_node.add_variable(key, value)
 
@@ -80,7 +82,7 @@ class EcflowNode:
                 if triggers.trigger_string is not None:
                     self.ecf_node.add_trigger(triggers.trigger_string)
                 else:
-                    logging.warning("WARNING: Empty trigger")
+                    logger.warning("WARNING: Empty trigger")
             else:
                 raise TypeError("Triggers must be a Triggers object")
         self.triggers = triggers
@@ -108,7 +110,7 @@ class EcflowNode:
             if triggers.trigger_string is not None:
                 self.ecf_node.add_part_trigger(triggers.trigger_string, mode)
             else:
-                logging.warning("WARNING: Empty trigger")
+                logger.warning("WARNING: Empty trigger")
         else:
             raise TypeError("Triggers must be a Triggers object")
 
@@ -191,7 +193,7 @@ class EcflowSuite(EcflowNodeContainer):
         """
         if self.defs is not None:
             self.defs.save_as_defs(def_file)
-        logging.info("def file saved to %s", def_file)
+        logger.info("def file saved to {}", def_file)
 
 
 class EcflowSuiteTriggers:
@@ -317,7 +319,7 @@ class EcflowSuiteFamily(EcflowNodeContainer):
             triggers=triggers,
             def_status=def_status,
         )
-        logging.debug(self.ecf_container_path)
+        logger.debug(self.ecf_container_path)
         if self.ecf_node is not None:
             self.ecf_node.add_variable("ECF_FILES", self.ecf_container_path)
 
@@ -373,8 +375,8 @@ class EcflowSuiteTask(EcflowNode):
             def_status=def_status,
         )
 
-        logging.debug(parent.path)
-        logging.debug(parent.ecf_container_path)
+        logger.debug(parent.path)
+        logger.debug(parent.ecf_container_path)
         task_container = parent.ecf_container_path + "/" + name + ".py"
         if parse:
             if input_template is None:
@@ -385,12 +387,12 @@ class EcflowSuiteTask(EcflowNode):
                 interpreter = variables["INTERPRETER"]
             else:
                 interpreter = f"{sys.executable}"
-            logging.debug("vars %s", variables)
+            logger.debug("vars {}", variables)
             for var, value in variables.items():
-                logging.debug("value=%s", value)
+                logger.debug("value={}", value)
                 value = value.replace("@INTERPRETER@", interpreter.replace("#!", ""))
                 value = value.replace("@NAME@", name)
-                logging.debug("var=%s value=%s", var, value)
+                logger.debug("var={} value={}", var, value)
                 if self.ecf_node is not None:
                     self.ecf_node.add_variable(var, value)
             task_settings.parse_job(

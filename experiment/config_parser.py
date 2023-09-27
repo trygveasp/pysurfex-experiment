@@ -2,7 +2,6 @@
 """Registration and validation of options passed in the config file."""
 import copy
 import json
-import logging
 import os
 from collections import defaultdict
 from functools import cached_property, reduce
@@ -17,6 +16,7 @@ from fastjsonschema import JsonSchemaValueException
 
 from . import PACKAGE_NAME
 from .datetime_utils import ISO_8601_TIME_DURATION_REGEX
+from .logs import logger
 
 NO_DEFAULT_PROVIDED = object()
 
@@ -29,8 +29,6 @@ MAIN_CONFIG_JSON_SCHEMA_PATH = (
 )
 with open(MAIN_CONFIG_JSON_SCHEMA_PATH, mode="r", encoding="utf-8") as schema_file:
     MAIN_CONFIG_JSON_SCHEMA = json.load(schema_file)
-
-logger = logging.getLogger(__name__)
 
 
 class ConfigFileValidationError(Exception):
@@ -237,7 +235,7 @@ class ParsedConfig(BasicConfig):
             .config_parser.ParsedConfig: Parsed configs from config_path.
         """
         config_path = Path(config_path).expanduser().resolve()
-        logging.info("Reading config file %s", config_path)
+        logger.info("Reading config file {}", config_path)
         raw_config = read_raw_config_file(config_path)
 
         # Add metadata about where the config was parsed from
