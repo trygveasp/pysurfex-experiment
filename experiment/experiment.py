@@ -7,9 +7,8 @@ import shutil
 import tomlkit
 from pysurfex.configuration import Configuration
 
-from . import PACKAGE_NAME
 from .config_parser import ParsedConfig
-from .logs import get_logger
+from .logs import GLOBAL_LOGLEVEL, logger
 from .system import System
 
 NO_DEFAULT_PROVIDED = object()
@@ -18,21 +17,19 @@ NO_DEFAULT_PROVIDED = object()
 class ExpFromConfig:
     """Experiment class."""
 
-    def __init__(self, merged_config, progress, loglevel="INFO", json_schema=None):
+    def __init__(self, merged_config, progress, json_schema=None):
         """Instaniate an object of the main experiment class.
 
         Args:
             merged_config (dict): Experiment configuration
             progress (dict): Updated time information
-            loglevel(str, optional): Loglevel. Default to "INFO"
             json_schema (dict, optional): Validating schema. Defaults to None
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         logger.debug("Construct ExpFromConfig")
         merged_config = merged_config.copy()
         times = merged_config["general"]["times"]
-        logger.info("Times before=%s", times)
+        logger.info("Times before={}", times)
         epoch = "1970-01-01T00:00:00Z"
         keys = ["start", "end", "basetime", "basetime_pp", "validtime"]
         for key in keys:
@@ -41,12 +38,12 @@ class ExpFromConfig:
             else:
                 if key not in times:
                     times.update({key: epoch})
-            logger.info("key=%s value%s", key, times[key])
+            logger.info("key={} value{}", key, times[key])
         if "end" not in times:
             times.update({"end": times["basetime"]})
-        logger.info("Times after=%s", times)
+        logger.info("Times after={}", times)
         merged_config["general"]["times"].update(times)
-        merged_config["general"]["loglevel"] = loglevel
+        merged_config["general"]["loglevel"] = GLOBAL_LOGLEVEL
 
         json_schema = None
         self.config = ParsedConfig.parse_obj(merged_config, json_schema=json_schema)
@@ -76,7 +73,6 @@ class Exp(ExpFromConfig):
         env_submit,
         progress,
         stream=None,
-        loglevel="INFO",
         json_schema=None,
     ):
         """Instaniate an object of the main experiment class.
@@ -90,11 +86,9 @@ class Exp(ExpFromConfig):
             env_submit (dict): Submission settings
             progress (dict): Date/time settings
             stream (str, optional): Stream identifier. Defaults to None.
-            loglevel (str, optional): Loglevel. Defaults to "INFO".
             json_schema (dict, optional): Validating schema. Defaults to None
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         logger.debug("Construct Exp")
 
         # Date/time
@@ -112,7 +106,7 @@ class Exp(ExpFromConfig):
         if "end" not in times:
             times.update({"end": times["basetime"]})
         merged_config["general"]["times"].update(times)
-        logger.info("Progress: %s", progress)
+        logger.info("Progress: {}", progress)
 
         case = exp_dependencies.get("exp_name")
         host = "0"
@@ -191,9 +185,7 @@ class Exp(ExpFromConfig):
         merged_config["task"].update(task)
         config = ParsedConfig.parse_obj(merged_config, json_schema=json_schema)
         config = config.copy(update=update)
-        ExpFromConfig.__init__(
-            self, config.dict(), progress, loglevel=loglevel, json_schema=json_schema
-        )
+        ExpFromConfig.__init__(self, config.dict(), progress, json_schema=json_schema)
 
 
 class ExpFromFiles(Exp):
@@ -204,7 +196,6 @@ class ExpFromFiles(Exp):
         exp_dependencies,
         stream=None,
         config_settings=None,
-        loglevel="INFO",
         progress=None,
         json_schema=None,
     ):
@@ -214,7 +205,6 @@ class ExpFromFiles(Exp):
             exp_dependencies (dict): Exp dependencies
             stream(str, optional): Stream identifier
             config_settings(dict): Possible input config settings
-            loglevel(str, optional): Loglevel. Default to "INFO"
             progress(dict, optional): Time/date information to update.
             json_schema (dict, optional): Validating schema. Defaults to None
 
@@ -223,9 +213,8 @@ class ExpFromFiles(Exp):
             KeyError: Key not found
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         logger.debug("Construct ExpFromFiles")
-        logger.debug("Experiment dependencies: %s", exp_dependencies)
+        logger.debug("Experiment dependencies: {}", exp_dependencies)
 
         # System
         exp_name = exp_dependencies.get("exp_name")
@@ -427,20 +416,18 @@ class ExpFromFiles(Exp):
         f_h.close()
 
     @staticmethod
-    def merge_dict_from_config_dicts(config_files, loglevel="INFO"):
+    def merge_dict_from_config_dicts(config_files):
         """Merge the settings in a config dict with config files.
 
         Args:
             config_files (dict): Config files dictionaries inside a
                                  dict with config file names
-            loglevel(str, optional): Loglevel. Default to "INFO"
 
         Returns:
             dict: Merged settings as a config dict with config files
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
-        logger.debug("config_files: %s", str(config_files))
+        logger.debug("config_files: {}", str(config_files))
         merged_env = {}
         for fff in config_files:
             modification = config_files[fff]["toml"]
@@ -519,7 +506,6 @@ class ExpFromFiles(Exp):
         configuration=None,
         testbed_configuration=None,
         user_settings=None,
-        loglevel="INFO",
     ):
         """Merge config files dicts.
 
@@ -528,7 +514,6 @@ class ExpFromFiles(Exp):
             configuration (str, optional): Configuration name. Defaults to None.
             testbed_configuration (str, optional): Testbed name. Defaults to None.
             user_settings (dict, optional): User input. Defaults to None.
-            loglevel(str, optional): Loglevel. Default to "INFO"
 
         Raises:
             TypeError: Settings should be a dict
@@ -537,10 +522,9 @@ class ExpFromFiles(Exp):
             dict: Merged config files dicts.
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         logger.debug("Merge config files")
         for this_config_file in config_files:
-            logger.debug("This config file %s", this_config_file)
+            logger.debug("This config file {}", this_config_file)
             hm_exp = config_files[this_config_file]["toml"].copy()
 
             block_config = tomlkit.document()
@@ -558,7 +542,7 @@ class ExpFromFiles(Exp):
                         merged_config = ExpFromFiles.merge_dict(
                             hm_exp[block], configuration[block]
                         )
-                        logger.info("Merged: %s %s", block, str(configuration[block]))
+                        logger.info("Merged: {} {}", block, str(configuration[block]))
                     else:
                         merged_config = hm_exp[block]
 
@@ -577,13 +561,13 @@ class ExpFromFiles(Exp):
                     if not isinstance(user_settings, dict):
                         raise TypeError("User settings should be a dict here!")
                     if block in user_settings:
-                        logger.info("Merge user settings in block %s", block)
+                        logger.info("Merge user settings in block {}", block)
                         user = ExpFromFiles.merge_dict(
                             block_config[block], user_settings[block]
                         )
                         block_config.update({block: user})
 
-            logger.debug("block config %s", block_config)
+            logger.debug("block config {}", block_config)
             config_files.update({this_config_file: {"toml": block_config}})
         return config_files
 
@@ -594,7 +578,6 @@ class ExpFromFiles(Exp):
         configuration=None,
         testbed_configuration=None,
         user_settings=None,
-        loglevel="INFO",
         write_config_files=True,
     ):
         """Merge to toml config files.
@@ -605,7 +588,6 @@ class ExpFromFiles(Exp):
             configuration (str, optional): Configuration name. Defaults to None.
             testbed_configuration (str, optional): Testbed name. Defaults to None.
             user_settings (dict, optional): User input. Defaults to None.
-            loglevel(str, optional): Loglevel. Default to "INFO"
             write_config_files (bool, optional): Write updated config files.
                                                  Defaults to True.
 
@@ -619,7 +601,6 @@ class ExpFromFiles(Exp):
             configuration=configuration,
             testbed_configuration=testbed_configuration,
             user_settings=user_settings,
-            loglevel=loglevel,
         )
 
         for fname in config_files:
@@ -651,7 +632,6 @@ class ExpFromFiles(Exp):
         offline_source=None,
         namelist_defs=None,
         binary_input_files=None,
-        loglevel="INFO",
     ):
         """Set up the files for an experiment.
 
@@ -664,7 +644,6 @@ class ExpFromFiles(Exp):
             offline_source (str, optional): Offline source code. Defaults to None.
             namelist_defs (str, optional): Namelist directory. Defaults to None.
             binary_input_files (str, optional): Binary input files. Defaults to None.
-            loglevel(str, optional): Loglevel. Default to "INFO"
 
         Raises:
             FileNotFoundError: System files not found
@@ -673,9 +652,8 @@ class ExpFromFiles(Exp):
             exp_dependencies(dict): Experiment dependencies from setup.
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         exp_dependencies = {}
-        logger.info("Setting up for host %s", host)
+        logger.info("Setting up for host {}", host)
 
         # Create needed system files
         if host is None:
@@ -698,13 +676,13 @@ class ExpFromFiles(Exp):
                 if wdir is not None:
                     lname = f"{wdir}/{fname}"
                     if os.path.exists(lname):
-                        logger.info("Using local host specific file %s as %s", lname, key)
+                        logger.info("Using local host specific file {} as {}", lname, key)
                         exp_dependencies.update({key: fname})
                         found = True
                 if not found:
                     if os.path.exists(gname):
                         logger.info(
-                            "Using general host specific file %s as %s", gname, key
+                            "Using general host specific file {} as {}", gname, key
                         )
                         exp_dependencies.update({key: gname})
                     else:
@@ -718,12 +696,12 @@ class ExpFromFiles(Exp):
         if wdir is not None:
             lname = f"{wdir}/{fname}"
             if os.path.exists(lname):
-                logger.info("Using local host specific domain file %s", lname)
+                logger.info("Using local host specific domain file {}", lname)
                 exp_dependencies.update({"domain_file": lname})
                 found = True
         if not found:
             if os.path.exists(gname):
-                logger.info("Using general host specific domain file %s", gname)
+                logger.info("Using general host specific domain file {}", gname)
                 exp_dependencies.update({"domain_file": gname})
 
         # Check existence of needed config files
@@ -732,11 +710,11 @@ class ExpFromFiles(Exp):
         if wdir is not None:
             lconfig = f"{wdir}/config/config.toml"
             if os.path.exists(lconfig):
-                logger.info("Local config definition %s", lconfig)
+                logger.info("Local config definition {}", lconfig)
                 config = lconfig
         if config is None:
             if os.path.exists(gconfig):
-                logger.info("Global config definition %s", gconfig)
+                logger.info("Global config definition {}", gconfig)
                 config = gconfig
             else:
                 raise FileNotFoundError
@@ -745,7 +723,7 @@ class ExpFromFiles(Exp):
         blocks = ExpFromFiles.toml_load(config)
         pysurfex_files = ["config_exp_surfex.toml", "first_guess.yml", "config.yml"]
         c_files = c_files + ["config_exp_surfex.toml"]
-        logger.info("Set up toml config files %s", str(c_files))
+        logger.info("Set up toml config files {}", str(c_files))
         cc_files = {}
         for c_f in c_files:
             gname = f"{pysurfex_experiment}/data/config/{c_f}"
@@ -755,19 +733,19 @@ class ExpFromFiles(Exp):
             if wdir is not None:
                 lname = f"{wdir}/config/{c_f}"
                 if os.path.exists(lname):
-                    logger.info("Using local toml config file %s", lname)
+                    logger.info("Using local toml config file {}", lname)
                     cc_files.update({c_f: lname})
                     found = True
             if not found:
                 if os.path.exists(gname):
-                    logger.info("Using general toml config file %s", gname)
+                    logger.info("Using general toml config file {}", gname)
                     cc_files.update({c_f: gname})
                 else:
                     raise FileNotFoundError(
                         f"No toml config file found for lname={lname} or gname={gname}"
                     )
 
-        logger.info("Set up other config files %s", str(c_files))
+        logger.info("Set up other config files {}", str(c_files))
         other_files = {}
         for c_f in ["first_guess.yml", "config.yml", "troika_config.yml"]:
             gname = f"{pysurfex_experiment}/data/config/{c_f}"
@@ -777,12 +755,12 @@ class ExpFromFiles(Exp):
             if wdir is not None:
                 lname = f"{wdir}/config/{c_f}"
                 if os.path.exists(lname):
-                    logger.info("Using local extra file %s", lname)
+                    logger.info("Using local extra file {}", lname)
                     other_files.update({c_f: lname})
                     found = True
             if not found:
                 if os.path.exists(gname):
-                    logger.info("Using general extra file %s", gname)
+                    logger.info("Using general extra file {}", gname)
                     other_files.update({c_f: gname})
                 else:
                     raise FileNotFoundError(
@@ -801,13 +779,13 @@ class ExpFromFiles(Exp):
 
         if namelist_defs is None:
             namelist_defs = f"{pysurfex_experiment}/data/nam/surfex_namelists.yml"
-            logger.info("Using default namelist directory %s", namelist_defs)
+            logger.info("Using default namelist directory {}", namelist_defs)
 
         if binary_input_files is None:
             binary_input_files = (
                 f"{pysurfex_experiment}/data/input/binary_input_data.json"
             )
-            logger.info("Using default binary input %s", binary_input_files)
+            logger.info("Using default binary input {}", binary_input_files)
 
         exp_dependencies.update(
             {
@@ -829,7 +807,6 @@ class ExpFromFiles(Exp):
         configuration=None,
         configuration_file=None,
         write_config_files=True,
-        loglevel="INFO",
     ):
         """Write the exp config to files.
 
@@ -838,7 +815,6 @@ class ExpFromFiles(Exp):
             configuration (str, optional): Configuration name. Defaults to None.
             configuration_file (str, optional): Configuration filename with settings.
                                                 Defaults to None.
-            loglevel(str, optional): Loglevel. Default to "INFO"
             write_config_files (bool, optional): Write updated config files.
                                                  Defaults to True.
 
@@ -849,24 +825,23 @@ class ExpFromFiles(Exp):
             config_files (dict): Config files dict with settings and file names
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         wdir = exp_dependencies["exp_dir"]
         pysurfex_experiment = exp_dependencies["pysurfex_experiment"]
         other_files = exp_dependencies["config"]["other_files"]
         # First priority is config
         if configuration is not None:
-            logger.info("Using configuration %s", configuration)
+            logger.info("Using configuration {}", configuration)
             gconf = f"{pysurfex_experiment}/data/config/configurations/{configuration.lower()}.toml"
             found = False
             if wdir is not None:
                 lconf = f"{wdir}/data/config/configurations/{configuration.lower()}.toml"
                 if os.path.exists(lconf):
-                    logger.info("Using local configuration file %s", lconf)
+                    logger.info("Using local configuration file {}", lconf)
                     configuration = ExpFromFiles.toml_load(lconf)
                     found = True
             if not found:
                 if os.path.exists(gconf):
-                    logger.info("Using general configuration file %s", gconf)
+                    logger.info("Using general configuration file {}", gconf)
                     configuration = ExpFromFiles.toml_load(gconf)
                 else:
                     raise FileNotFoundError
@@ -875,7 +850,7 @@ class ExpFromFiles(Exp):
         if configuration is None:
             if configuration_file is not None:
                 if os.path.exists(configuration_file):
-                    logger.info("Using configuration from file %s", configuration_file)
+                    logger.info("Using configuration from file {}", configuration_file)
                     configuration = ExpFromFiles.toml_load(configuration_file)
                 else:
                     raise FileNotFoundError(configuration_file)
@@ -891,18 +866,17 @@ class ExpFromFiles(Exp):
             wdir,
             configuration=configuration,
             write_config_files=write_config_files,
-            loglevel=loglevel,
         )
 
-        logger.debug("Configuration is: %s", configuration)
+        logger.debug("Configuration is: {}", configuration)
         if wdir is not None and write_config_files:
             for ename, extra_file in other_files.items():
                 fname = f"{wdir}/config/{ename}"
                 if not os.path.exists(fname):
-                    logger.info("Copy %s to %s", extra_file, fname)
+                    logger.info("Copy {} to {}", extra_file, fname)
                     shutil.copy(extra_file, fname)
                 else:
-                    logger.info("File %s exists", fname)
+                    logger.info("File {} exists", fname)
         return config_files
 
     @staticmethod
@@ -929,7 +903,6 @@ class ExpFromFilesDep(ExpFromFiles):
         exp_dependencies,
         stream=None,
         config_settings=None,
-        loglevel="INFO",
         progress=None,
         json_schema=None,
     ):
@@ -939,19 +912,16 @@ class ExpFromFilesDep(ExpFromFiles):
             exp_dependencies (str): File with exp dependencies
             stream (str): Stream identifier
             config_settings (dict): Possible input config setting to
-            loglevel(str, optional): Loglevel. Default to "INFO"
             progress (dict, optional): Updated date/time. Default to None
             json_schema (dict, optional): Validating schema. Defaults to None
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         logger.debug("Construct ExpFromFilesDep")
         ExpFromFiles.__init__(
             self,
             exp_dependencies,
             stream=stream,
             config_settings=config_settings,
-            loglevel=loglevel,
             progress=progress,
             json_schema=json_schema,
         )
@@ -965,7 +935,6 @@ class ExpFromFilesDepFile(ExpFromFiles):
         exp_dependencies_file,
         config_settings=None,
         stream=None,
-        loglevel="INFO",
         progress=None,
         json_schema=None,
     ):
@@ -975,7 +944,6 @@ class ExpFromFilesDepFile(ExpFromFiles):
             exp_dependencies_file (str): File with exp dependencies
             stream (str): Stream identifier
             config_settings (dict): Possible input config setting to
-            loglevel(str, optional): Loglevel. Default to "INFO"
             progress (dict, optional): Updated date/time. Default to None
             json_schema (dict, optional): Validating schema. Defaults to None
 
@@ -983,7 +951,6 @@ class ExpFromFilesDepFile(ExpFromFiles):
             FileNotFoundError: If file is not found
 
         """
-        logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
         logger.debug("Construct ExpFromFilesDepFile")
         if os.path.exists(exp_dependencies_file):
             with open(
@@ -995,7 +962,6 @@ class ExpFromFilesDepFile(ExpFromFiles):
                     exp_dependencies,
                     stream=stream,
                     config_settings=config_settings,
-                    loglevel=loglevel,
                     progress=progress,
                     json_schema=json_schema,
                 )

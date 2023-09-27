@@ -7,7 +7,7 @@ from argparse import ArgumentParser
 from . import PACKAGE_NAME, __version__
 from .config_parser import ParsedConfig
 from .experiment import ExpFromConfig, ExpFromFilesDepFile
-from .logs import get_logger
+from .logs import logger
 from .scheduler.scheduler import EcflowServerFromConfig
 from .scheduler.submission import NoSchedulerSubmission, TaskSettings
 from .suites import get_defs
@@ -56,10 +56,6 @@ def parse_surfex_script(argv):
     parser.add_argument(
         "--file", type=str, default=None, required=False, help="File to checkout"
     )
-
-    parser.add_argument(
-        "--debug", dest="debug", action="store_true", help="Debug information"
-    )
     parser.add_argument("--version", action="version", version=__version__)
 
     if len(argv) == 0:
@@ -84,16 +80,7 @@ def surfex_script(**kwargs):
         RuntimeError: Could not start experiment
 
     """
-    debug = kwargs.get("debug")
-    if debug is None:
-        debug = False
-
-    if debug:
-        loglevel = "DEBUG"
-    else:
-        loglevel = "INFO"
-
-    logger = get_logger(PACKAGE_NAME, loglevel)
+    logger.enable(PACKAGE_NAME)
     logger.info("************ PySurfexExp ******************")
 
     action = kwargs["action"]
@@ -110,21 +97,19 @@ def surfex_script(**kwargs):
     if begin is None:
         begin = True
 
-    logger.info("debug %s", debug)
-
     config_file = kwargs.get("config")
 
     if config_file is None:
         work_dir = kwargs.get("wd")
         if work_dir is None:
             work_dir = f"{os.getcwd()}"
-            logger.info("Setting working directory from current directory: %s", work_dir)
+            logger.info("Setting working directory from current directory: {}", work_dir)
 
         # Find experiment
         if exp is None:
-            logger.info("Setting EXP from WD: %s", work_dir)
+            logger.info("Setting EXP from WD: {}", work_dir)
             exp = work_dir.split("/")[-1]
-            logger.info("EXP = %s", exp)
+            logger.info("EXP = {}", exp)
 
         # Set experiment from files. Should be existing now after setup
         exp_dependencies_file = f"{work_dir}/exp_dependencies.json"
@@ -188,7 +173,7 @@ def surfex_script(**kwargs):
         else:
             with open(config_file, mode="r", encoding="utf-8") as fhandler:
                 config = json.load(fhandler)
-            sfx_exp = ExpFromConfig(config, progress, loglevel=loglevel)
+            sfx_exp = ExpFromConfig(config, progress)
         sfx_exp.dump_json(config_file, indent=2)
         config = ParsedConfig.from_file(config_file)
 
@@ -198,7 +183,7 @@ def surfex_script(**kwargs):
         os.makedirs(sfx_data, exist_ok=True)
         def_file = f"{sfx_data}/{case}_{suite}.def"
 
-        logger.info("Creating def file: %s", def_file)
+        logger.info("Creating def file: {}", def_file)
         defs = get_defs(config, suite)
         defs.save_as_defs(def_file)
         server = EcflowServerFromConfig(config)
@@ -214,9 +199,6 @@ def parse_update_config(argv):
     parser.add_argument(
         "--wd", help="Experiment working directory", type=str, default=None
     )
-    parser.add_argument(
-        "--debug", dest="debug", action="store_true", help="Debug information"
-    )
     parser.add_argument("--version", action="version", version=__version__)
 
     args = parser.parse_args(argv)
@@ -228,27 +210,18 @@ def parse_update_config(argv):
 
 def update_config(**kwargs):
     """Update the experiment json file configurations."""
-    debug = kwargs.get("debug")
-    if debug is None:
-        debug = False
-    if debug:
-        loglevel = "DEBUG"
-    else:
-        loglevel = "INFO"
-
-    logger = get_logger(PACKAGE_NAME, loglevel)
+    logger.enable(PACKAGE_NAME)
     exp = kwargs.get("exp")
-
     work_dir = kwargs.get("wd")
 
     # Find experiment
     if work_dir is None:
         work_dir = os.getcwd()
-        logger.info("Setting current working directory as WD: %s", work_dir)
+        logger.info("Setting current working directory as WD: {}", work_dir)
     if exp is None:
-        logger.info("Setting EXP from WD: %s", work_dir)
+        logger.info("Setting EXP from WD: {}", work_dir)
         exp = work_dir.split("/")[-1]
-        logger.info("EXP = %s", exp)
+        logger.info("EXP = {}", exp)
 
     # Set experiment from files. Should be existing now after setup
     exp_dependencies_file = f"{work_dir}/exp_dependencies.json"
@@ -301,9 +274,6 @@ def parse_submit_cmd_exp(argv):
     )
     parser.add_argument("-troika", type=str, help="Troika", required=False, default=None)
     parser.add_argument(
-        "--debug", dest="debug", action="store_true", help="Debug information"
-    )
-    parser.add_argument(
         "--background", dest="background", action="store_true", help="Run in background"
     )
     parser.add_argument("--version", action="version", version=__version__)
@@ -321,25 +291,15 @@ def parse_submit_cmd_exp(argv):
 
 def submit_cmd_exp(**kwargs):
     """Submit task."""
-    debug = kwargs.get("debug")
-    if debug is None:
-        debug = False
-    if debug:
-        loglevel = "DEBUG"
-    else:
-        loglevel = "INFO"
-
-    logger = get_logger(PACKAGE_NAME, loglevel)
+    logger.enable(PACKAGE_NAME)
     logger.info("************ ECF_submit_exp ******************")
-
-    logger.debug("kwargs %s", str(kwargs))
     config_file = kwargs.get("config_file")
     cwd = os.getcwd()
     if config_file is None:
         config_file = f"{cwd}/exp_configuration.json"
-        logger.info("Using config file=%s", config_file)
+        logger.info("Using config file={}", config_file)
         if os.path.exists("exp_configuration.json"):
-            logger.info("Using config file=%s", config_file)
+            logger.info("Using config file={}", config_file)
         else:
             raise FileNotFoundError("Could not find config file " + config_file)
     config = ParsedConfig.from_file(config_file)
@@ -359,11 +319,11 @@ def submit_cmd_exp(**kwargs):
     output = kwargs.get("output")
     if output is None:
         output = f"{cwd}/{task}.log"
-    logger.debug("Task: %s", task)
-    logger.debug("config: %s", config_file)
-    logger.debug("template_job: %s", template_job)
-    logger.debug("task_job: %s", task_job)
-    logger.debug("output: %s", output)
+    logger.debug("Task: {}", task)
+    logger.debug("config: {}", config_file)
+    logger.debug("template_job: {}", template_job)
+    logger.debug("task_job: {}", task_job)
+    logger.debug("output: {}", output)
     if kwargs.get("background"):
         update = {"submission": {"default_submit_type": "background"}}
         config = config.copy(update=update)

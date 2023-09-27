@@ -4,6 +4,7 @@ import shutil
 
 from pysurfex.run import BatchJob
 
+from ..logs import logger
 from ..tasks.tasks import AbstractTask
 
 
@@ -36,10 +37,10 @@ class SyncSourceCode(AbstractTask):
         ifsaux_copy = f"{offline_source}/src/LIB/ifsaux_copy"
         if os.path.exists(ifsaux):
             cmd = f"{rsync} {ifsaux}/* {ifsaux_copy}"
-            self.logger.info(cmd)
+            logger.info(cmd)
             BatchJob(rte, wrapper=wrapper).run(cmd)
         cmd = f"{rsync} {offline_source}/ {sfx_lib}"
-        self.logger.info(cmd)
+        logger.info(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
         # Add system files if not existing
@@ -49,21 +50,21 @@ class SyncSourceCode(AbstractTask):
         system_file_scripts = f"{scripts}/config/offline/conf/system.{host}"
         system_file_lib = f"{sfx_lib}/conf/system.{host}"
 
-        self.logger.debug("Check system_file_lib %s", system_file_lib)
+        logger.debug("Check system_file_lib {}", system_file_lib)
         if not os.path.exists(system_file_lib):
-            self.logger.debug("Check system_file_scripts %s", system_file_scripts)
+            logger.debug("Check system_file_scripts {}", system_file_scripts)
             if os.path.exists(system_file_scripts):
-                self.logger.info("Copy %s %s", system_file_scripts, system_file_lib)
+                logger.info("Copy {} {}", system_file_scripts, system_file_lib)
                 shutil.copy(system_file_scripts, system_file_lib)
 
         rules_file_scripts = f"{scripts}/config/offline/src/Rules.{host}.mk"
         rules_file_lib = f"{sfx_lib}/src/Rules.{host}.mk"
 
-        self.logger.debug("Check rules_file_lib %s", rules_file_lib)
+        logger.debug("Check rules_file_lib {}", rules_file_lib)
         if not os.path.exists(rules_file_lib):
-            self.logger.debug("Check rules_file_scripts %s", rules_file_scripts)
+            logger.debug("Check rules_file_scripts {}", rules_file_scripts)
             if os.path.exists(rules_file_scripts):
-                self.logger.info("Copy %s %s", rules_file_scripts, rules_file_lib)
+                logger.info("Copy {} {}", rules_file_scripts, rules_file_lib)
                 shutil.copy(rules_file_scripts, rules_file_lib)
 
 
@@ -92,13 +93,13 @@ class ConfigureOfflineBinaries(AbstractTask):
             f"export OFFLINE_CONFIG={flavour} && cd {sfx_lib}/offline/src && "
             f"./configure OfflineNWP ../conf//system.{flavour}"
         )
-        self.logger.debug(cmd)
+        logger.debug(cmd)
         BatchJob(rte, wrapper=self.wrapper).run(cmd)
 
         conf_file = sfx_lib + "/offline/conf/profile_surfex-" + flavour
         xyz_file = sfx_lib + "/xyz"
         cmd = ". " + conf_file + '; echo "$XYZ" > ' + xyz_file
-        self.logger.info(cmd)
+        logger.info(cmd)
         try:
             os.system(cmd)  # noqa
         except Exception as ex:
@@ -132,12 +133,12 @@ class MakeOfflineBinaries(AbstractTask):
         conf_file = sfx_lib + "/offline/conf/profile_surfex-" + flavour
 
         cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make -j 4"
-        self.logger.debug(cmd)
+        logger.debug(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
         os.makedirs(f"{sfx_lib}/offline/exe", exist_ok=True)
         cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make installmaster"
-        self.logger.debug(cmd)
+        logger.debug(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
 
@@ -174,7 +175,7 @@ class CMakeBuild(AbstractTask):
         os.makedirs(install_dir, exist_ok=True)
         prerequisites = ["gribex_370"]
         for project in prerequisites:
-            self.logger.info("Compiling %s", project)
+            logger.info("Compiling {}", project)
             current_project_dir = f"{offline_source}/util/auxlibs/{project}"
             fproject = project.replace("/", "-")
             current_build_dir = f"{build_dir}/{fproject}"
@@ -208,7 +209,7 @@ class CMakeBuild(AbstractTask):
         # Manual installation
         programs = ["PGD-offline", "PREP-offline", "OFFLINE-offline", "SODA-offline"]
         for program in programs:
-            self.logger.info("Installing %s", program)
+            logger.info("Installing {}", program)
             shutil.copy(f"{build_dir}/bin/{program}", f"{install_dir}/{program}")
 
         xyz_file = sfx_lib + "/xyz"

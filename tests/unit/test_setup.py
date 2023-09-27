@@ -1,15 +1,10 @@
 """Test setup of an experiment and merging of input."""
-import logging
 from pathlib import Path
 
 from experiment.experiment import ExpFromFiles
 
 TESTDATA = f"{str((Path(__file__).parent).parent)}/testdata"
 ROOT = f"{str((Path(__file__).parent).parent)}"
-logging.basicConfig(
-    format="%(asctime)s %(levelname)s %(pathname)s:%(lineno)s %(message)s",
-    level=logging.DEBUG,
-)
 
 
 def test_merge():

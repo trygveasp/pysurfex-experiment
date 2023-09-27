@@ -3,7 +3,11 @@
 
 import pytest
 
+from experiment import PACKAGE_NAME
+from experiment.logs import logger
 from experiment.scheduler.scheduler import EcflowClient, EcflowServer, EcflowTask
+
+logger.enable(PACKAGE_NAME)
 
 
 def suite_name():

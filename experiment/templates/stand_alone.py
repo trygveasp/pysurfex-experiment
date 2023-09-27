@@ -2,11 +2,15 @@
 # @ENV_SUB1@
 
 
-from experiment.config_parser import ParsedConfig
-from experiment.logs import get_logger_from_config
+from experiment import PACKAGE_NAME
+from experiment.config_parser import MAIN_CONFIG_JSON_SCHEMA, ParsedConfig
+from experiment.logs import logger
 from experiment.tasks.discover_tasks import get_task
 
 # @ENV_SUB2@
+
+
+logger.enable(PACKAGE_NAME)
 
 
 def stand_alone_main(task, config_file):
@@ -16,13 +20,11 @@ def stand_alone_main(task, config_file):
         task (str): Task name
         config_file (str): Config file
     """
-    config = ParsedConfig.from_file(config_file)
-    logger = get_logger_from_config(config)
+    config = ParsedConfig.from_file(config_file, json_schema=MAIN_CONFIG_JSON_SCHEMA)
 
-    logger.info("Running task %s", task)
-
+    logger.info("Running task {}", task)
     get_task(task, config).run()
-    logger.info("Finished task %s", task)
+    logger.info("Finished task {}", task)
 
 
 if __name__ == "__main__":

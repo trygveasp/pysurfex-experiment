@@ -5,6 +5,7 @@ import time
 
 import numpy as np
 
+from ..logs import logger
 from ..tasks.tasks import AbstractTask
 
 
@@ -252,7 +253,7 @@ class Gmted(AbstractTask):
 
         for tif_file in tif_files:
             if not os.path.isfile(tif_file):
-                self.logger.error("GMTED file %s not found", tif_file)
+                logger.error("GMTED file {} not found", tif_file)
                 sys.exit(1)
 
         return tif_files, hdr_east, hdr_west, hdr_south, hdr_north
@@ -335,7 +336,7 @@ class Gmted(AbstractTask):
 
         # Create the header file
         header_file = f"{climdir}/gmted2010.hdr"
-        self.logger.debug("Write header file %s", header_file)
+        logger.debug("Write header file {}", header_file)
         Gmted.write_gmted_header_file(
             header_file, hdr_north, hdr_south, hdr_west, hdr_east, hdr_rows, hdr_cols
         )
@@ -352,7 +353,7 @@ class Soil(AbstractTask):
 
         """
         AbstractTask.__init__(self, config, "Soil")
-        self.logger.debug("Constructed Soil task")
+        logger.debug("Constructed Soil task")
 
     def get_domain_properties(self, config) -> dict:
         """Get domain properties.
@@ -482,11 +483,11 @@ class Soil(AbstractTask):
         Raises:
             FileNotFoundError: If no tif files are found.
         """
-        self.logger.debug("Running soil task")
+        logger.debug("Running soil task")
 
         soilgrid_path = self.fmanager.platform.get_platform_value("SOILGRID_DATA_PATH")
 
-        self.logger.info(soilgrid_path)
+        logger.info(soilgrid_path)
         soilgrid_tifs = Search.find_files(soilgrid_path, postfix=".tif", fullpath=True)
 
         if len(soilgrid_tifs) == 0:
@@ -571,7 +572,7 @@ class Soil(AbstractTask):
                 )
                 ds = None
             else:
-                self.logger.warning("Unknown soilgrid tif file: %s", subarea_file)
+                logger.warning("Unknown soilgrid tif file: {}", subarea_file)
 
         # Compose headers in surfex/pgd format
         self.write_soil_header_file(
@@ -627,4 +628,4 @@ class Soil(AbstractTask):
             write_fact=True,
         )
 
-        self.logger.debug("Finished soil task")
+        logger.debug("Finished soil task")

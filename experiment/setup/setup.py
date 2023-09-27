@@ -13,10 +13,10 @@ except:  # noqa
     pysurfex = None
 
 
-from experiment import PACKAGE_NAME, __version__
+from experiment import __version__
 from experiment.experiment import ExpFromFiles, ExpFromFilesDep
 
-from ..logs import get_logger
+from ..logs import logger
 
 
 def surfex_exp_setup(argv=None):
@@ -110,9 +110,6 @@ def parse_surfex_script_setup(argv):
         required=False,
         default=None,
     )
-    parser.add_argument(
-        "--debug", dest="debug", action="store_true", help="Debug information"
-    )
     parser.add_argument("--version", action="version", version=__version__)
 
     if len(argv) == 0:
@@ -135,16 +132,6 @@ def surfex_script_setup(**kwargs):
     Raises:
         RuntimeError: Setup failed
     """
-    debug = kwargs.get("debug")
-    if debug is None:
-        debug = False
-    if debug:
-        loglevel = "DEBUG"
-    else:
-        loglevel = "INFO"
-
-    print(loglevel)
-    logger = get_logger(PACKAGE_NAME, loglevel=loglevel)
     logger.info("************ PySurfexExpSetup ******************")
 
     # Setup
@@ -154,7 +141,7 @@ def surfex_script_setup(**kwargs):
     pysurfex_experiment = kwargs.get("pysurfex_experiment")
     if pysurfex_experiment is None:
         pysurfex_experiment = f"{os.path.abspath(os.path.dirname(__file__))}/../.."
-        logger.info("Using pysurfex_experiment from environment: %s", pysurfex_experiment)
+        logger.info("Using pysurfex_experiment from environment: {}", pysurfex_experiment)
     offline_source = kwargs.get("offline_source")
     namelist_defs = kwargs.get("namelist_defs")
     binary_input_files = kwargs.get("binary_input_files")
@@ -173,13 +160,13 @@ def surfex_script_setup(**kwargs):
     if wdir is None:
         if output_file is None:
             wdir = os.getcwd()
-            logger.info("Setting current working directory as WD: %s", wdir)
+            logger.info("Setting current working directory as WD: {}", wdir)
         else:
             wdir = None
     if exp_name is None:
-        logger.info("Setting EXP from WD: %s", wdir)
+        logger.info("Setting EXP from WD: {}", wdir)
         exp_name = wdir.split("/")[-1]
-        logger.info("EXP = %s", exp_name)
+        logger.info("EXP = {}", exp_name)
 
     if offline_source is None:
         logger.warning("No offline soure code set. Assume existing binaries")
@@ -193,7 +180,6 @@ def surfex_script_setup(**kwargs):
         offline_source=offline_source,
         namelist_defs=namelist_defs,
         binary_input_files=binary_input_files,
-        loglevel=loglevel,
     )
 
     # Merge and update config
@@ -202,14 +188,10 @@ def surfex_script_setup(**kwargs):
         configuration=config,
         configuration_file=config_file,
         write_config_files=write_config_files,
-        loglevel=loglevel,
     )
 
     if output_file is None:
         # Redo exp_dependencies with local changes
-        talk_level = "FATAL"
-        if loglevel != "INFO":
-            talk_level = loglevel
         exp_dependencies = ExpFromFiles.setup_files(
             wdir,
             exp_name,
@@ -219,21 +201,16 @@ def surfex_script_setup(**kwargs):
             offline_source=offline_source,
             namelist_defs=namelist_defs,
             binary_input_files=binary_input_files,
-            loglevel=talk_level,
         )
 
         # Save experiment dependencies
         exp_dependencies_file = wdir + "/exp_dependencies.json"
-        logger.info("Store exp dependencies in %s", exp_dependencies_file)
+        logger.info("Store exp dependencies in {}", exp_dependencies_file)
         ExpFromFiles.dump_exp_dependencies(exp_dependencies, exp_dependencies_file)
     else:
         # Create en experiment object and dump the configuration
-        merged_config = ExpFromFiles.merge_dict_from_config_dicts(
-            merged_config, loglevel=loglevel
-        )
-        sfx_exp = ExpFromFilesDep(
-            exp_dependencies, config_settings=merged_config, loglevel=loglevel
-        )
+        merged_config = ExpFromFiles.merge_dict_from_config_dicts(merged_config)
+        sfx_exp = ExpFromFilesDep(exp_dependencies, config_settings=merged_config)
         sfx_exp.dump_json(output_file, indent=2)
 
     files = [

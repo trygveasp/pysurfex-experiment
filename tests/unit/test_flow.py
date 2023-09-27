@@ -5,9 +5,11 @@ from pathlib import Path
 import pysurfex
 import pytest
 
+from experiment import PACKAGE_NAME
 from experiment.config_parser import ParsedConfig
 from experiment.datetime_utils import as_datetime
 from experiment.experiment import ExpFromFiles
+from experiment.logs import logger
 from experiment.scheduler.scheduler import EcflowServer, EcflowTask
 from experiment.scheduler.submission import TaskSettings
 from experiment.scheduler.suites import EcflowSuite, EcflowSuiteFamily, EcflowSuiteTask
@@ -15,6 +17,8 @@ from experiment.suites import SurfexSuite
 
 TESTDATA = f"{str((Path(__file__).parent).parent)}/testdata"
 ROOT = f"{str((Path(__file__).parent).parent)}"
+
+logger.enable(PACKAGE_NAME)
 
 
 @pytest.fixture(scope="module")

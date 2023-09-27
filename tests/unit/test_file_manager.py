@@ -1,16 +1,19 @@
 #!/usr/bin/env python3
 """Unit tests for the config file parsing module."""
-import logging
 import os
 from pathlib import Path
 
 import pysurfex
 import pytest
 
+from experiment import PACKAGE_NAME
 from experiment.datetime_utils import as_datetime
 from experiment.experiment import Exp, ExpFromFiles
+from experiment.logs import logger
 from experiment.system import System
 from experiment.toolbox import FileManager
+
+logger.enable(PACKAGE_NAME)
 
 
 @pytest.fixture(scope="module")
@@ -167,7 +170,7 @@ class TestFileManager:
             f"{tmp_path_factory.getbasetemp().as_posix()}/ICMSH@CNMEXP@INIT",
             check_archive=True,
         )
-        logging.debug("identifier=%s", provider.identifier)
+        logger.debug("identifier={}", provider.identifier)
         assert provider.identifier == "ectmp:/2000/01/01/00/ICMSHUNIT+0024"
         assert (
             resource.identifier
