@@ -10,6 +10,7 @@ PySurfexExp = "experiment.cli:surfex_exp"
 PySurfexExpConfig = "experiment.cli:surfex_exp_config"
 PySurfexExpSetup = "experiment.setup.setup:surfex_exp_setup"
 SubmitTask = "experiment.cli:run_submit_cmd_exp"
+PySurfexScheduler = "experiment.cli:run_task_in_container"
 
 [build-system]
     build-backend = "poetry.core.masonry.api"

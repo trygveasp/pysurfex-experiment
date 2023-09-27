@@ -1,0 +1,23 @@
+FROM ubuntu:20.04
+
+WORKDIR /pysurfex-experiment
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install
+RUN apt-get update && apt-get install -y \
+    python3 \
+    python3-pip \
+    libproj-dev \
+    libeccodes-dev \
+    libecflow-dev \
+    libudunits2-dev
+
+WORKDIR /pysurfex-experiment
+
+# Install
+COPY . .
+
+WORKDIR /pysurfex-experiment
+RUN python3 -m pip install setuptools --upgrade
+RUN python3 -m pip install .

@@ -57,7 +57,7 @@ class SurfexSuite:
         ecf_include = exp_dir + "/ecf"
         ecf_files = joboutdir
         os.makedirs(ecf_files, exist_ok=True)
-        template = f"{platform.get_system_value('pysurfex_experiment')}/experiment/templates/ecflow/default.py"
+        template = f"{platform.get_system_value('pysurfex_experiment')}/experiment/templates/ecflow/container.py"
         ecf_home = joboutdir
         ecf_out = joboutdir
         ecf_jobout = joboutdir + "/%ECF_NAME%.%ECF_TRYNO%"
