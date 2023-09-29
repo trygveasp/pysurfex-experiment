@@ -3,22 +3,8 @@
 
 import json
 import os
-from experiment import PACKAGE_NAME
-from experiment.config_parser import MAIN_CONFIG_JSON_SCHEMA, ParsedConfig
-from experiment.datetime_utils import ecflow2datetime_string
-from experiment.logs import GLOBAL_LOGLEVEL, LoggerHandlers, logger
-from experiment.scheduler.scheduler import (
-    EcflowClient,
-    EcflowServerFromConfig,
-    EcflowTask,
-)
-from experiment.tasks.discover_tasks import get_task
 
 # @ENV_SUB2@
-
-
-logger.enable(PACKAGE_NAME)
-
 
 def parse_ecflow_vars():
     """Parse the ecflow variables."""
@@ -50,8 +36,9 @@ if __name__ == "__main__":
     kwargs = parse_ecflow_vars()
     fname = str(os.getpid()) + ".json"
     with open(fname, mode="w", encoding="utf-8") as fhandler:
-        json.dump(fhandler, kwargs)
-    os.system(f"PySurfexScheduler {fname}")
+        json.dump(kwargs, fhandler)
+    print(f"singularity exec --bind /lustre:/lustre /home/trygveasp/projects/pysurfex-experiment/trygveasp/feature/task_in_container/pysurfex-experiment.sif PySurfexScheduler {fname}")
+    os.system(f"singularity exec --bind /lustre:/lustre /home/trygveasp/projects/pysurfex-experiment/trygveasp/feature/task_in_container/pysurfex-experiment.sif PySurfexScheduler {fname}")
 
 """    # noqa
 %end"  # noqa

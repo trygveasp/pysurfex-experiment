@@ -403,11 +403,7 @@ def run_task_in_container(argv=None):
     ecf_pass = kwargs.get("ECF_PASS")
     ecf_tryno = kwargs.get("ECF_TRYNO")
     ecf_rid = kwargs.get("ECF_RID")
-    task = EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid)
-    scheduler = EcflowServerFromConfig(config)
-
-    # This will also handle call to sys.exit(), i.e. Client._   _exit__ will still be called.
-    with EcflowClient(scheduler, task):
+    if ecf_name is None:
         task_name = kwargs.get("TASK_NAME")
         logger.info("Running task {}", task_name)
         args = kwargs.get("ARGS")
@@ -437,5 +433,42 @@ def run_task_in_container(argv=None):
             },
         }
         config = config.copy(update=update)
-        get_task(task.ecf_task, config).run()
+        get_task(task_name, config).run()
         logger.info("Finished task {}", task_name)
+    else:
+        task = EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid)
+        scheduler = EcflowServerFromConfig(config)
+
+        # This will also handle call to sys.exit(), i.e. Client._   _exit__ will still be called.
+        with EcflowClient(scheduler, task):
+            task_name = kwargs.get("TASK_NAME")
+            logger.info("Running task {}", task_name)
+            args = kwargs.get("ARGS")
+            args_dict = {}
+            if args != "":
+                logger.debug("args={}", args)
+                for arg in args.split(";"):
+                    parts = arg.split("=")
+                    logger.debug("arg={} parts={} len(parts)={}", arg, parts, len(parts))
+                    if len(parts) == 2:
+                        args_dict.update({parts[0]: parts[1]})
+
+            update = {
+                "general": {
+                    "stream": kwargs.get("STREAM"),
+                    "realization": kwargs.get("ENSMBR"),
+                    "times": {
+                        "basetime": ecflow2datetime_string(kwargs.get("DTG")),
+                        "validtime": ecflow2datetime_string(kwargs.get("DTG")),
+                        "basetime_pp": ecflow2datetime_string(kwargs.get("DTGPP")),
+                    },
+                },
+                "task": {
+                    "wrapper": kwargs.get("WRAPPER"),
+                    "var_name": kwargs.get("VAR_NAME"),
+                    "args": args_dict,
+                },
+            }
+            config = config.copy(update=update)
+            get_task(task.ecf_task, config).run()
+            logger.info("Finished task {}", task_name)
