@@ -1,7 +1,35 @@
- 
+[general]
+create_static_data = false
+hh_list="00-23:1"
+
+[general.times]
+cycle_length = "PT1H"
+
+[compile]
+build = false
+ial_source = "/home/trygveasp/projects/CARRA2-offline/"
+
 [forcing]
-pattern = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
+# pattern = "https://thredds.met.no/thredds/dodsC/metpparchive/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
+pattern = "/lustre/storeB/project/metproduction/products/yr_short/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
 input_format = "netcdf"
+
+[initial_conditions]
+prep_input_file = ""
+prep_input_filetype = ""
+
+[initial_conditions.fg4oi]
+inputfile = "@casedir@/archive/@YYYY_FG@/@MM_FG@/@DD_FG@/@HH_FG@/SURFOUT.@YYYY@@MM@@DD@_@HH@h00.nc"
+fileformat = "surfex"
+converter = "none"
+
+[initial_conditions.fg4oi.altitude]
+inputfile = "@climdir@/PGD.nc"
+converter = "none"
+
+[initial_conditions.fg4oi.land_area_fraction]
+inputfile = "@climdir@/climate/PGD.nc"
+converter = "nature_town"
  
 [SURFEX.IO]
 CTIMESERIES_FILETYPE = "NC"         # Fileformat for timseries. Inline runs use FA
@@ -26,6 +54,6 @@ ISBA = "NONE"                        # Assimilation method for ISBA soil: "NONE"
 TEB = "NONE"                         # Assimilation method for TEB tile: "NONE"|"ROADT"
 
 [SURFEX.ASSIM.ISBA]
-UPDATE_SNOW_CYCLES = []          # Cycles to update snow depths/SWE in assimilation.
+UPDATE_SNOW_CYCLES = ["06"]          # Cycles to update snow depths/SWE in assimilation.
  
  

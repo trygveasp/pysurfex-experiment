@@ -187,54 +187,53 @@ ll_list="48,3,3,3,3,3,3,3"              # Forecast lengths for the cycles [h], r
 build = true                           # Turn on or off the compilation and binary build (true/false)
 
 
-[OBSERVATIONS]
-NETATMO_FILEPATTERN = "@SFX_EXP_DATA@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@YYYY@@MM@@DD@T@HH@@mm@*Z*.json"
+[observations]
+netatmo_filepattern = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@YYYY@@MM@@DD@T@HH@@mm@*Z*.json"
 
-[INITIAL_CONDITIONS]
-PREP_INPUT_FILE = "@PYSURFEX_EXPERIMENT@/nam/prep_from_namelist_values.json"
-PREP_INPUT_FILETYPE = "json"
-PREP_PGDFILE = ""
-PREP_PGDFILETYPE = ""
+[initial_conditions]
+  prep_input_file = "@pysurfex_experiment@/data/nam/prep_from_namelist_values.json"
+  prep_input_filetype = "json"
+  prep_pgdfile = ""
+  prep_pgdfiletype = ""
 
 
-[INITIAL_CONDITIONS.FG4OI]
-INPUTFILE = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
-FILEFORMAT = "netcdf"
-CONVERTER = "none"
+[initial_conditions.fg4oi]
+inputfile = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
+fileformat = "netcdf"
+converter = "none"
 
-[INITIAL_CONDITIONS.FG4OI.air_temperature_2m]
+[initial_conditions.fg4oi.air_temperature_2m]
 
-[INITIAL_CONDITIONS.FG4OI.relative_humidity_2m]
+[initial_conditions.fg4oi.relative_humidity_2m]
 
-[INITIAL_CONDITIONS.FG4OI.surface_snow_thickness]
-CONVERTER = "sweclim"
+[initial_conditions.fg4oi.surface_snow_thickness]
+converter = "sweclim"
 
-[INITIAL_CONDITIONS.FG4OI.altitude]
-CONVERTER = "phi2m"
+[initial_conditions.fg4oi.altitude]
+converter = "phi2m"
 
-[FORECAST]
+[forecast]
 #####################################################################################################
 #  Forecast model (physics + dynamics and output)
 #####################################################################################################
 
-PHYSICS = "arome"
-ENSMSEL = []                            # Ensemble members to run (list with member numbers)
+physics = "arome"
+ensmsel = []                            # Ensemble members to run (list with member numbers)
 
-FORC_ZS = true
+forc_zs = true
 
-[FORCING]
-PATTERN = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
-INPUT_FORMAT = "netcdf"
-RAIN_CONVERTER = "totalprec"
-ZREF = "ml"
-ZVAL = "constant"
-UREF = "ml"
-UVAL = "constant"
-ZSORO_CONVERTER = "phi2m"
-SCA_SW = "constant"
-CO2 = "constant"
-WIND_CONVERTER = "windspeed"
-WINDDIR_CONVERTER = "winddir"
-DEBUG = false
+[forcing]
+pattern = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
+input_format = "netcdf"
+rain_converter = "totalprec"
+zref = "ml"
+zval = "constant"
+uref = "ml"
+uval = "constant"
+zsoro_converter = "phi2m"
+sca_sw = "constant"
+co2 = "constant"
+wind_converter = "windspeed"
+winddir_converter = "winddir"
+debug = false
 
-[SYSTEM]

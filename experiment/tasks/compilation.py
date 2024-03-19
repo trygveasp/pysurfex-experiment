@@ -4,15 +4,15 @@ import shutil
 
 from pysurfex.run import BatchJob
 
-from ..logs import logger
-from ..tasks.tasks import AbstractTask
+from deode.logs import logger
+from ..tasks.tasks import PySurfexBaseTask
 
 
-class SyncSourceCode(AbstractTask):
+class SyncSourceCode(PySurfexBaseTask):
     """Sync source code for offline code.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -22,17 +22,17 @@ class SyncSourceCode(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "SyncSourceCode")
+        PySurfexBaseTask.__init__(self, config, "SyncSourceCode")
 
     def execute(self):
         """Execute."""
         rte = os.environ
         wrapper = ""
 
-        rsync = self.platform.get_system_value("rsync")
-        sfx_lib = f"{self.platform.get_system_value('sfx_exp_lib')}/offline"
+        rsync = self.config["compile.rsync"]
+        sfx_lib = f"{self.platform.get_system_value('casedir')}/offline"
         os.makedirs(sfx_lib, exist_ok=True)
-        offline_source = self.config.get_value("compile.offline_source")
+        offline_source = self.config["compile.ial_source"]
         ifsaux = f"{offline_source}/../../src/ifsaux"
         ifsaux_copy = f"{offline_source}/src/LIB/ifsaux_copy"
         if os.path.exists(ifsaux):
@@ -45,7 +45,7 @@ class SyncSourceCode(AbstractTask):
 
         # Add system files if not existing
         scripts = self.platform.get_system_value("pysurfex_experiment")
-        host = self.platform.get_system_value("surfex_config")
+        host = self.config["compile.build_config"]
 
         system_file_scripts = f"{scripts}/config/offline/conf/system.{host}"
         system_file_lib = f"{sfx_lib}/conf/system.{host}"
@@ -68,11 +68,11 @@ class SyncSourceCode(AbstractTask):
                 shutil.copy(rules_file_scripts, rules_file_lib)
 
 
-class ConfigureOfflineBinaries(AbstractTask):
+class ConfigureOfflineBinaries(PySurfexBaseTask):
     """Configure offline binaries.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -82,17 +82,14 @@ class ConfigureOfflineBinaries(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "ConfigureOfflineBinaries")
+        PySurfexBaseTask.__init__(self, config, "ConfigureOfflineBinaries")
 
     def execute(self):
         """Execute."""
         rte = os.environ
-        sfx_lib = f"{self.platform.get_system_value('sfx_exp_lib')}"
-        flavour = self.surfex_config
-        cmd = (
-            f"export OFFLINE_CONFIG={flavour} && cd {sfx_lib}/offline/src && "
-            f"./configure OfflineNWP ../conf//system.{flavour}"
-        )
+        sfx_lib = f"{self.platform.get_system_value('casedir')}"
+        flavour = self.config["compile.build_config"]
+        cmd = f"{sfx_lib}/offline/scr/Configure_offline.sh {sfx_lib}/offline {flavour}"
         logger.debug(cmd)
         BatchJob(rte, wrapper=self.wrapper).run(cmd)
 
@@ -103,14 +100,14 @@ class ConfigureOfflineBinaries(AbstractTask):
         try:
             os.system(cmd)  # noqa
         except Exception as ex:
-            raise Exception("Can not write XYZ ") from ex
+            raise RuntimeError("Can not write XYZ ") from ex
 
 
-class MakeOfflineBinaries(AbstractTask):
+class MakeOfflineBinaries(PySurfexBaseTask):
     """Make offline binaries.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -120,33 +117,31 @@ class MakeOfflineBinaries(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "MakeOfflineBinaries")
+        PySurfexBaseTask.__init__(self, config, "MakeOfflineBinaries")
 
     def execute(self):
         """Execute."""
         rte = {**os.environ}
         wrapper = ""
-        sfx_lib = f"{self.platform.get_system_value('sfx_exp_lib')}"
-        flavour = self.surfex_config
+        sfx_lib = f"{self.platform.get_system_value('casedir')}"
+        flavour = self.config["compile.build_config"]
 
-        system_file = sfx_lib + "/offline/conf/system." + flavour
-        conf_file = sfx_lib + "/offline/conf/profile_surfex-" + flavour
-
-        cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make -j 4"
+        threads = 8
+        cmd = f"{sfx_lib}/offline/scr/Compile_offline.sh {sfx_lib}/offline {flavour} {threads}"
         logger.debug(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
         os.makedirs(f"{sfx_lib}/offline/exe", exist_ok=True)
-        cmd = f". {system_file}; . {conf_file}; cd {sfx_lib}/offline/src && make installmaster"
+        cmd = f"{sfx_lib}/offline/scr/Install_offline.sh {sfx_lib}/offline {flavour} {threads}"
         logger.debug(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
 
-class CMakeBuild(AbstractTask):
+class CMakeBuild(PySurfexBaseTask):
     """Make offline binaries.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -156,7 +151,7 @@ class CMakeBuild(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "CMakeBuild")
+        PySurfexBaseTask.__init__(self, config, "CMakeBuild")
 
     def execute(self):
         """Execute."""
@@ -164,12 +159,12 @@ class CMakeBuild(AbstractTask):
         wrapper = ""
 
         nproc = 8
-        offline_source = self.config.get_value("compile.offline_source")
-        cmake_config = self.platform.get_system_value("surfex_config")
+        offline_source = self.config["compile.ial_source"]
+        cmake_config = self.config["compile.build_config"]
         cmake_config = f"{offline_source}/util/cmake/config/config.{cmake_config}.json"
         if not os.path:
             raise FileNotFoundError(f"CMake config file {cmake_config} not found!")
-        sfx_lib = f"{self.platform.get_system_value('sfx_exp_lib')}"
+        sfx_lib = f"{self.platform.get_system_value('casedir')}/lib"
         build_dir = f"{sfx_lib}/offline/"
         install_dir = f"{sfx_lib}/offline/exe"
         os.makedirs(install_dir, exist_ok=True)
@@ -179,11 +174,12 @@ class CMakeBuild(AbstractTask):
             current_project_dir = f"{offline_source}/util/auxlibs/{project}"
             fproject = project.replace("/", "-")
             current_build_dir = f"{build_dir}/{fproject}"
+            print("current build dir ", current_build_dir)
             os.makedirs(current_build_dir, exist_ok=True)
             os.chdir(current_build_dir)
             cmake_flags = "-DCMAKE_BUILD_TYPE=Release "
             cmake_flags += (
-                f"-DCMAKE_INSTALL_PREFIX={install_dir} -DCONFIG_FILE={cmake_config}"
+                f" -DCMAKE_INSTALL_PREFIX={install_dir} -DCONFIG_FILE={cmake_config} "
             )
             cmd = f"cmake {current_project_dir} {cmake_flags}"
             BatchJob(rte, wrapper=wrapper).run(cmd)
@@ -192,10 +188,10 @@ class CMakeBuild(AbstractTask):
             cmd = "cmake --build . --target install"
             BatchJob(rte, wrapper=wrapper).run(cmd)
 
-        cmake_flags = "-DCMAKE_BUILD_TYPE=Release "
-        cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_PREFIX={install_dir}"
-        cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=YES"
-        cmake_flags += f"{cmake_flags} -DCONFIG_FILE={cmake_config}"
+        cmake_flags = " -DCMAKE_BUILD_TYPE=Release "
+        cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_PREFIX={install_dir} "
+        cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=YES "
+        cmake_flags += f"{cmake_flags} -DCONFIG_FILE={cmake_config} "
         os.makedirs(build_dir, exist_ok=True)
         os.chdir(build_dir)
 

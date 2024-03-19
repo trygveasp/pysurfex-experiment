@@ -4,17 +4,17 @@ prep_input_file = ""
 prep_pgdfile = ""
 
 [initial_conditions.fg4oi]
-inputfile = "@sfx_exp_data@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.nc"
+inputfile = "@casedir@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.nc"
 fileformat = "surfex"
 
 [initial_conditions.fg4oi.altitude]
-inputfile = "@sfx_exp_data@/climate/PGD.nc"
+inputfile = "@casedir@/climate/PGD.nc"
 converter = "none"
 [initial_conditions.fg4oi.surface_snow_thickness]
-inputfile = "@sfx_exp_data@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.@YYYY@@MM@@DD@_@HH_LL@h00.nc"
+inputfile = "@casedir@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.@YYYY@@MM@@DD@_@HH_LL@h00.nc"
 converter = "none"
 [initial_conditions.fg4oi.land_area_fraction]
-inputfile = "@sfx_exp_data@/climate/PGD.nc"
+inputfile = "@casedir@/climate/PGD.nc"
 converter = "nature_town"
 
 [SURFEX.IO]

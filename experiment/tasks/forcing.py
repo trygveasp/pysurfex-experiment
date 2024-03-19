@@ -5,11 +5,11 @@ import os
 import yaml
 from pysurfex.forcing import modify_forcing, run_time_loop, set_forcing_config
 
-from ..logs import logger
-from ..tasks.tasks import AbstractTask
+from deode.logs import logger
+from .tasks import PySurfexBaseTask
 
 
-class Forcing(AbstractTask):
+class Forcing(PySurfexBaseTask):
     """Create forcing task."""
 
     def __init__(self, config):
@@ -19,11 +19,14 @@ class Forcing(AbstractTask):
             config (dict): Actual configuration dict
 
         """
-        AbstractTask.__init__(self, config, "Forcing")
-        self.var_name = self.config.get_value("task.var_name")
+        PySurfexBaseTask.__init__(self, config, "Forcing")
         try:
-            user_config = self.config.get_value("task.forcing_user_config")
-        except AttributeError:
+            self.var_name = self.config["task.var_name"]
+        except KeyError:
+            self.var_name = None
+        try:
+            user_config = self.config["task.forcing_user_config"]
+        except KeyError:
             user_config = None
         self.user_config = user_config
 
@@ -57,7 +60,7 @@ class Forcing(AbstractTask):
         forcing_dir = self.platform.substitute(forcing_dir, basetime=self.dtg)
         os.makedirs(forcing_dir, exist_ok=True)
 
-        output_format = self.config.get_value("SURFEX.IO.CFORCING_FILETYPE").lower()
+        output_format = self.config["SURFEX.IO.CFORCING_FILETYPE"].lower()
         if output_format == "netcdf":
             output = forcing_dir + "/FORCING.nc"
         else:
@@ -66,28 +69,28 @@ class Forcing(AbstractTask):
         kwargs.update({"of": output})
         kwargs.update({"output_format": output_format})
 
-        pattern = self.config.get_value("forcing.pattern")
-        input_format = self.config.get_value("forcing.input_format")
-        kwargs.update({"geo_input_file": self.config.get_value("forcing.input_geo_file")})
-        zref = self.config.get_value("forcing.zref")
-        zval = self.config.get_value("forcing.zval")
-        uref = self.config.get_value("forcing.uref")
-        uval = self.config.get_value("forcing.uval")
-        zsoro_converter = self.config.get_value("forcing.zsoro_converter")
-        qa_converter = self.config.get_value("forcing.qa_converter")
-        dir_sw_converter = self.config.get_value("forcing.dir_sw_converter")
-        sca_sw = self.config.get_value("forcing.sca_sw")
-        lw_converter = self.config.get_value("forcing.lw_converter")
-        co2 = self.config.get_value("forcing.co2")
-        rain_converter = self.config.get_value("forcing.rain_converter")
-        snow_converter = self.config.get_value("forcing.snow_converter")
-        wind_converter = self.config.get_value("forcing.wind_converter")
-        wind_dir_converter = self.config.get_value("forcing.winddir_converter")
-        ps_converter = self.config.get_value("forcing.ps_converter")
-        analysis = self.config.get_value("forcing.analysis")
-        debug = self.config.get_value("forcing.debug")
-        timestep = self.config.get_value("forcing.timestep")
-        interpolation = self.config.get_value("forcing.interpolation")
+        pattern = self.config["forcing.pattern"]
+        input_format = self.config["forcing.input_format"]
+        kwargs.update({"geo_input_file": self.config["forcing.input_geo_file"]})
+        zref = self.config["forcing.zref"]
+        zval = self.config["forcing.zval"]
+        uref = self.config["forcing.uref"]
+        uval = self.config["forcing.uval"]
+        zsoro_converter = self.config["forcing.zsoro_converter"]
+        qa_converter = self.config["forcing.qa_converter"]
+        dir_sw_converter = self.config["forcing.dir_sw_converter"]
+        sca_sw = self.config["forcing.sca_sw"]
+        lw_converter = self.config["forcing.lw_converter"]
+        co2 = self.config["forcing.co2"]
+        rain_converter = self.config["forcing.rain_converter"]
+        snow_converter = self.config["forcing.snow_converter"]
+        wind_converter = self.config["forcing.wind_converter"]
+        wind_dir_converter = self.config["forcing.winddir_converter"]
+        ps_converter = self.config["forcing.ps_converter"]
+        analysis = self.config["forcing.analysis"]
+        debug = self.config["forcing.debug"]
+        timestep = self.config["forcing.timestep"]
+        interpolation = self.config["forcing.interpolation"]
 
         kwargs.update({"input_format": input_format})
         kwargs.update({"pattern": pattern})
@@ -118,7 +121,7 @@ class Forcing(AbstractTask):
             run_time_loop(options, var_objs, att_objs)
 
 
-class ModifyForcing(AbstractTask):
+class ModifyForcing(PySurfexBaseTask):
     """Create modify forcing task."""
 
     def __init__(self, config):
@@ -128,10 +131,10 @@ class ModifyForcing(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "ModifyForcing")
-        self.var_name = self.config.get_value("task.var_name")
+        PySurfexBaseTask.__init__(self, config, "ModifyForcing")
+        self.var_name = self.config["task.var_name"]
         try:
-            user_config = self.config.get_value("task.forcing_user_config")
+            user_config = self.config["task.forcing_user_config"]
         except AttributeError:
             user_config = None
         self.user_config = user_config

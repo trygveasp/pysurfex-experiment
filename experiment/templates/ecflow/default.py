@@ -1,103 +1,98 @@
 """Default ecflow container."""
-# @ENV_SUB1@
 
-from experiment import PACKAGE_NAME
-from experiment.config_parser import MAIN_CONFIG_JSON_SCHEMA, ParsedConfig
-from experiment.datetime_utils import ecflow2datetime_string
-from experiment.logs import GLOBAL_LOGLEVEL, LoggerHandlers, logger
-from experiment.scheduler.scheduler import (
-    EcflowClient,
-    EcflowServerFromConfig,
-    EcflowTask,
-)
-from experiment.tasks.discover_tasks import get_task
+import os
 
-# @ENV_SUB2@
+from deode.config_parser import ConfigParserDefaults, ParsedConfig
+from deode.derived_variables import derived_variables
+from deode.logs import LogDefaults, LoggerHandlers, logger
+from deode.scheduler import EcflowClient, EcflowServer, EcflowTask
+from deode.submission import ProcessorLayout
+from deode.tasks.discover_task import get_task
 
-
-logger.enable(PACKAGE_NAME)
+logger.enable("deode")
 
 
 def parse_ecflow_vars():
     """Parse the ecflow variables."""
     return {
-        "CONFIG": "%CONFIG%",
-        "WRAPPER": "%WRAPPER%",
-        "ENSMBR": "%ENSMBR%",
-        "DTG": "%DTG%",
-        "DTGPP": "%DTGPP%",
-        "STREAM": "%STREAM%",
-        "TASK_NAME": "%TASK%",
-        "VAR_NAME": "%VAR_NAME%",
-        "LOGLEVEL": "%LOGLEVEL%",
-        "ARGS": "%ARGS%",
-        "ECF_NAME": "%ECF_NAME%",
-        "ECF_PASS": "%ECF_PASS%",
-        "ECF_TRYNO": "%ECF_TRYNO%",
-        "ECF_RID": "%ECF_RID%",
+        "ECF_HOST": os.environ["ECF_HOST"],
+        "ECF_PORT": os.environ["ECF_PORT"],
+        "ECF_NAME": os.environ["ECF_NAME"],
+        "ECF_PASS": os.environ["ECF_PASS"],
+        "ECF_TRYNO": os.environ["ECF_TRYNO"],
+        "ECF_RID": os.environ["ECF_RID"],
+        "ECF_TIMEOUT": os.environ["ECF_TIMEOUT"],
+        "BASETIME": os.environ["BASETIME"],
+        "VALIDTIME": os.environ["VALIDTIME"],
+        "LOGLEVEL": os.environ["LOGLEVEL"],
+        "ARGS": os.environ["ARGS"],
+        "WRAPPER": os.environ["WRAPPER"],
+        "CONFIG": os.environ["CONFIG"],
+        "DEODE_HOME": os.environ["DEODE_HOME"],
     }
-
-
-"""
-%nopp"
-"""
 
 
 def default_main(**kwargs):
     """Ecflow container default method."""
     config = kwargs.get("CONFIG")
-    config = ParsedConfig.from_file(config, json_schema=MAIN_CONFIG_JSON_SCHEMA)
+    config = ParsedConfig.from_file(
+        config, json_schema=ConfigParserDefaults.MAIN_CONFIG_JSON_SCHEMA
+    )
 
     # Reset loglevel according to (in order of priority):
     #     (a) Configs in ECFLOW UI
     #     (b) What was originally set in the config file
-    #     (c) The default `GLOBAL_LOGLEVEL` if none of the above is found.
-    loglevel = kwargs.get(
-        "LOGLEVEL", config.get_value("general.loglevel", GLOBAL_LOGLEVEL)
-    ).upper()
+    #     (c) The default `LogDefaults.level` if none of the above is found.
+    loglevel = kwargs.get("LOGLEVEL", config.get("loglevel", LogDefaults.LEVEL)).upper()
     logger.configure(handlers=LoggerHandlers(default_level=loglevel))
     logger.info("Loglevel={}", loglevel)
+
+    args = kwargs.get("ARGS")
+    args_dict = {}
+    if args != "":
+        for arg in args.split(";"):
+            parts = arg.split("=")
+            if len(parts) == 2:
+                args_dict.update({parts[0]: parts[1]})
+            else:
+                logger.warning("Could not convert ARGS:{} to dict, skip it", arg)
+
+    # Update config based on ecflow settings
+    config = config.copy(
+        update={
+            "submission": {"task": {"wrapper": kwargs.get("WRAPPER")}},
+            "task": {"args": args_dict},
+            "general": {
+                "times": {
+                    "validtime": kwargs.get("VALIDTIME"),
+                    "basetime": kwargs.get("BASETIME"),
+                },
+                "loglevel": loglevel,
+            },
+            "platform": {"deode_home": kwargs.get("DEODE_HOME")},
+        }
+    )
+
+    # TODO Add wrapper
+    server = EcflowServer(config)
 
     ecf_name = kwargs.get("ECF_NAME")
     ecf_pass = kwargs.get("ECF_PASS")
     ecf_tryno = kwargs.get("ECF_TRYNO")
     ecf_rid = kwargs.get("ECF_RID")
-    task = EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid)
-    scheduler = EcflowServerFromConfig(config)
+    ecf_timeout = kwargs.get("ECF_TIMEOUT")
+    task = EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid, ecf_timeout=ecf_timeout)
 
-    # This will also handle call to sys.exit(), i.e. Client._   _exit__ will still be called.
-    with EcflowClient(scheduler, task):
-        task_name = kwargs.get("TASK_NAME")
-        logger.info("Running task {}", task_name)
-        args = kwargs.get("ARGS")
-        args_dict = {}
-        if args != "":
-            logger.debug("args={}", args)
-            for arg in args.split(";"):
-                parts = arg.split("=")
-                logger.debug("arg={} parts={} len(parts)={}", arg, parts, len(parts))
-                if len(parts) == 2:
-                    args_dict.update({parts[0]: parts[1]})
-
-        update = {
-            "general": {
-                "stream": kwargs.get("STREAM"),
-                "realization": kwargs.get("ENSMBR"),
-                "times": {
-                    "basetime": ecflow2datetime_string(kwargs.get("DTG")),
-                    "validtime": ecflow2datetime_string(kwargs.get("DTG")),
-                    "basetime_pp": ecflow2datetime_string(kwargs.get("DTGPP")),
-                },
-            },
-            "task": {
-                "wrapper": kwargs.get("WRAPPER"),
-                "var_name": kwargs.get("VAR_NAME"),
-                "args": args_dict,
-            },
-        }
+    # This will also handle call to sys.exit(), i.e. Client.__exit__ will still be called.
+    with EcflowClient(server, task):
+        processor_layout = ProcessorLayout(kwargs)
+        update = derived_variables(config, processor_layout=processor_layout)
         config = config.copy(update=update)
+
+        # TODO Add wrapper to config
+        logger.info("Running task {}", task.ecf_name)
         get_task(task.ecf_task, config).run()
-        logger.info("Finished task {}", task_name)
+        logger.info("Finished task {}", task.ecf_name)
 
 
 if __name__ == "__main__":

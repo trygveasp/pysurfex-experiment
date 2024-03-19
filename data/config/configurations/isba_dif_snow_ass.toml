@@ -6,7 +6,7 @@ ll_list="24"
 build = true
 
 [INITIAL_CONDITIONS.FG4OI]
-INPUTFILE = "@SFX_EXP_DATA@/archive/@YYYY@/@MM@/@DD@/03/SURFOUT.@YYYY@@MM@@DD@_06h00.nc"
+INPUTFILE = "@casedir@/archive/@YYYY@/@MM@/@DD@/03/SURFOUT.@YYYY@@MM@@DD@_06h00.nc"
 FILEFORMAT = "surfex"
 CONVERTER = "none"
 
@@ -18,11 +18,11 @@ CONVERTER = "none"
 CONVERTER = "sdp"
 
 [INITIAL_CONDITIONS.FG4OI.altitude]
-INPUTFILE = "@SFX_EXP_DATA@/climate/PGD.nc"
+INPUTFILE = "@casedir@/climate/PGD.nc"
 CONVERTER = "none"
 
 [INITIAL_CONDITIONS.FG4OI.land_area_fraction]
-INPUTFILE = "@SFX_EXP_DATA@/climate/PGD.nc"
+INPUTFILE = "@casedir@/climate/PGD.nc"
 CONVERTER = "nature_town"
 
  

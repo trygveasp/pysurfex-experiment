@@ -1,14 +1,13 @@
 """General task module."""
 
-import atexit
 import json
 import os
 import shutil
-import socket
 
 import numpy as np
 import yaml
 from pysurfex.cache import Cache
+from pysurfex.configuration import Configuration
 from pysurfex.file import SurfFileTypeExtension
 from pysurfex.geo import ConfProj, get_geo_object
 from pysurfex.input_methods import get_datasources
@@ -25,216 +24,81 @@ from pysurfex.read import ConvertedInput, Converter
 from pysurfex.run import BatchJob
 from pysurfex.titan import TitanDataSet, dataset_from_file, define_quality_control
 
-from ..config_parser import ParsedConfig
-from ..configuration import Configuration
-from ..datetime_utils import as_datetime, as_timedelta, datetime_as_string
-from ..experiment import ExpFromConfig
-from ..logs import logger
-from ..toolbox import FileManager
+from deode.config_parser import ParsedConfig
+from deode.datetime_utils import as_datetime, as_timedelta  # , datetime_as_string
+from ..experiment import get_nnco
+from deode.logs import logger
+from deode.tasks.base import Task
+from deode.toolbox import FileManager
 
 
-class AbstractTask(object):
-    """General abstract task to be implemented by all tasks using default container."""
+class PySurfexBaseTask(Task):
+    """Base task class for pysurfex-experiment."""
 
     def __init__(self, config, name):
-        """Initialize a task run by the default ecflow container.
-
-        All tasks implelementing this base class will work with the default
-        ecflow container
+        """Construct pysurfex-experiment base class.
 
         Args:
-            config (ParsedObject): Parsed configuration
-            name (str): Task name
+            config (ParsedConfig): Configuration.
+            name (str): Task name.
 
         """
-        self.config = config
-        self.name = name
-        logger.debug("Create task")
-        self.fmanager = FileManager(self.config)
-        self.platform = self.fmanager.platform
-        self.settings = Configuration(self.config)
-        self.dtg = as_datetime(config.get_value("general.times.basetime"))
-        self.basetime = as_datetime(config.get_value("general.times.basetime"))
-        self.starttime = as_datetime(config.get_value("general.times.start"))
-        self.dtgbeg = as_datetime(config.get_value("general.times.start"))
-
-        self.host = "0"
-        self.work_dir = self.platform.get_system_value("sfx_exp_data")
-        self.lib = self.platform.get_system_value("sfx_exp_lib")
-        try:
-            self.stream = self.config.get_value("general.stream")
-        except AttributeError:
-            self.stream = None
-
-        self.surfex_config = self.platform.get_system_value("surfex_config")
-        self.sfx_exp_vars = None
-        logger.debug("   config: {}", json.dumps(config.dict(), sort_keys=True, indent=2))
-
-        mbr = self.config.get_value("general.realization")
-        if isinstance(mbr, str) and mbr == "":
-            mbr = None
-        if mbr is not None:
-            mbr = int(mbr)
-        self.mbr = mbr
-        self.members = self.config.get_value("general.realizations")
+        Task.__init__(self, config, name)
 
         # Domain/geo
         conf_proj = {
             "nam_conf_proj_grid": {
-                "nimax": self.config.get_value("domain.nimax"),
-                "njmax": self.config.get_value("domain.njmax"),
-                "xloncen": self.config.get_value("domain.xloncen"),
-                "xlatcen": self.config.get_value("domain.xlatcen"),
-                "xdx": self.config.get_value("domain.xdx"),
-                "xdy": self.config.get_value("domain.xdy"),
-                "ilone": self.config.get_value("domain.ilone"),
-                "ilate": self.config.get_value("domain.ilate"),
+                "nimax": self.config["domain.nimax"],
+                "njmax": self.config["domain.njmax"],
+                "xloncen": self.config["domain.xloncen"],
+                "xlatcen": self.config["domain.xlatcen"],
+                "xdx": self.config["domain.xdx"],
+                "xdy": self.config["domain.xdy"],
+                "ilone": self.config["domain.ilone"],
+                "ilate": self.config["domain.ilate"],
             },
             "nam_conf_proj": {
-                "xlon0": self.config.get_value("domain.xlon0"),
-                "xlat0": self.config.get_value("domain.xlat0"),
+                "xlon0": self.config["domain.xlon0"],
+                "xlat0": self.config["domain.xlat0"],
             },
         }
 
         self.geo = ConfProj(conf_proj)
-        self.fmanager = FileManager(config)
-        self.platform = self.fmanager.platform
-        wrapper = self.config.get_value("task.wrapper")
-        if wrapper is None:
-            wrapper = ""
-        self.wrapper = wrapper
-
-        masterodb = False
-        try:
-            lfagmap = self.config.get_value("SURFEX.IO.LFAGMAP")
-        except AttributeError:
-            lfagmap = False
-        self.csurf_filetype = self.config.get_value("SURFEX.IO.CSURF_FILETYPE")
-        self.suffix = SurfFileTypeExtension(
-            self.csurf_filetype, lfagmap=lfagmap, masterodb=masterodb
-        ).suffix
-
-        # TODO Move to config
-        ###########################################################################
-        wrk = self.config.get_value("system.wrk")
-        self.wrk = self.platform.substitute(wrk)
-        os.makedirs(self.wrk, exist_ok=True)
-        archive = self.platform.get_system_value("archive_dir")
-        self.archive = self.platform.substitute(archive)
-
-        os.makedirs(self.archive, exist_ok=True)
-        self.bindir = self.platform.get_system_value("bin_dir")
-
-        self.extrarch = self.platform.get_system_value("extrarch_dir")
-
-        os.makedirs(self.extrarch, exist_ok=True)
-        self.obsdir = self.platform.get_system_value("obs_dir")
-        os.makedirs(self.obsdir, exist_ok=True)
-
-        # TODO
-        self.fgint = as_timedelta(self.config.get_value("general.times.cycle_length"))
-        self.fcint = as_timedelta(self.config.get_value("general.times.cycle_length"))
-        self.fg_dtg = self.dtg - self.fgint
-        self.next_dtg = self.dtg + self.fcint
-        self.next_dtgpp = self.next_dtg
-
-        first_guess_dir = self.platform.get_system_value("archive_dir")
-        first_guess_dir = self.platform.substitute(first_guess_dir, basetime=self.fg_dtg)
-        self.first_guess_dir = first_guess_dir
-        self.namelist_defs = self.platform.get_system_value("namelist_defs")
-        self.binary_input_files = self.platform.get_system_value("binary_input_files")
-        ###########################################################################
-
-        self.pid = str(os.getpid())
-        wdir = f"{self.wrk}/{socket.gethostname()}{self.pid}"
-        self.wdir = wdir
-
-        self.fg_guess_sfx = self.wrk + "/first_guess_sfx"
-        self.fc_start_sfx = self.wrk + "/fc_start_sfx"
+        self.dtg = as_datetime(self.config["general.times.basetime"])
+        self.fcint = as_timedelta("PT6H")
 
         self.translation = {
             "t2m": "air_temperature_2m",
             "rh2m": "relative_humidity_2m",
             "sd": "surface_snow_thickness",
         }
-        self.obs_types = self.config.get_value("SURFEX.ASSIM.OBS.COBS_M")
+        self.obs_types = self.config["SURFEX.ASSIM.OBS.COBS_M"]
+        self.nnco = get_nnco(self.config, basetime=self.dtg)
 
-        self.nnco = self.settings.get_nnco(dtg=self.basetime)
+        self.fgint = as_timedelta(self.config["general.times.cycle_length"])
+        self.fcint = as_timedelta(self.config["general.times.cycle_length"])
+        self.fg_dtg = self.dtg - self.fgint
+        self.next_dtg = self.dtg + self.fcint
+        self.next_dtgpp = self.next_dtg
+
+        self.fg_guess_sfx = self.wrk + "/first_guess_sfx"
+        self.fc_start_sfx = self.wrk + "/fc_start_sfx"
+
+        cfg = self.config["SURFEX"].dict()
+        sfx_config = {"SURFEX": cfg}
+        self.sfx_config = Configuration(sfx_config)
         update = {"SURFEX": {"ASSIM": {"OBS": {"NNCO": self.nnco}}}}
         self.config = self.config.copy(update=update)
         logger.debug("NNCO: {}", self.nnco)
 
-    def create_wdir(self):
-        """Create task working directory."""
-        os.makedirs(self.wdir, exist_ok=True)
 
-    def change_to_wdir(self):
-        """Change to task working dir."""
-        os.chdir(self.wdir)
-
-    def remove_wdir(self):
-        """Remove working directory."""
-        os.chdir(self.wrk)
-        shutil.rmtree(self.wdir)
-        logger.debug("Remove {}", self.wdir)
-
-    def rename_wdir(self, prefix="Failed_"):
-        """Rename failed working directory."""
-        fdir = f"{self.wrk}/{prefix}{self.name}"
-        if os.path.isdir(self.wdir):
-            if os.path.exists(fdir):
-                logger.debug("{} exists. Remove it", fdir)
-                shutil.rmtree(fdir)
-            shutil.move(self.wdir, fdir)
-            logger.info("Renamed {} to {}", self.wdir, fdir)
-
-    def execute(self):
-        """Do nothing for base execute task."""
-        logger.warning("Using empty base class execute")
-
-    def prepfix(self):
-        """Do default preparation before execution.
-
-        E.g. clean
-
-        """
-        logger.debug("Base class prep")
-        logger.info("WDIR={}", self.wdir)
-        self.create_wdir()
-        self.change_to_wdir()
-        atexit.register(self.rename_wdir)
-
-    def postfix(self):
-        """Do default postfix.
-
-        E.g. clean
-
-        """
-        logger.debug("Base class post")
-        # Clean workdir
-        if self.config.get_value("general.keep_workdirs"):
-            self.rename_wdir(prefix=f"Finished_task_{self.pid}_")
-        else:
-            self.remove_wdir()
-
-    def run(self):
-        """Run task.
-
-        Define run sequence.
-
-        """
-        self.prepfix()
-        self.execute()
-        self.postfix()
-
-
-class PrepareCycle(AbstractTask):
+class PrepareCycle(PySurfexBaseTask):
     """Prepare for th cycle to be run.
 
     Clean up existing directories.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -244,7 +108,7 @@ class PrepareCycle(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "PrepareCycle")
+        PySurfexBaseTask.__init__(self, config, "PrepareCycle")
 
     def run(self):
         """Override run."""
@@ -256,11 +120,11 @@ class PrepareCycle(AbstractTask):
             shutil.rmtree(self.wrk)
 
 
-class QualityControl(AbstractTask):
+class QualityControl(PySurfexBaseTask):
     """Perform quality control of observations.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -270,21 +134,28 @@ class QualityControl(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "QualityControl")
-        self.var_name = self.config.get_value("task.var_name")
+        PySurfexBaseTask.__init__(self, config, "QualityControl")
+        try:
+            self.var_name = self.config["task.args.var_name"]
+        except KeyError:
+            self.var_name = None
 
     def execute(self):
         """Execute."""
         an_time = self.dtg
 
-        sfx_lib = self.platform.get_system_value("sfx_exp_lib")
+        obsdir = self.platform.get_system_value("obs_dir")
+        os.makedirs(obsdir, exist_ok=True)
 
         fg_file = f"{self.platform.get_system_value('archive_dir')}/raw.nc"
         fg_file = self.platform.substitute(fg_file, basetime=self.dtg)
 
         # Default
+        domain_file = f"{self.wdir}/domain.json"
+        with open(domain_file, mode="w", encoding="utf8") as fh:
+            json.dump(self.geo.json, fh)
         settings = {
-            "domain": {"domain_file": sfx_lib + "/domain.json"},
+            "domain": {"domain_file": domain_file},
             "firstguess": {"fg_file": fg_file, "fg_var": self.translation[self.var_name]},
         }
         default_tests = {
@@ -298,25 +169,26 @@ class QualityControl(AbstractTask):
 
         # T2M
         if self.var_name == "t2m":
-            synop_obs = self.config.get_value("observations.synop_obs_t2m")
+            synop_obs = self.config["observations.synop_obs_t2m"]
             data_sets = {}
             if synop_obs:
                 bufr_tests = default_tests
                 bufr_tests.update(
                     {"plausibility": {"do_test": True, "maxval": 340, "minval": 200}}
                 )
-                filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                # filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                filepattern = "/lustre/storeB/project/metproduction/products/obs_dec/bufr/syno/syno_@YYYY@@MM@@DD@@HH@.bufr"
                 data_sets.update(
                     {
                         "bufr": {
                             "filepattern": filepattern,
                             "filetype": "bufr",
-                            "varname": "airTemperatureAt2M",
+                            "varname": ["airTemperatureAt2M"],
                             "tests": bufr_tests,
                         }
                     }
                 )
-            netatmo_obs = self.config.get_value("observations.netatmo_obs_t2m")
+            netatmo_obs = self.config["observations.netatmo_obs_t2m"]
             if netatmo_obs:
                 netatmo_tests = default_tests
                 netatmo_tests.update(
@@ -325,7 +197,7 @@ class QualityControl(AbstractTask):
                         "plausibility": {"do_test": True, "maxval": 340, "minval": 200},
                     }
                 )
-                filepattern = self.config.get_value("observations.netatmo_filepattern")
+                filepattern = self.config["observations.netatmo_filepattern"]
                 data_sets.update(
                     {
                         "netatmo": {
@@ -341,26 +213,27 @@ class QualityControl(AbstractTask):
 
         # RH2M
         elif self.var_name == "rh2m":
-            synop_obs = self.config.get_value("observations.synop_obs_rh2m")
+            synop_obs = self.config["observations.synop_obs_rh2m"]
             data_sets = {}
             if synop_obs:
                 bufr_tests = default_tests
                 bufr_tests.update(
                     {"plausibility": {"do_test": True, "maxval": 100, "minval": 0}}
                 )
-                filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                # filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                filepattern = "/lustre/storeB/project/metproduction/products/obs_dec/bufr/syno/syno_@YYYY@@MM@@DD@@HH@.bufr"
                 data_sets.update(
                     {
                         "bufr": {
                             "filepattern": filepattern,
                             "filetype": "bufr",
-                            "varname": "relativeHumidityAt2M",
+                            "varname": ["relativeHumidityAt2M"],
                             "tests": bufr_tests,
                         }
                     }
                 )
 
-            netatmo_obs = self.config.get_value("observations.netatmo_obs_rh2m")
+            netatmo_obs = self.config["observations.netatmo_obs_rh2m"]
             if netatmo_obs:
                 netatmo_tests = default_tests
                 netatmo_tests.update(
@@ -369,7 +242,7 @@ class QualityControl(AbstractTask):
                         "plausibility": {"do_test": True, "maxval": 10000, "minval": 0},
                     }
                 )
-                filepattern = self.config.get_value("observations.netatmo_filepattern")
+                filepattern = self.config["observations.netatmo_filepattern"]
                 data_sets.update(
                     {
                         "netatmo": {
@@ -385,8 +258,8 @@ class QualityControl(AbstractTask):
 
         # Snow Depth
         elif self.var_name == "sd":
-            synop_obs = self.config.get_value("observations.synop_obs_sd")
-            cryo_obs = self.config.get_value("observations.cryo_obs_sd")
+            synop_obs = self.config["observations.synop_obs_sd"]
+            cryo_obs = self.config["observations.cryo_obs_sd"]
             data_sets = {}
             if synop_obs:
                 bufr_tests = default_tests
@@ -396,13 +269,14 @@ class QualityControl(AbstractTask):
                         "firstguess": {"do_test": True, "negdiff": 0.5, "posdiff": 0.5},
                     }
                 )
-                filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                # filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
+                filepattern = "/lustre/storeB/project/metproduction/products/obs_dec/bufr/syno/syno_@YYYY@@MM@@DD@@HH@.bufr"
                 data_sets.update(
                     {
                         "bufr": {
                             "filepattern": filepattern,
                             "filetype": "bufr",
-                            "varname": "totalSnowDepth",
+                            "varname": ["totalSnowDepth"],
                             "tests": bufr_tests,
                         }
                     }
@@ -416,7 +290,7 @@ class QualityControl(AbstractTask):
                         "firstguess": {"do_test": True, "negdiff": 0.5, "posdiff": 0.5},
                     }
                 )
-                filepattern = self.obsdir + "/cryo.json"
+                filepattern = obsdir + "/cryo.json"
                 data_sets.update(
                     {
                         "cryo": {
@@ -433,15 +307,15 @@ class QualityControl(AbstractTask):
 
         logger.debug("Settings {}", json.dumps(settings, indent=2, sort_keys=True))
 
-        output = self.obsdir + "/qc_" + self.translation[self.var_name] + ".json"
+        output = obsdir + "/qc_" + self.translation[self.var_name] + ".json"
         lname = self.var_name.lower()
 
         try:
-            tests = self.config.get_value(f"observations.qc.{lname}.tests")
+            tests = self.config[f"observations.qc.{lname}.tests"]
             logger.info("Using observations.qc.{lname}.tests")
-        except AttributeError:
+        except KeyError:
             logger.info("Using default test observations.qc.tests")
-            tests = self.config.get_value("observations.qc.tests")
+            tests = self.config["observations.qc.tests"]
 
         indent = 2
         blacklist = {}
@@ -458,11 +332,11 @@ class QualityControl(AbstractTask):
         data_set.write_output(output, indent=indent)
 
 
-class OptimalInterpolation(AbstractTask):
+class OptimalInterpolation(PySurfexBaseTask):
     """Creates a horizontal OI analysis of selected variables.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -472,60 +346,63 @@ class OptimalInterpolation(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "OptimalInterpolation")
-        self.var_name = self.config.get_value("task.var_name")
+        PySurfexBaseTask.__init__(self, config, "OptimalInterpolation")
+        self.var_name = self.config["task.args.var_name"]
 
     def execute(self):
         """Execute."""
+        archive = self.platform.get_system_value("archive_dir")
         if self.var_name in self.translation:
             var = self.translation[self.var_name]
         else:
             raise KeyError(f"No translation for {self.var_name}")
 
-        hlength = 30000
-        vlength = 100000
-        wlength = 0.5
-        max_locations = 20
-        elev_gradient = 0
-        epsilon = 0.25
-        only_diff = False
-
         lname = self.var_name.lower()
-        hlength = self.config.get_value(
-            f"observations.oi.{lname}.hlength", default=hlength
-        )
-        vlength = self.config.get_value(
-            f"observations.oi.{lname}.vlength", default=vlength
-        )
-        wlength = self.config.get_value(
-            f"observations.oi.{lname}.wlength", default=wlength
-        )
-        elev_gradient = self.config.get_value(
-            f"observations.oi.{lname}.gradient", default=elev_gradient
-        )
-        max_locations = self.config.get_value(
-            f"observations.oi.{lname}.max_locations", default=max_locations
-        )
-        epsilon = self.config.get_value(
-            f"observations.oi.{lname}.epsilon", default=epsilon
-        )
-        only_diff = self.config.get_value(
-            f"observations.oi.{lname}.only_diff", default=only_diff
-        )
         try:
-            minvalue = self.config.get_value(
-                f"observations.oi.{lname}.minvalue", default=None
-            )
-        except AttributeError:
+            hlength = self.config[f"observations.oi.{lname}.hlength"]
+        except KeyError:
+            hlength = 30000
+
+        try:
+            vlength = self.config[f"observations.oi.{lname}.vlength"]
+        except KeyError:
+            vlength = 100000
+
+        try:
+            wlength = self.config[f"observations.oi.{lname}.wlength"]
+        except KeyError:
+            wlength = 0.5
+
+        try:
+            elev_gradient = self.config[f"observations.oi.{lname}.gradient"]
+        except KeyError:
+            elev_gradient = 0
+
+        try:
+            max_locations = self.config[f"observations.oi.{lname}.max_locations"]
+        except KeyError:
+            max_locations = 20
+
+        try:
+            epsilon = self.config[f"observations.oi.{lname}.epsilon"]
+        except KeyError:
+            epsilon = 0.25
+
+        try:
+            only_diff = self.config[f"observations.oi.{lname}.only_diff"]
+        except KeyError:
+            only_diff = False
+
+        try:
+            minvalue = self.config[f"observations.oi.{lname}.minvalue"]
+        except KeyError:
             minvalue = None
         try:
-            maxvalue = self.config.get_value(
-                f"observations.oi.{lname}.maxvalue", default=None
-            )
-        except AttributeError:
+            maxvalue = self.config[f"observations.oi.{lname}.maxvalue"]
+        except KeyError:
             maxvalue = None
-        input_file = self.archive + "/raw_" + var + ".nc"
-        output_file = self.archive + "/an_" + var + ".nc"
+        input_file = archive + "/raw_" + var + ".nc"
+        output_file = archive + "/an_" + var + ".nc"
 
         # Get input fields
         geo, validtime, background, glafs, gelevs = read_first_guess_netcdf_file(
@@ -563,11 +440,11 @@ class OptimalInterpolation(AbstractTask):
         )
 
 
-class FirstGuess(AbstractTask):
+class FirstGuess(PySurfexBaseTask):
     """Find first guess.
 
     Args:
-        AbstractTask (AbstractTask): Base class
+        Task (Task): Base class
 
     """
 
@@ -581,14 +458,30 @@ class FirstGuess(AbstractTask):
         """
         if name is None:
             name = "FirstGuess"
-        AbstractTask.__init__(self, config, name)
-        self.var_name = self.config.get_value("task.var_name", default=None)
+        PySurfexBaseTask.__init__(self, config, name)
+        try:
+            self.var_name = self.config["task.var_name"]
+        except KeyError:
+            self.var_name = None
+        # TODO
+        masterodb = False
+        try:
+            lfagmap = self.sfx_config.get_setting("SURFEX#IO#LFAGMAP")
+        except AttributeError:
+            lfagmap = False
+        self.csurf_filetype = self.sfx_config.get_setting("SURFEX#IO#CSURF_FILETYPE")
+        self.suffix = SurfFileTypeExtension(
+            self.csurf_filetype, lfagmap=lfagmap, masterodb=masterodb
+        ).suffix
+        self.fgint = as_timedelta(self.config["general.times.cycle_length"])
+        self.fcint = as_timedelta(self.config["general.times.cycle_length"])
+        self.fg_dtg = self.dtg - self.fgint
 
     def execute(self):
         """Execute."""
-        firstguess = self.config.get_value("SURFEX.IO.CSURFFILE") + self.suffix
+        firstguess = self.sfx_config.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
         logger.debug("DTG: {} BASEDTG: {}", self.dtg, self.fg_dtg)
-        fg_dir = self.config.get_value("system.archive_dir")
+        fg_dir = self.config["system.archive_dir"]
         fg_dir = self.platform.substitute(
             fg_dir, basetime=self.fg_dtg, validtime=self.dtg
         )
@@ -600,11 +493,11 @@ class FirstGuess(AbstractTask):
         os.symlink(fg_file, self.fg_guess_sfx)
 
 
-class CryoClim2json(AbstractTask):
+class CryoClim2json(PySurfexBaseTask):
     """Find first guess.
 
     Args:
-        AbstractTask (AbstractTask): Base class
+        Task (Task): Base class
 
     """
 
@@ -618,39 +511,43 @@ class CryoClim2json(AbstractTask):
         """
         if name is None:
             name = "CryoClim2json"
-        AbstractTask.__init__(self, config, name)
-        self.var_name = self.config.get_value("task.var_name", default=None)
+        PySurfexBaseTask.__init__(self, config, name)
+        try:
+            self.var_name = self.config["task.var_name"]
+        except KeyError:
+            self.var_name = None
 
     def execute(self):
         """Execute."""
+        archive = self.platform.get_system_value("archive_dir")
         var = "surface_snow_thickness"
-        input_file = self.archive + "/raw_" + var + ".nc"
+        input_file = archive + "/raw_" + var + ".nc"
 
         # Get input fields
         geo, validtime, background, glafs, gelevs = read_first_guess_netcdf_file(
             input_file, var
         )
 
-        obs_file = self.config.get_value("observations.cryo_filepattern")
+        obs_file = self.config["observations.cryo_filepattern"]
         obs_file = [self.platform.substitute(obs_file)]
         try:
-            laf_threshold = self.config.get_value("observations.cryo_laf_threshold")
+            laf_threshold = self.config["observations.cryo_laf_threshold"]
         except AttributeError:
             laf_threshold = 0.1
         try:
-            step = self.config.get_value("observations.cryo_step")
+            step = self.config["observations.cryo_step"]
         except AttributeError:
             step = 2
         try:
-            fg_threshold = self.config.get_value("observations.cryo_fg_threshold")
+            fg_threshold = self.config["observations.cryo_fg_threshold"]
         except AttributeError:
             fg_threshold = 0.4
         try:
-            new_snow_depth = self.config.get_value("observations.cryo_new_snow")
+            new_snow_depth = self.config["observations.cryo_new_snow"]
         except AttributeError:
             new_snow_depth = 0.1
         try:
-            cryo_varname = self.config.get_value("observations.cryo_varname")
+            cryo_varname = self.config["observations.cryo_varname"]
         except AttributeError:
             cryo_varname = None
         obs_set = CryoclimObservationSet(
@@ -687,8 +584,8 @@ class CycleFirstGuess(FirstGuess):
 
     def execute(self):
         """Execute."""
-        firstguess = self.config.get_value("SURFEX.IO.CSURFFILE") + self.suffix
-        fg_dir = self.config.get_value("system.archive_dir")
+        firstguess = self.sfx_config.get_setting("SURFEX#IO#CSURFFILE") + self.suffix
+        fg_dir = self.config["system.archive_dir"]
         fg_dir = self.platform.substitute(
             fg_dir, basetime=self.fg_dtg, validtime=self.dtg
         )
@@ -699,11 +596,11 @@ class CycleFirstGuess(FirstGuess):
         os.symlink(fg_file, self.fc_start_sfx)
 
 
-class Oi2soda(AbstractTask):
+class Oi2soda(PySurfexBaseTask):
     """Convert OI analysis to an ASCII file for SODA.
 
     Args:
-        AbstractTask (AbstractClass): Base class
+        Task (AbstractClass): Base class
     """
 
     def __init__(self, config):
@@ -712,8 +609,11 @@ class Oi2soda(AbstractTask):
         Args:
             config (ParsedObject): Parsed configuration
         """
-        AbstractTask.__init__(self, config, "Oi2soda")
-        self.var_name = self.config.get_value("task.var_name")
+        PySurfexBaseTask.__init__(self, config, "Oi2soda")
+        try:
+            self.var_name = self.config["task.args.var_name"]
+        except KeyError:
+            self.var_name = None
 
     def execute(self):
         """Execute."""
@@ -728,6 +628,7 @@ class Oi2soda(AbstractTask):
         rh2m = None
         s_d = None
 
+        archive = self.platform.get_system_value("archive_dir")
         an_variables = {"t2m": False, "rh2m": False, "sd": False}
         obs_types = self.obs_types
         logger.debug("NNCO: {}", self.nnco)
@@ -748,17 +649,17 @@ class Oi2soda(AbstractTask):
                 var_name = self.translation[var]
                 if var == "t2m":
                     t2m = {
-                        "file": self.archive + "/an_" + var_name + ".nc",
+                        "file": archive + "/an_" + var_name + ".nc",
                         "var": var_name,
                     }
                 elif var == "rh2m":
                     rh2m = {
-                        "file": self.archive + "/an_" + var_name + ".nc",
+                        "file": archive + "/an_" + var_name + ".nc",
                         "var": var_name,
                     }
                 elif var == "sd":
                     s_d = {
-                        "file": self.archive + "/an_" + var_name + ".nc",
+                        "file": archive + "/an_" + var_name + ".nc",
                         "var": var_name,
                     }
         logger.debug("t2m  {} ", t2m)
@@ -768,11 +669,11 @@ class Oi2soda(AbstractTask):
         oi2soda(self.dtg, t2m=t2m, rh2m=rh2m, s_d=s_d, output=output)
 
 
-class Qc2obsmon(AbstractTask):
+class Qc2obsmon(PySurfexBaseTask):
     """Convert QC data to obsmon SQLite data.
 
     Args:
-        AbstractTask (AbstractClass): Base class
+        Task (AbstractClass): Base class
     """
 
     def __init__(self, config):
@@ -782,12 +683,18 @@ class Qc2obsmon(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "Qc2obsmon")
-        self.var_name = self.config.get_value("task.var_name")
+        PySurfexBaseTask.__init__(self, config, "Qc2obsmon")
+        try:
+            self.var_name = self.config["task.args.var_name"]
+        except KeyError:
+            self.var_name = None
 
     def execute(self):
         """Execute."""
-        outdir = self.extrarch + "/ecma_sfc/" + self.dtg.strftime("%Y%m%d%H") + "/"
+        archive = self.platform.get_system_value("archive_dir")
+        extrarch = self.platform.get_system_value("extrarch_dir")
+        obsdir = self.platform.get_system_value("obs_dir")
+        outdir = extrarch + "/ecma_sfc/" + self.dtg.strftime("%Y%m%d%H") + "/"
         os.makedirs(outdir, exist_ok=True)
         output = outdir + "/ecma.db"
 
@@ -809,9 +716,9 @@ class Qc2obsmon(AbstractTask):
 
                     if var_in != "sd":
                         var_name = self.translation[var_in]
-                        q_c = self.obsdir + "/qc_" + var_name + ".json"
-                        fg_file = self.archive + "/raw_" + var_name + ".nc"
-                        an_file = self.archive + "/an_" + var_name + ".nc"
+                        q_c = obsdir + "/qc_" + var_name + ".json"
+                        fg_file = archive + "/raw_" + var_name + ".nc"
+                        an_file = archive + "/an_" + var_name + ".nc"
                         write_obsmon_sqlite_file(
                             dtg=self.dtg,
                             output=output,
@@ -823,11 +730,11 @@ class Qc2obsmon(AbstractTask):
                         )
 
 
-class FirstGuess4OI(AbstractTask):
+class FirstGuess4OI(PySurfexBaseTask):
     """Create a first guess to be used for OI.
 
     Args:
-        AbstractTask (AbstractClass): Base class
+        Task (AbstractClass): Base class
     """
 
     def __init__(self, config):
@@ -837,8 +744,11 @@ class FirstGuess4OI(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "FirstGuess4OI")
-        self.var_name = self.config.get_value("task.var_name")
+        PySurfexBaseTask.__init__(self, config, "FirstGuess4OI")
+        try:
+            self.var_name = self.config["task.var_name"]
+        except KeyError:
+            self.var_name = None
 
     def execute(self):
         """Execute."""
@@ -846,11 +756,12 @@ class FirstGuess4OI(AbstractTask):
 
         extra = ""
         symlink_files = {}
+        archive = self.platform.get_system_value("archive_dir")
         if self.var_name in self.translation:
             var = self.translation[self.var_name]
             variables = [var]
             extra = "_" + var
-            symlink_files.update({self.archive + "/raw.nc": "raw" + extra + ".nc"})
+            symlink_files.update({archive + "/raw.nc": "raw" + extra + ".nc"})
         else:
             var_in = []
             obs_types = self.obs_types
@@ -871,20 +782,19 @@ class FirstGuess4OI(AbstractTask):
                 for var in var_in:
                     var_name = self.translation[var]
                     variables.append(var_name)
-                    symlink_files.update(
-                        {self.archive + "/raw_" + var_name + ".nc": "raw.nc"}
-                    )
+                    symlink_files.update({archive + "/raw_" + var_name + ".nc": "raw.nc"})
             except KeyError as exc:
                 raise KeyError("Variables could not be translated") from exc
 
         variables = variables + ["altitude", "land_area_fraction"]
 
-        output = self.archive + "/raw" + extra + ".nc"
+        output = archive + "/raw" + extra + ".nc"
         cache_time = 3600
         cache = Cache(cache_time)
         if os.path.exists(output):
             logger.info("Output already exists {}", output)
         else:
+            os.makedirs(os.path.dirname(output), exist_ok=True)
             self.write_file(output, variables, self.geo, validtime, cache=cache)
 
         # Create symlinks
@@ -913,10 +823,10 @@ class FirstGuess4OI(AbstractTask):
             lvar = var.lower()
             try:
                 identifier = "initial_conditions.fg4oi." + lvar + "."
-                inputfile = self.config.get_value(identifier + "inputfile")
-            except AttributeError:
+                inputfile = self.config[identifier + "inputfile"]
+            except KeyError:
                 identifier = "initial_conditions.fg4oi."
-                inputfile = self.config.get_value(identifier + "inputfile")
+                inputfile = self.config[identifier + "inputfile"]
 
             inputfile = self.platform.substitute(
                 inputfile, basetime=self.fg_dtg, validtime=self.dtg
@@ -924,27 +834,27 @@ class FirstGuess4OI(AbstractTask):
 
             try:
                 identifier = "initial_conditions.fg4oi." + lvar + "."
-                fileformat = self.config.get_value(identifier + "fileformat")
-            except AttributeError:
+                fileformat = self.config[identifier + "fileformat"]
+            except KeyError:
                 identifier = "initial_conditions.fg4oi."
-                fileformat = self.config.get_value(identifier + "fileformat")
+                fileformat = self.config[identifier + "fileformat"]
             fileformat = self.platform.substitute(
                 fileformat, basetime=self.fg_dtg, validtime=self.dtg
             )
 
             try:
                 identifier = "initial_conditions.fg4oi." + lvar + "."
-                converter = self.config.get_value(identifier + "converter")
-            except AttributeError:
+                converter = self.config[identifier + "converter"]
+            except KeyError:
                 identifier = "initial_conditions.fg4oi."
-                converter = self.config.get_value(identifier + "converter")
+                converter = self.config[identifier + "converter"]
 
             try:
                 identifier = "initial_conditions.fg4oi." + lvar + "."
-                input_geo_file = self.config.get_value(identifier + "input_geo_file")
-            except AttributeError:
+                input_geo_file = self.config[identifier + "input_geo_file"]
+            except KeyError:
                 identifier = "initial_conditions.fg4oi."
-                input_geo_file = self.config.get_value(identifier + "input_geo_file")
+                input_geo_file = self.config[identifier + "input_geo_file"]
 
             logger.info("inputfile={}, fileformat={}", inputfile, fileformat)
             logger.info("converter={}, input_geo_file={}", converter, input_geo_file)
@@ -1013,11 +923,11 @@ class FirstGuess4OI(AbstractTask):
             f_g.close()
 
 
-class LogProgress(AbstractTask):
+class LogProgress(PySurfexBaseTask):
     """Log progress for restart.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -1027,25 +937,17 @@ class LogProgress(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "LogProgress")
+        PySurfexBaseTask.__init__(self, config, "LogProgress")
 
     def execute(self):
         """Execute."""
-        progress = {
-            "basetime": datetime_as_string(self.next_dtg),
-            "validtime": datetime_as_string(self.next_dtg),
-        }
-        config_file = self.config.get_value("metadata.source_file_path")
-        config = ParsedConfig.from_file(config_file)
-        sfx_exp = ExpFromConfig(config.dict(), progress)
-        sfx_exp.dump_json(config_file, indent=2)
 
 
-class LogProgressPP(AbstractTask):
+class LogProgressPP(PySurfexBaseTask):
     """Log progress for PP restart.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -1055,23 +957,17 @@ class LogProgressPP(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "LogProgressPP")
+        PySurfexBaseTask.__init__(self, config, "LogProgressPP")
 
     def execute(self):
         """Execute."""
-        progress = {"basetime_pp": datetime_as_string(self.next_dtg)}
-
-        config_file = self.config.get_value("metadata.source_file_path")
-        config = ParsedConfig.from_file(config_file)
-        sfx_exp = ExpFromConfig(config.dict(), progress)
-        sfx_exp.dump_json(config_file, indent=2)
 
 
-class FetchMarsObs(AbstractTask):
+class FetchMarsObs(PySurfexBaseTask):
     """Fetch observations from Mars.
 
     Args:
-        AbstractTask (_type_): _description_
+        Task (_type_): _description_
     """
 
     def __init__(self, config):
@@ -1081,7 +977,9 @@ class FetchMarsObs(AbstractTask):
             config (ParsedObject): Parsed configuration
 
         """
-        AbstractTask.__init__(self, config, "FetchMarsObs")
+        PySurfexBaseTask.__init__(self, config, "FetchMarsObs")
+        self.basetime = as_datetime(self.config["basetime"])
+        self.obsdir = self.platform.get_system_value("obs_dir")
 
     def execute(self):
         """Execute."""
