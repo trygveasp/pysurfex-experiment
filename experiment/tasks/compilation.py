@@ -87,20 +87,17 @@ class ConfigureOfflineBinaries(PySurfexBaseTask):
     def execute(self):
         """Execute."""
         rte = os.environ
-        sfx_lib = f"{self.platform.get_system_value('casedir')}"
+        casedir = f"{self.platform.get_system_value('casedir')}"
         flavour = self.config["compile.build_config"]
-        cmd = f"{sfx_lib}/offline/scr/Configure_offline.sh {sfx_lib}/offline {flavour}"
+        exp_home = self.config["platform.deode_home"]
+        cmd = f"{casedir}/offline/scr/Configure_offline.sh {casedir}/offline {flavour}"
         logger.debug(cmd)
         BatchJob(rte, wrapper=self.wrapper).run(cmd)
 
-        conf_file = sfx_lib + "/offline/conf/profile_surfex-" + flavour
-        xyz_file = sfx_lib + "/xyz"
-        cmd = ". " + conf_file + '; echo "$XYZ" > ' + xyz_file
+        xyz_file = casedir + "/xyz"
+        cmd = f"{exp_home}/offline/Flavour_offline.sh {casedir}/offline {flavour} {xyz_file}"
         logger.info(cmd)
-        try:
-            os.system(cmd)  # noqa
-        except Exception as ex:
-            raise RuntimeError("Can not write XYZ ") from ex
+        BatchJob(rte, wrapper=self.wrapper).run(cmd)
 
 
 class MakeOfflineBinaries(PySurfexBaseTask):
@@ -121,18 +118,20 @@ class MakeOfflineBinaries(PySurfexBaseTask):
 
     def execute(self):
         """Execute."""
-        rte = {**os.environ}
+        rte = os.environ
         wrapper = ""
-        sfx_lib = f"{self.platform.get_system_value('casedir')}"
+        casedir = self.platform.get_system_value('casedir')
+        exp_home = self.config["platform.deode_home"]
+        bindir = f"{self.platform.get_system_value('bindir')}"
         flavour = self.config["compile.build_config"]
 
         threads = 8
-        cmd = f"{sfx_lib}/offline/scr/Compile_offline.sh {sfx_lib}/offline {flavour} {threads}"
+        cmd = f"{exp_home}/offline/Compile_offline.sh {casedir}/offline {flavour} {threads}"
         logger.debug(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
-        os.makedirs(f"{sfx_lib}/offline/exe", exist_ok=True)
-        cmd = f"{sfx_lib}/offline/scr/Install_offline.sh {sfx_lib}/offline {flavour} {threads}"
+        os.makedirs(bindir, exist_ok=True)
+        cmd = f"{exp_home}/offline/Install_offline.sh {casedir}/offline {flavour} {threads}"
         logger.debug(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
@@ -164,10 +163,15 @@ class CMakeBuild(PySurfexBaseTask):
         cmake_config = f"{offline_source}/util/cmake/config/config.{cmake_config}.json"
         if not os.path:
             raise FileNotFoundError(f"CMake config file {cmake_config} not found!")
-        sfx_lib = f"{self.platform.get_system_value('casedir')}/lib"
-        build_dir = f"{sfx_lib}/offline/"
-        install_dir = f"{sfx_lib}/offline/exe"
+
+        casedir = self.platform.get_system_value('casedir')
+        exp_home = self.config["platform.deode_home"]
+        bindir = self.platform.get_system_value('bindir')
+
+        build_dir = f"{casedir}/offline/build"
+        install_dir = f"{casedir}/offline/install"
         os.makedirs(install_dir, exist_ok=True)
+        os.makedirs(build_dir, exist_ok=True)
         prerequisites = ["gribex_370"]
         for project in prerequisites:
             logger.info("Compiling {}", project)
@@ -192,9 +196,8 @@ class CMakeBuild(PySurfexBaseTask):
         cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_PREFIX={install_dir} "
         cmake_flags += f"{cmake_flags} -DCMAKE_INSTALL_RPATH_USE_LINK_PATH=YES "
         cmake_flags += f"{cmake_flags} -DCONFIG_FILE={cmake_config} "
-        os.makedirs(build_dir, exist_ok=True)
-        os.chdir(build_dir)
 
+        os.chdir(build_dir)
         # Configure
         cmd = f"cmake {offline_source}/src {cmake_flags}"
         BatchJob(rte, wrapper=wrapper).run(cmd)
@@ -204,10 +207,11 @@ class CMakeBuild(PySurfexBaseTask):
 
         # Manual installation
         programs = ["PGD-offline", "PREP-offline", "OFFLINE-offline", "SODA-offline"]
+        os.makedirs(bindir, exist_ok=True)
         for program in programs:
             logger.info("Installing {}", program)
-            shutil.copy(f"{build_dir}/bin/{program}", f"{install_dir}/{program}")
+            shutil.copy(f"{build_dir}/bin/{program}", f"{bindir}/{program}")
 
-        xyz_file = sfx_lib + "/xyz"
+        xyz_file = casedir + "/xyz"
         with open(xyz_file, mode="w", encoding="utf-8") as fhandler:
             fhandler.write("-offline")

@@ -289,6 +289,28 @@ class Exp2(Exp):
         if stream is None:
             stream = ""
 
+        try:
+            bindir = merged_config["system"]["bindir"]
+        except KeyError:
+            bindir = "@casedir@/offline/exe"
+
+        config_dir = exp_dependencies["config_dir"]
+        namelist_defs = exp_dependencies.get('namelist_defs')
+        if namelist_defs is None:
+            try:
+                namelist_defs = merged_config["system"]["namelist_defs"]
+            except KeyError:
+                namelist_defs = f"{config_dir}/nam/surfex_namelists.yml"
+                logger.info("Using default namelist directory {}", namelist_defs)
+
+        binary_input_files =  exp_dependencies.get('binary_input_files')
+        if binary_input_files is None:
+            try:
+                binary_input_files = merged_config["system"]["binary_input_files"]
+            except KeyError:
+                binary_input_files = f"{config_dir}/input/binary_input_data.json"
+                logger.info("Using default binary input {}", binary_input_files)
+
         update = {
             "general": {
                 "stream": stream,
@@ -299,10 +321,11 @@ class Exp2(Exp):
                 "extrarch_dir": "@casedir@/archive/extract/",
                 "forcing_dir": "@casedir@/forcing/@YYYY@@MM@@DD@@HH@/@RRR@/",
                 "obs_dir": "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/",
-                "namelist_defs": f"{exp_dependencies.get('namelist_defs')}",
-                "binary_input_files": f"{exp_dependencies.get('binary_input_files')}",
+                "namelist_defs": f"{namelist_defs}",
+                "binary_input_files": f"{binary_input_files}",
                 "first_guess_yml": f"{merged_config['pysurfex']['first_guess_yml_file']}",
                 "config_yml": f"{merged_config['pysurfex']['forcing_variable_config_yml_file']}",
+                "bindir": bindir,
             },
             "include": {
                 "scheduler": f"{scheduler_config_file}",
@@ -558,18 +581,18 @@ class ExpFromFiles(Exp2):
                     "platform": f"{config_dir}/include/platform_paths/{host}.toml",
                 }
             )
-            if domain is not None:
-                include_paths.update(
-                    {"domain": f"{config_dir}/include/domains/{domain}.toml"}
-                )
-            if "submission" not in include_paths:
-                include_paths.update(
-                    {"submission": f"{config_dir}/include/submission/{host}.toml"}
-                )
-            for incp in include_paths.values():
-                if not os.path.exists(incp):
-                    logger.error("Input file {} not found", incp)
-                    raise FileNotFoundError(incp)
+        if domain is not None:
+            include_paths.update(
+                {"domain": f"{config_dir}/include/domains/{domain}.toml"}
+            )
+        if "submission" not in include_paths:
+            include_paths.update(
+                {"submission": f"{config_dir}/include/submission/{host}.toml"}
+            )
+        for incp in include_paths.values():
+            if not os.path.exists(incp):
+                logger.error("Input file {} not found", incp)
+                raise FileNotFoundError(incp)
 
         # Check existence of needed config files
         config = None
@@ -590,14 +613,6 @@ class ExpFromFiles(Exp2):
                 "@default_config_dir@", f"{config_dir}/defaults/"
             )
         )
-
-        if namelist_defs is None:
-            namelist_defs = f"{config_dir}/nam/surfex_namelists.yml"
-            logger.info("Using default namelist directory {}", namelist_defs)
-
-        if binary_input_files is None:
-            binary_input_files = f"{config_dir}/input/binary_input_data.json"
-            logger.info("Using default binary input {}", binary_input_files)
 
         exp_dependencies.update(
             {

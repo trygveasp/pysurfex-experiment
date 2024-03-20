@@ -2,7 +2,6 @@
 """Implement the package's commands."""
 import argparse
 
-import os
 import sys
 
 from deode.commands_functions import set_deode_home
@@ -66,7 +65,6 @@ def parse_args(argv=None):
     ##########################################
     # Configure parser for the "case" command #
     ##########################################
-    cwd = os.getcwd()
     parser = argparse.ArgumentParser(
         "Create a config file to run an experiment case"
     )
@@ -108,7 +106,7 @@ def parse_args(argv=None):
         dest="namelist_defs",
         help="Namelist definitions",
         required=False,
-        default=f"{cwd}/nam/surfex_namelists.yml",
+        default=None,
     )
     parser.add_argument(
         "--input",
@@ -116,7 +114,7 @@ def parse_args(argv=None):
         dest="binary_input_files",
         help="Binary input data",
         required=False,
-        default=f"{cwd}/input/binary_input_data.json",
+        default=None,
     )
     parser.add_argument(
         "--predef",

@@ -3,6 +3,7 @@
 import json
 import os
 import shutil
+import contextlib
 
 import numpy as np
 import yaml
@@ -90,6 +91,26 @@ class PySurfexBaseTask(Task):
         update = {"SURFEX": {"ASSIM": {"OBS": {"NNCO": self.nnco}}}}
         self.config = self.config.copy(update=update)
         logger.debug("NNCO: {}", self.nnco)
+
+    def get_binary(self, binary):
+        """Determine binary path from task or system config section.
+
+        Args:
+            binary (str): Name of binary
+
+        Returns:
+            bindir (str): full path to binary
+
+        """
+        with contextlib.suppress(KeyError):
+            binary = self.config[f"submission.task_exceptions.{self.name}.binary"]
+
+        try:
+            bindir = self.config[f"submission.task_exceptions.{self.name}.bindir"]
+        except KeyError:
+            bindir = self.platform.get_system_value("bindir")
+
+        return f"{bindir}/{binary}"
 
 
 class PrepareCycle(PySurfexBaseTask):

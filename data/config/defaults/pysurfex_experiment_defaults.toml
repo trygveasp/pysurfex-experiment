@@ -24,6 +24,10 @@
   first_guess_yml_file = "@pysurfex_cfg@/first_guess.yml"
   forcing_variable_config_yml_file = "@pysurfex_cfg@/config.yml"
 
+[pgd]
+  soilgrid_format = "netcdf"
+  gmted_format = "netcdf"
+
 [compile]
 ####################################################################################################
 # Compilation settings
