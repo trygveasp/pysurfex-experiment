@@ -3,6 +3,8 @@ import json
 import os
 
 import yaml
+from deode.datetime_utils import as_datetime, get_decade
+from deode.logs import logger
 from pysurfex.binary_input import InputDataFromNamelist, JsonOutputData
 from pysurfex.configuration import Configuration
 from pysurfex.file import PGDFile, PREPFile, SURFFile, SurfFileTypeExtension
@@ -10,10 +12,8 @@ from pysurfex.namelist import NamelistGenerator
 from pysurfex.platform_deps import SystemFilePaths
 from pysurfex.run import BatchJob, PerturbedOffline, SURFEXBinary
 
-from deode.datetime_utils import as_datetime, get_decade
-from ..experiment import setting_is
-from deode.logs import logger
-from ..tasks.tasks import PySurfexBaseTask
+from experiment.experiment import setting_is
+from experiment.tasks.tasks import PySurfexBaseTask
 
 
 class SurfexBinaryTask(PySurfexBaseTask):
@@ -197,6 +197,7 @@ class SurfexBinaryTask(PySurfexBaseTask):
             input_data = json.load(fhandler)
 
         if self.mode == "pgd" and self.config["pgd.one_decade"]:
+
             def replace(data, match, repl):
                 if isinstance(data, dict):
                     for k, v in data.items():
@@ -242,7 +243,9 @@ class SurfexBinaryTask(PySurfexBaseTask):
             )
 
         if self.need_prep and self.need_pgd:
-            surffile = SURFFile(filetype, surffile, archive_file=output, lfagmap=lfagmap)
+            surffile = SURFFile(
+                filetype, surffile, archive_file=output, lfagmap=lfagmap
+            )
         else:
             surffile = None
 
@@ -291,7 +294,9 @@ class SurfexBinaryTask(PySurfexBaseTask):
                 print_namelist=self.print_namelist,
             )
         elif self.do_prep:
-            prepfile = PREPFile(filetype, prepfile, archive_file=output, lfagmap=lfagmap)
+            prepfile = PREPFile(
+                filetype, prepfile, archive_file=output, lfagmap=lfagmap
+            )
             SURFEXBinary(
                 binary,
                 batch,
@@ -337,7 +342,9 @@ class OfflinePgd(SurfexBinaryTask):
         decade = ""
         if self.config["pgd.one_decade"]:
             decade = f"_{get_decade(as_datetime(self.dtg))}"
-        pgdfile = f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        pgdfile = (
+            f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        )
         output = f"{self.platform.get_system_value('climdir')}/{pgdfile}"
         binary = self.get_binary("PGD" + self.xyz)
 
@@ -368,7 +375,9 @@ class OfflinePrep(SurfexBinaryTask):
         decade = ""
         if self.config["pgd.one_decade"]:
             decade = f"_{get_decade(as_datetime(self.dtg))}"
-        pgdfile = f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        pgdfile = (
+            f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        )
         pgd_file_path = f"{self.platform.get_system_value('climdir')}/{pgdfile}"
         try:
             prep_file = self.config["initial_conditions.prep_input_file"]
@@ -431,7 +440,9 @@ class OfflineForecast(SurfexBinaryTask):
         decade = ""
         if self.config["pgd.one_decade"]:
             decade = f"_{get_decade(as_datetime(self.dtg))}"
-        pgdfile = f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        pgdfile = (
+            f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        )
         pgd_file_path = f"{self.platform.get_system_value('climdir')}/{pgdfile}"
         archive = f"{self.platform.get_system_value('archive_dir')}"
         binary = self.get_binary("OFFLINE" + self.xyz)
@@ -501,7 +512,9 @@ class PerturbedRun(SurfexBinaryTask):
         decade = ""
         if self.config["pgd.one_decade"]:
             decade = f"_{get_decade(as_datetime(self.dtg))}"
-        pgdfile = f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        pgdfile = (
+            f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        )
         pgd_file_path = f"{self.platform.get_system_value('climdir')}/{pgdfile}"
         binary = self.get_binary("OFFLINE" + self.xyz)
 
@@ -559,7 +572,9 @@ class Soda(SurfexBinaryTask):
         decade = ""
         if self.config["pgd.one_decade"]:
             decade = f"_{get_decade(as_datetime(self.dtg))}"
-        pgdfile = f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        pgdfile = (
+            f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
+        )
         pgd_file_path = self.platform.get_system_value("climdir")
         pgd_file_path = f"{self.platform.substitute(pgd_file_path)}/{pgdfile}"
 
@@ -571,7 +586,9 @@ class Soda(SurfexBinaryTask):
             archive_dir = self.config["system.archive_dir"]
             pert_run_dir = self.platform.substitute(archive_dir, basetime=self.dtg)
             self.exp_file_paths.add_system_file_path("perturbed_run_dir", pert_run_dir)
-            first_guess_dir = self.platform.substitute(archive_dir, basetime=self.fg_dtg)
+            first_guess_dir = self.platform.substitute(
+                archive_dir, basetime=self.fg_dtg
+            )
             self.exp_file_paths.add_system_file_path("first_guess_dir", first_guess_dir)
 
         if not os.path.exists(output) or self.force:

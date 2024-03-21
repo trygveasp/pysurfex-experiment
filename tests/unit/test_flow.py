@@ -126,7 +126,9 @@ class TestFlow:
         ecf_pass = "12345"  # noqa S105
         ecf_rid = 54321
         ecf_timeout = 20
-        task = EcflowTask(ecf_name, ecf_tryno, ecf_pass, ecf_rid, ecf_timeout=ecf_timeout)
+        task = EcflowTask(
+            ecf_name, ecf_tryno, ecf_pass, ecf_rid, ecf_timeout=ecf_timeout
+        )
         assert ecf_name == task.ecf_name
         assert ecf_tryno == task.ecf_tryno
         assert ecf_pass == task.ecf_pass

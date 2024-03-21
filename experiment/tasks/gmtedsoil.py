@@ -3,8 +3,8 @@
 import os
 import shutil
 import sys
-import netCDF4
 
+import netCDF4
 from deode.geo_utils import Projection, Projstring
 from deode.logs import logger
 from deode.os_utils import Search, deodemakedirs
@@ -246,7 +246,9 @@ class Gmted(Task):
 
         fmt = self.config["pgd.gmted_format"]
         if fmt == "netcdf":
-            gdal.Translate(f"{climdir}/gmted2010.nc", "gmted_mea075.tif", format='NetCDF')
+            gdal.Translate(
+                f"{climdir}/gmted2010.nc", "gmted_mea075.tif", format="NetCDF"
+            )
             modify_ncfile(f"{climdir}/gmted2010.nc", "ZS")
         elif fmt == "direct":
             Gmted.tif2bin(gd, "gmted_mea075.bin")
@@ -262,7 +264,13 @@ class Gmted(Task):
             header_file = f"{climdir}/gmted2010.hdr"
             logger.debug("Write header file {}", header_file)
             Gmted.write_gmted_header_file(
-                header_file, hdr_north, hdr_south, hdr_west, hdr_east, hdr_rows, hdr_cols
+                header_file,
+                hdr_north,
+                hdr_south,
+                hdr_west,
+                hdr_east,
+                hdr_rows,
+                hdr_cols,
             )
 
 
@@ -510,9 +518,7 @@ class Soil(Task):
                     output_type = gdal.GDT_Int16
                 output = f"{climdir}/soc_top.{suffix}"
                 ds = gdal.Open(subarea_file)
-                ds = gdal.Translate(
-                    output, ds, format=gfmt, outputType=output_type
-                )
+                ds = gdal.Translate(output, ds, format=gfmt, outputType=output_type)
                 ds = None
                 if fmt == "netcdf":
                     modify_ncfile(output, "SOC_TOP", fact=fact)
@@ -521,15 +527,12 @@ class Soil(Task):
                     output_type = gdal.GDT_Int16
                 output = f"{climdir}/soc_sub.{suffix}"
                 ds = gdal.Open(subarea_file)
-                ds = gdal.Translate(
-                    output, ds, format=gfmt, outputType=output_type
-                )
+                ds = gdal.Translate(output, ds, format=gfmt, outputType=output_type)
                 ds = None
                 if fmt == "netcdf":
                     modify_ncfile(output, "SOC_SUB", fact=fact)
             else:
                 logger.warning("Unknown soilgrid tif file: {}", subarea_file)
-
 
         if fmt == "direct":
             # Compose headers in surfex/pgd format

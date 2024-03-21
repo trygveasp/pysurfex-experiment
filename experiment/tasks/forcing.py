@@ -3,10 +3,10 @@ import json
 import os
 
 import yaml
+from deode.logs import logger
 from pysurfex.forcing import modify_forcing, run_time_loop, set_forcing_config
 
-from deode.logs import logger
-from .tasks import PySurfexBaseTask
+from experiment.tasks.tasks import PySurfexBaseTask
 
 
 class Forcing(PySurfexBaseTask):
@@ -45,7 +45,9 @@ class Forcing(PySurfexBaseTask):
 
         domain_json = self.geo.json
         domain_json.update({"nam_pgd_grid": {"cgrid": "CONF PROJ"}})
-        with open(self.wdir + "/domain.json", mode="w", encoding="utf-8") as file_handler:
+        with open(
+            self.wdir + "/domain.json", mode="w", encoding="utf-8"
+        ) as file_handler:
             json.dump(domain_json, file_handler, indent=2)
         kwargs.update({"domain": self.wdir + "/domain.json"})
         global_config = self.platform.get_system_value("config_yml")

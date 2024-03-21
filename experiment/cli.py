@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Implement the package's commands."""
 import argparse
-
 import sys
 
 from deode.commands_functions import set_deode_home
-from deode.config_parser import ParsedConfig, ConfigParserDefaults
+from deode.config_parser import ConfigParserDefaults, ParsedConfig
+
 from .experiment import case_setup
 
 
@@ -13,8 +13,7 @@ def case_cli():
     """Entry point."""
     args = parse_args()
     config = ParsedConfig.from_file(
-        args.config_file,
-        json_schema=ConfigParserDefaults.MAIN_CONFIG_JSON_SCHEMA
+        args.config_file, json_schema=ConfigParserDefaults.MAIN_CONFIG_JSON_SCHEMA
     )
     create_exp(args, config)
 
@@ -65,9 +64,7 @@ def parse_args(argv=None):
     ##########################################
     # Configure parser for the "case" command #
     ##########################################
-    parser = argparse.ArgumentParser(
-        "Create a config file to run an experiment case"
-    )
+    parser = argparse.ArgumentParser("Create a config file to run an experiment case")
     parser.add_argument(
         "--deode-home",
         default=None,
@@ -76,9 +73,7 @@ def parse_args(argv=None):
 
     parser.add_argument("--config-file", help="Config", required=True)
     parser.add_argument("--host", help="Host", required=False, default=None)
-    parser.add_argument(
-        "--config-dir", help="Config dir", required=False, default=None
-    )
+    parser.add_argument("--config-dir", help="Config dir", required=False, default=None)
     parser.add_argument("--casedir", help="Case dir", required=False, default=None)
     parser.add_argument(
         "--output",

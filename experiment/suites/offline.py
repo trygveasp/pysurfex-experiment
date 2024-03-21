@@ -2,7 +2,6 @@
 from pathlib import Path
 
 from deode.datetime_utils import as_datetime, as_timedelta, get_decadal_list, get_decade
-from ..experiment import get_nnco, get_total_unique_cycle_list, setting_is
 from deode.logs import logger
 from deode.suites.base import (
     EcflowSuiteFamily,
@@ -11,6 +10,8 @@ from deode.suites.base import (
     EcflowSuiteTriggers,
     SuiteDefinition,
 )
+
+from ..experiment import get_nnco, get_total_unique_cycle_list, setting_is
 
 
 class SurfexSuiteDefinition(SuiteDefinition):
@@ -84,7 +85,7 @@ class SurfexSuiteDefinition(SuiteDefinition):
                         prediction_trigger_times.update(
                             {c_index: starttime.strftime("%Y%m%d%H%M")}
                         )
-            
+
                     cycles.update(
                         {
                             c_index: {
@@ -618,7 +619,9 @@ class SurfexSuiteDefinition(SuiteDefinition):
                     need_lsm = False
                     if setting_is(config, "SURFEX.ASSIM.SCHEMES.ISBA", "OI"):
                         need_lsm = True
-                    if setting_is(config, "SURFEX.ASSIM.SCHEMES.INLAND_WATER", "WATFLX"):
+                    if setting_is(
+                        config, "SURFEX.ASSIM.SCHEMES.INLAND_WATER", "WATFLX"
+                    ):
                         if config["SURFEX.ASSIM.INLAND_WATER.LEXTRAP_WATER"]:
                             need_lsm = True
                     if need_lsm:

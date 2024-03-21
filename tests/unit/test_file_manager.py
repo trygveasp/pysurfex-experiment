@@ -70,7 +70,10 @@ def sfx_exp_config(tmp_path_factory):
             "OMP_NUM_THREADS": 'import os\nos.environ.update({"OMP_NUM_THREADS": "1"})',
             "tasks": ["InitRun", "LogProgress", "LogProgressPP"],
         },
-        "scalar": {"HOST": "1", "Not_existing_task": {"DR_HOOK": 'print("Hello world")'}},
+        "scalar": {
+            "HOST": "1",
+            "Not_existing_task": {"DR_HOOK": 'print("Hello world")'},
+        },
     }
     progress = {
         "basetime": "2023-01-01T03:00:00Z",
@@ -94,7 +97,9 @@ def sfx_exp_config(tmp_path_factory):
     if "times" not in merged_config["general"]:
         merged_config["general"].update({"times": {}})
     merged_config["general"]["times"]["basetime"] = as_datetime("2000-01-01 T00:00:00Z")
-    merged_config["general"]["times"]["validtime"] = as_datetime("2000-01-02 T00:00:00Z")
+    merged_config["general"]["times"]["validtime"] = as_datetime(
+        "2000-01-02 T00:00:00Z"
+    )
 
     # Create Exp/Configuration object
     stream = None
@@ -181,7 +186,8 @@ class TestFileManager:
         expected_file = tmp_path_factory.getbasetemp() / "bin/MASTERODB"
         expected_file.touch()
         provider, resource = fmanager.get_input(
-            "@BINDIR@/MASTERODB", f"{tmp_path_factory.getbasetemp().as_posix()}/MASTERODB"
+            "@BINDIR@/MASTERODB",
+            f"{tmp_path_factory.getbasetemp().as_posix()}/MASTERODB",
         )
         assert (
             provider.identifier

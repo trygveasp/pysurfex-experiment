@@ -99,7 +99,10 @@ def get_config(tmp_path_factory):
             "OMP_NUM_THREADS": 'import os\nos.environ.update({"OMP_NUM_THREADS": "1"})',
             "tasks": ["InitRun", "LogProgress", "LogProgressPP"],
         },
-        "scalar": {"HOST": "1", "Not_existing_task": {"DR_HOOK": 'print("Hello world")'}},
+        "scalar": {
+            "HOST": "1",
+            "Not_existing_task": {"DR_HOOK": 'print("Hello world")'},
+        },
     }
     progress = {
         "basetime": "2023-01-01T03:00:00Z",
@@ -260,7 +263,9 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
         "experiment.tasks.tasks.write_analysis_netcdf_file",
         new=new_write_analysis_netcdf_file,
     )
-    session_mocker.patch("pysurfex.pseudoobs.read_cryoclim_nc", new=new_read_cryoclim_nc)
+    session_mocker.patch(
+        "pysurfex.pseudoobs.read_cryoclim_nc", new=new_read_cryoclim_nc
+    )
     session_mocker.patch(
         "experiment.tasks.tasks.write_obsmon_sqlite_file",
         new=new_write_obsmon_sqlite_file,
@@ -295,13 +300,12 @@ def _mockers_for_task_run_tests(session_mocker, tmp_path_factory):
     cmake_config.touch()
 
     bin_files = ["PGD-offline", "PREP-offline", "SODA-offline", "OFFLINE-offline"]
-    bin_dir = (
-        f"{tmp_path_factory.getbasetemp().as_posix()}/host0/test_config/lib/offline/bin/"
-    )
+    bin_dir = f"{tmp_path_factory.getbasetemp().as_posix()}/host0/test_config/lib/offline/bin/"
     os.makedirs(bin_dir, exist_ok=True)
     for bfile in bin_files:
         bin_file = (
-            tmp_path_factory.getbasetemp() / f"host0/test_config/lib/offline/bin/{bfile}"
+            tmp_path_factory.getbasetemp()
+            / f"host0/test_config/lib/offline/bin/{bfile}"
         )
         bin_file.touch()
 

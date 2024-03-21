@@ -1,12 +1,15 @@
 """General task module."""
 
+import contextlib
 import json
 import os
 import shutil
-import contextlib
 
 import numpy as np
 import yaml
+from deode.datetime_utils import as_datetime, as_timedelta
+from deode.logs import logger
+from deode.tasks.base import Task
 from pysurfex.cache import Cache
 from pysurfex.configuration import Configuration
 from pysurfex.file import SurfFileTypeExtension
@@ -25,12 +28,7 @@ from pysurfex.read import ConvertedInput, Converter
 from pysurfex.run import BatchJob
 from pysurfex.titan import TitanDataSet, dataset_from_file, define_quality_control
 
-from deode.config_parser import ParsedConfig
-from deode.datetime_utils import as_datetime, as_timedelta  # , datetime_as_string
-from ..experiment import get_nnco
-from deode.logs import logger
-from deode.tasks.base import Task
-from deode.toolbox import FileManager
+from experiment.experiment import get_nnco
 
 
 class PySurfexBaseTask(Task):
@@ -177,7 +175,10 @@ class QualityControl(PySurfexBaseTask):
             json.dump(self.geo.json, fh)
         settings = {
             "domain": {"domain_file": domain_file},
-            "firstguess": {"fg_file": fg_file, "fg_var": self.translation[self.var_name]},
+            "firstguess": {
+                "fg_file": fg_file,
+                "fg_var": self.translation[self.var_name],
+            },
         }
         default_tests = {
             "nometa": {"do_test": True},
@@ -584,7 +585,9 @@ class CryoClim2json(PySurfexBaseTask):
             laf_threshold=laf_threshold,
             cryo_varname=cryo_varname,
         )
-        obs_set.write_json_file(f"{self.platform.get_system_value('obs_dir')}/cryo.json")
+        obs_set.write_json_file(
+            f"{self.platform.get_system_value('obs_dir')}/cryo.json"
+        )
 
 
 class CycleFirstGuess(FirstGuess):
@@ -655,7 +658,10 @@ class Oi2soda(PySurfexBaseTask):
         logger.debug("NNCO: {}", self.nnco)
         for ivar, __ in enumerate(obs_types):
             logger.debug(
-                "ivar={} NNCO[ivar]={} obtype={}", ivar, self.nnco[ivar], obs_types[ivar]
+                "ivar={} NNCO[ivar]={} obtype={}",
+                ivar,
+                self.nnco[ivar],
+                obs_types[ivar],
             )
             if self.nnco[ivar] == 1:
                 if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
@@ -803,7 +809,9 @@ class FirstGuess4OI(PySurfexBaseTask):
                 for var in var_in:
                     var_name = self.translation[var]
                     variables.append(var_name)
-                    symlink_files.update({archive + "/raw_" + var_name + ".nc": "raw.nc"})
+                    symlink_files.update(
+                        {archive + "/raw_" + var_name + ".nc": "raw.nc"}
+                    )
             except KeyError as exc:
                 raise KeyError("Variables could not be translated") from exc
 

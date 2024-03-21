@@ -1,16 +1,16 @@
 """Experiment tools."""
 import collections
 import json
-import yaml
 import os
 import shutil
 
 import pysurfex
 import tomlkit
-
-import experiment
+import yaml
 from deode.datetime_utils import as_datetime, as_timedelta
 from deode.logs import logger
+
+import experiment
 
 
 def get_nnco(config, basetime=None, realization=None):
@@ -270,7 +270,9 @@ class Exp2(Exp):
 
         troika_config = merged_config["troika"]["config_file"]
         default_config_dir = exp_dependencies.get("default_config_dir")
-        troika_config = troika_config.replace("@default_config_dir@", default_config_dir)
+        troika_config = troika_config.replace(
+            "@default_config_dir@", default_config_dir
+        )
         try:
             troika = merged_config["troika"]["troika"]
         except KeyError:
@@ -295,7 +297,7 @@ class Exp2(Exp):
             bindir = "@casedir@/offline/exe"
 
         config_dir = exp_dependencies["config_dir"]
-        namelist_defs = exp_dependencies.get('namelist_defs')
+        namelist_defs = exp_dependencies.get("namelist_defs")
         if namelist_defs is None:
             try:
                 namelist_defs = merged_config["system"]["namelist_defs"]
@@ -303,7 +305,7 @@ class Exp2(Exp):
                 namelist_defs = f"{config_dir}/nam/surfex_namelists.yml"
                 logger.info("Using default namelist directory {}", namelist_defs)
 
-        binary_input_files =  exp_dependencies.get('binary_input_files')
+        binary_input_files = exp_dependencies.get("binary_input_files")
         if binary_input_files is None:
             try:
                 binary_input_files = merged_config["system"]["binary_input_files"]
@@ -353,7 +355,7 @@ class Exp2(Exp):
             platform_paths_file,
             scheduler_config_file,
             submission_config_file,
-            domain_file
+            domain_file,
         )
 
     def save_as(self, fname):
@@ -419,10 +421,14 @@ class ExpFromFiles(Exp2):
         experiment_path = f"{experiment.__path__[0]}/.."
         plugin_registry = {"plugins": {"experiment": experiment_path}}
 
-        plugin_registry_file = f"{exp_dependencies.get('default_config_dir')}/deode_plugins.yml"
+        plugin_registry_file = (
+            f"{exp_dependencies.get('default_config_dir')}/deode_plugins.yml"
+        )
         with open(plugin_registry_file, mode="w", encoding="utf8") as fh:
             yaml.safe_dump(plugin_registry, fh)
-        config_settings = {"general": {"case": case, "plugin_registry": plugin_registry_file}}
+        config_settings = {
+            "general": {"case": case, "plugin_registry": plugin_registry_file}
+        }
         pysurfex_exp_defaults = self.toml_load(
             exp_dependencies.get("pysurfex_experiment_default_config")
         )

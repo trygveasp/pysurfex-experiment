@@ -2,10 +2,10 @@
 import os
 import shutil
 
+from deode.logs import logger
 from pysurfex.run import BatchJob
 
-from deode.logs import logger
-from ..tasks.tasks import PySurfexBaseTask
+from experiment.tasks.tasks import PySurfexBaseTask
 
 
 class SyncSourceCode(PySurfexBaseTask):
@@ -120,7 +120,7 @@ class MakeOfflineBinaries(PySurfexBaseTask):
         """Execute."""
         rte = os.environ
         wrapper = ""
-        casedir = self.platform.get_system_value('casedir')
+        casedir = self.platform.get_system_value("casedir")
         exp_home = self.config["platform.deode_home"]
         bindir = f"{self.platform.get_system_value('bindir')}"
         flavour = self.config["compile.build_config"]
@@ -164,9 +164,8 @@ class CMakeBuild(PySurfexBaseTask):
         if not os.path:
             raise FileNotFoundError(f"CMake config file {cmake_config} not found!")
 
-        casedir = self.platform.get_system_value('casedir')
-        exp_home = self.config["platform.deode_home"]
-        bindir = self.platform.get_system_value('bindir')
+        casedir = self.platform.get_system_value("casedir")
+        bindir = self.platform.get_system_value("bindir")
 
         build_dir = f"{casedir}/offline/build"
         install_dir = f"{casedir}/offline/install"
