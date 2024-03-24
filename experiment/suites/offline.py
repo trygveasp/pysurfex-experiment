@@ -1,4 +1,4 @@
-"""Offlione suite"""
+"""Offline suite."""
 from pathlib import Path
 
 from deode.datetime_utils import as_datetime, as_timedelta, get_decadal_list, get_decade
@@ -11,7 +11,7 @@ from deode.suites.base import (
     SuiteDefinition,
 )
 
-from ..experiment import get_nnco, get_total_unique_cycle_list, setting_is
+from experiment.experiment import get_nnco, get_total_unique_cycle_list, setting_is
 
 
 class SurfexSuiteDefinition(SuiteDefinition):
@@ -25,11 +25,13 @@ class SurfexSuiteDefinition(SuiteDefinition):
         """Initialize a SurfexSuite object.
 
         Args:
+        ----
             suite_name (str): Name of the suite
             config (ParsedConfig): Parsed configuration
-            ecf_micro (str, optional): Ecflow micro. Defaults to "%"
+            dry_run (str, optional): Dry run. Defaults to False
 
         Raises:
+        ------
             NotImplementedError: Not implmented
 
         """
@@ -251,10 +253,12 @@ class SurfexSuiteDefinition(SuiteDefinition):
                 days.append(cycle_day)
 
             time_trigger = None
-            if c_index in time_trigger_times:
-                if time_trigger_times[c_index] is not None:
-                    if time_trigger_times[c_index] in cycle_input_nodes:
-                        time_trigger = cycle_input_nodes[time_trigger_times[c_index]]
+            if (
+                c_index in time_trigger_times
+                and time_trigger_times[c_index] is not None
+                and time_trigger_times[c_index] in cycle_input_nodes
+            ):
+                time_trigger = cycle_input_nodes[time_trigger_times[c_index]]
             triggers = EcflowSuiteTriggers([static_complete, time_trigger])
 
             time_family = EcflowSuiteFamily(
@@ -309,11 +313,11 @@ class SurfexSuiteDefinition(SuiteDefinition):
                 prediction_trigger_times[c_index],
             )
             prediction_trigger = None
-            if c_index in prediction_trigger_times:
-                if prediction_trigger_times[c_index] in prediction_nodes:
-                    prediction_trigger = prediction_nodes[
-                        prediction_trigger_times[c_index]
-                    ]
+            if (
+                c_index in prediction_trigger_times
+                and prediction_trigger_times[c_index] in prediction_nodes
+            ):
+                prediction_trigger = prediction_nodes[prediction_trigger_times[c_index]]
             triggers = EcflowSuiteTriggers(
                 [static_complete, prepare_cycle_complete, prediction_trigger]
             )
@@ -453,7 +457,8 @@ class SurfexSuiteDefinition(SuiteDefinition):
                                         name, pert_parent, self.ecf_files
                                     )
                                     pert_sign = pert_signs[nfam]
-                                    args = f"pert={str(pivar)};name={name};ivar={str(nivar)};pert_sign={pert_sign}"
+                                    args = f"pert={pivar!s};name={name};ivar={nivar!s};"
+                                    args += f"pert_sign={pert_sign}"
                                     logger.debug("args: {}", args)
                                     variables = {"ARGS": args}
                                     EcflowSuiteTask(
@@ -490,18 +495,19 @@ class SurfexSuiteDefinition(SuiteDefinition):
                         )
 
                     prepare_sst = None
-                    if setting_is(config, "SURFEX.ASSIM.SCHEMES.SEA", "INPUT"):
-                        if setting_is(
-                            config, "SURFEX.ASSIM.SEA.CFILE_FORMAT_SST", "ASCII"
-                        ):
-                            prepare_sst = EcflowSuiteTask(
-                                "PrepareSST",
-                                initialization,
-                                config,
-                                self.task_settings,
-                                self.ecf_files,
-                                input_template=template,
-                            )
+                    if setting_is(
+                        config, "SURFEX.ASSIM.SCHEMES.SEA", "INPUT"
+                    ) and setting_is(
+                        config, "SURFEX.ASSIM.SEA.CFILE_FORMAT_SST", "ASCII"
+                    ):
+                        prepare_sst = EcflowSuiteTask(
+                            "PrepareSST",
+                            initialization,
+                            config,
+                            self.task_settings,
+                            self.ecf_files,
+                            input_template=template,
+                        )
 
                     an_variables = {"t2m": False, "rh2m": False, "sd": False}
                     obs_types = config["SURFEX.ASSIM.OBS.COBS_M"]
@@ -509,10 +515,10 @@ class SurfexSuiteDefinition(SuiteDefinition):
                     need_obs = False
                     for t_ind, val in enumerate(obs_types):
                         if nnco[t_ind] == 1:
-                            if val == "T2M" or val == "T2M_P":
+                            if val in ("T2M", "T2M_P"):
                                 an_variables.update({"t2m": True})
                                 need_obs = True
-                            elif val == "HU2M" or val == "HU2M_P":
+                            elif val in ("HU2M", "HU2M_P"):
                                 an_variables.update({"rh2m": True})
                                 need_obs = True
                             elif val == "SWE":
@@ -548,17 +554,16 @@ class SurfexSuiteDefinition(SuiteDefinition):
                         cryo2json_complete = EcflowSuiteTrigger(cryo2json)
 
                     fetchobs_complete = None
-                    if self.has_mars:
-                        if need_obs:
-                            fetchobs = EcflowSuiteTask(
-                                "FetchMarsObs",
-                                analysis,
-                                config,
-                                self.task_settings,
-                                self.ecf_files,
-                                input_template=template,
-                            )
-                            fetchobs_complete = EcflowSuiteTrigger(fetchobs)
+                    if self.has_mars and need_obs:
+                        fetchobs = EcflowSuiteTask(
+                            "FetchMarsObs",
+                            analysis,
+                            config,
+                            self.task_settings,
+                            self.ecf_files,
+                            input_template=template,
+                        )
+                        fetchobs_complete = EcflowSuiteTrigger(fetchobs)
 
                     triggers = []
                     for var, active in an_variables.items():
@@ -619,11 +624,11 @@ class SurfexSuiteDefinition(SuiteDefinition):
                     need_lsm = False
                     if setting_is(config, "SURFEX.ASSIM.SCHEMES.ISBA", "OI"):
                         need_lsm = True
-                    if setting_is(
-                        config, "SURFEX.ASSIM.SCHEMES.INLAND_WATER", "WATFLX"
+                    if (
+                        setting_is(config, "SURFEX.ASSIM.SCHEMES.INLAND_WATER", "WATFLX")
+                        and config["SURFEX.ASSIM.INLAND_WATER.LEXTRAP_WATER"]
                     ):
-                        if config["SURFEX.ASSIM.INLAND_WATER.LEXTRAP_WATER"]:
-                            need_lsm = True
+                        need_lsm = True
                     if need_lsm:
                         triggers = EcflowSuiteTriggers(fg4oi_complete)
                         prepare_lsm = EcflowSuiteTask(

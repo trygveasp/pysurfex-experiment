@@ -17,6 +17,7 @@ def get_nnco(config, basetime=None, realization=None):
     """Get the active observations.
 
     Args:
+        config (.config_parser.ParsedConfig): Parsed config file contents.
         basetime (as_datetime, optional): Basetime. Defaults to None.
         realization (int, optional): Realization number
 
@@ -34,24 +35,22 @@ def get_nnco(config, basetime=None, realization=None):
 
     if basetime is None:
         basetime = as_datetime(config["general.times.basetime"])
-    if len(snow_ass) > 0:
-        if basetime is not None:
-            hhh = int(basetime.strftime("%H"))
-            for s_n in snow_ass:
-                if hhh == int(s_n):
-                    snow_ass_done = True
+    if len(snow_ass) > 0 and basetime is not None:
+        hhh = int(basetime.strftime("%H"))
+        for s_n in snow_ass:
+            if hhh == int(s_n):
+                snow_ass_done = True
     nnco = []
     for ivar, __ in enumerate(obs_types):
         ival = 0
         if nnco_r[ivar] == 1:
             ival = 1
-            if obs_types[ivar] == "SWE":
-                if not snow_ass_done:
-                    logger.info(
-                        "Disabling snow assimilation since cycle is not in {}",
-                        snow_ass,
-                    )
-                    ival = 0
+            if obs_types[ivar] == "SWE" and not snow_ass_done:
+                logger.info(
+                    "Disabling snow assimilation since cycle is not in {}",
+                    snow_ass,
+                )
+                ival = 0
         logger.debug("ivar={} ival={}", ivar, ival)
         nnco.append(ival)
 
@@ -62,36 +61,42 @@ def get_nnco(config, basetime=None, realization=None):
 def get_total_unique_cycle_list(config):
     """Get a list of unique start times for the forecasts.
 
+    Args:
+        config (.config_parser.ParsedConfig): Parsed config file contents.
+
     Returns:
         list: List with time deltas from midnight
+
     """
     # Create a list of all cycles from all members
     realizations = config["general.realizations"]
     if realizations is None or len(realizations) == 0:
         return get_cycle_list(config)
-    else:
-        cycle_list_all = []
-        for realization in realizations:
-            cycle_list_all += get_cycle_list(config, realization=realization)
 
-        cycle_list = []
-        cycle_list_str = []
-        for cycle in cycle_list:
-            cycle_str = str(cycle)
-            if cycle_str not in cycle_list_str:
-                cycle_list.append(cycle)
-                cycle_list_str.append(str(cycle))
-        return cycle_list
+    cycle_list_all = []
+    for realization in realizations:
+        cycle_list_all += get_cycle_list(config, realization=realization)
+
+    cycle_list = []
+    cycle_list_str = []
+    for cycle in cycle_list:
+        cycle_str = str(cycle)
+        if cycle_str not in cycle_list_str:
+            cycle_list.append(cycle)
+            cycle_list_str.append(str(cycle))
+    return cycle_list
 
 
 def get_cycle_list(config, realization=None):
     """Get cycle list as time deltas from midnight.
 
     Args:
+        config (.config_parser.ParsedConfig): Parsed config file contents.
         realization (int, optional): Realization number
 
     Returns:
         list: Cycle list
+
     """
     cycle_length = as_timedelta(
         get_setting(config, "general.times.cycle_length", realization=realization)
@@ -110,6 +115,7 @@ def get_setting(config, setting, sep="#", realization=None):
     """Get setting.
 
     Args:
+        config (.config_parser.ParsedConfig): Parsed config file contents.
         setting (str): Setting
         sep (str, optional): _description_. Defaults to "#".
         realization (int, optional): Realization number
@@ -127,12 +133,14 @@ def setting_is(config, setting, value, realization=None):
     """Check if setting is value.
 
     Args:
+        config (.config_parser.ParsedConfig): Parsed config file contents.
         setting (str): Setting
         value (any): Value
         realization (int, optional): Realization number
 
     Returns:
         bool: True if found, False if not found.
+
     """
     if get_setting(config, setting, realization=realization) == value:
         return True
@@ -143,6 +151,7 @@ def get_fgint(config, realization=None):
     """Get the fgint.
 
     Args:
+        config (.config_parser.ParsedConfig): Parsed config file contents.
         realization (int, optional): Realization number
 
     Returns:
@@ -155,7 +164,7 @@ def get_fgint(config, realization=None):
 
 
 class Exp:
-    """Experiment class. Copy of deode class, to be replaced"""
+    """Experiment class. Copy of deode class, to be replaced."""
 
     def __init__(
         self,
@@ -236,6 +245,7 @@ class Exp:
 
         Args:
             fname (str): File name.
+
         """
         with open(fname, mode="w", encoding="utf8") as fh:
             tomlkit.dump(self.config, fh)
@@ -270,9 +280,7 @@ class Exp2(Exp):
 
         troika_config = merged_config["troika"]["config_file"]
         default_config_dir = exp_dependencies.get("default_config_dir")
-        troika_config = troika_config.replace(
-            "@default_config_dir@", default_config_dir
-        )
+        troika_config = troika_config.replace("@default_config_dir@", default_config_dir)
         try:
             troika = merged_config["troika"]["troika"]
         except KeyError:
@@ -313,6 +321,7 @@ class Exp2(Exp):
                 binary_input_files = f"{config_dir}/input/binary_input_data.json"
                 logger.info("Using default binary input {}", binary_input_files)
 
+        config_yml = f"{merged_config['pysurfex']['forcing_variable_config_yml_file']}"
         update = {
             "general": {
                 "stream": stream,
@@ -326,7 +335,7 @@ class Exp2(Exp):
                 "namelist_defs": f"{namelist_defs}",
                 "binary_input_files": f"{binary_input_files}",
                 "first_guess_yml": f"{merged_config['pysurfex']['first_guess_yml_file']}",
-                "config_yml": f"{merged_config['pysurfex']['forcing_variable_config_yml_file']}",
+                "config_yml": config_yml,
                 "bindir": bindir,
             },
             "include": {
@@ -343,8 +352,8 @@ class Exp2(Exp):
         config_dir = exp_dependencies.get("config_dir")
 
         for key, val in merged_config["include"].items():
-            val = val.replace("@config_dir@", config_dir)
-            merged_config["include"][key] = val
+            lval = val.replace("@config_dir@", config_dir)
+            merged_config["include"][key] = lval
         self.config = merged_config
 
         Exp.__init__(
@@ -363,6 +372,7 @@ class Exp2(Exp):
 
         Args:
             fname (str): File name.
+
         """
         with open(fname, mode="w", encoding="utf8") as fh:
             tomlkit.dump(self.config, fh)
@@ -381,6 +391,7 @@ class ExpFromFiles(Exp2):
         """Construct an Exp object from files.
 
         Args:
+            config (.config_parser.ParsedConfig): Parsed config file contents.
             exp_dependencies (dict): Exp dependencies
             stream(str, optional): Stream identifier
             config_settings(dict): Possible input config settings
@@ -392,6 +403,7 @@ class ExpFromFiles(Exp2):
         """
         logger.debug("Construct ExpFromFiles")
         logger.debug("Experiment dependencies: {}", exp_dependencies)
+        logger.debug("Stream: {}", stream)
 
         # platform paths
         try:
@@ -452,8 +464,8 @@ class ExpFromFiles(Exp2):
             config_settings = self.deep_update(config_settings, case_config)
 
         for key, val in config_settings["pysurfex"].items():
-            val = val.replace("@pysurfex_cfg@", f"{pysurfex.__path__[0]}/cfg")
-            config_settings["pysurfex"][key] = val
+            lval = val.replace("@pysurfex_cfg@", f"{pysurfex.__path__[0]}/cfg")
+            config_settings["pysurfex"][key] = lval
 
         ial_source = exp_dependencies.get("ial_source")
         if ial_source is not None:
@@ -624,7 +636,7 @@ class ExpFromFiles(Exp2):
             {
                 "config_dir": config_dir,
                 "default_config_dir": default_config_dir,
-                "pysurfex_experiment_default_config": pysurfex_experiment_default_config_file,
+                "pysurfex_experiment_default_config": pysurfex_experiment_default_config_file,  # noqa E501
                 "base_config_file": base_config_file,
                 "case_config_file": case_config_file,
                 "include_paths": include_paths,
@@ -644,6 +656,7 @@ class ExpFromFiles(Exp2):
             exp_dependencies (dict): Experiment dependencies
             exp_dependencies_file (str): Filename to dump to
             indent (int, optional): Intendation. Defaults to 2.
+
         """
         with open(exp_dependencies_file, mode="w", encoding="utf-8") as fh:
             json.dump(exp_dependencies, fh, indent=indent)
@@ -665,6 +678,7 @@ class ExpFromFilesDep(ExpFromFiles):
             config (.config_parser.ParsedConfig): Parsed config file contents.
             exp_dependencies (str): File with exp dependencies
             stream (str): Stream identifier
+            config_settings (dict, optional): Configurations settings. Defaults to None.
 
         """
         logger.debug("Construct ExpFromFilesDep")
@@ -740,6 +754,8 @@ def case_setup(
         config_dir (str, optional): Configuration directory. Defaults to None.
         submission_file (str, optional): Submission file. Defaults to None.
         ial_source (str, optional): IAL source path. Defaults to None.
+        namelist_defs (str, optional): Namelist directory. Defaults to None.
+        binary_input_files (str, optional): Binary input files. Defaults to None.
         base_config_file (str, optional): Base configuration file. Defaults to None.
         case_config_file (str, optional): Case specific configuration file.
                                           Defaults to None.

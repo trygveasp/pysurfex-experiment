@@ -1,22 +1,21 @@
 [tool.poetry]
-name = "experiment"
-version = "0.2.0"
-description = "pysurfex-experiment"
-authors = ["Trygve Aspelien <trygveasp@met.no>"]
-readme = "README.rst"
-
-[build-system]
-    build-backend = "poetry.core.masonry.api"
-    requires = ["poetry-core >= 1.0.0"]
-
-[tool.poetry.dependencies]
-    python = ">=3.9,<3.13"
-    deode = {git = "git@github.com:trygveasp/Deode-Prototype.git", develop=true, branch="feature/deode_plugin"}
-    pysurfex = {git = "https://github.com/metno/pysurfex.git", develop=true, branch="feature/pysurfex_experiment"}
-    troika = {git = "https://github.com/trygveasp/troika.git", branch="feature/sge"}
+  authors = ["Trygve Aspelien <trygveasp@met.no>"]
+  description = "pysurfex-experiment"
+  name = "experiment"
+  readme = "README.rst"
+  version = "0.2.0"
 
 [tool.poetry.scripts]
   PySfxExp = "experiment.cli:case_cli"
+
+[build-system]
+  build-backend = "poetry.core.masonry.api"
+  requires = ["poetry-core >= 1.0.0"]
+
+[tool.poetry.dependencies]
+  deode = {git = "git@github.com:trygveasp/Deode-Prototype.git", develop = true, branch = "feature/deode_plug_ppi"}
+  pysurfex = {git = "https://github.com/trygveasp/pysurfex.git", develop = true, branch = "feature/pysurfex_experiment"}
+  python = ">=3.9,<3.13"
 
 [tool.poetry.group.linting.dependencies]
   black = {extras = ["jupyter"], version = "^23.10.0"}
@@ -30,6 +29,123 @@ readme = "README.rst"
   poethepoet = {extras = ["poetry-plugin"], version = "0.24.4"}
   pydoclint = "^0.3.8" # Replaces darglint, but is maintained & faster
 
+[tool.poetry.group.test.dependencies]
+  pytest = "^7.2.2"
+  pytest-cov = "^4.1.0"
+  pytest-mock = "^3.7.0"
+  pytest-profiling = "^1.7.0"
+  pytest-timeout = "^2.1.0"
+  pytest-xdist = "^3.2.0"
+
+  ##################
+  # Linter configs #
+  ##################
+
+[tool.black]
+  line-length = 90
+
+[tool.flakeheaven]
+  exclude = [".*/", "tmp/", "*/tmp/", "*.ipynb"]
+  format = "colored"
+  # Show line of source code in output, with syntax highlighting
+  show_source = true
+  style = "google"
+
+# list of plugins and rules for them
+[tool.flakeheaven.plugins]
+  # Deactivate all rules for all plugins by default
+  "*" = ["-*"]
+  # Activate only those plugins not covered by ruff
+  pydoclint = []
+
+[tool.isort]
+  line_length = 90
+  profile = "black"
+
+[tool.ruff]
+  ignore = [
+    "C901",
+    "D105",
+    "EXE001",
+    "PLE1205",
+    "PLR0912",
+    "PLR0915",
+    "PLR0913",
+    "PLR2004",
+    "RET504",
+    "RUF012",
+  ]
+  line-length = 90
+  select = [
+    "A",
+    "ARG",
+    "B",
+    "BLE",
+    "C4",
+    "C90",
+    "D",
+    "E",
+    "ERA",
+    "EXE",
+    "F",
+    "G",
+    "I",
+    "N",
+    "PD",
+    "PERF",
+    "PIE",
+    "PL",
+    "PT",
+    "Q",
+    "RET",
+    "RSE",
+    "RUF",
+    "S",
+    "SIM",
+    "SLF",
+    "T20",
+    "W",
+  ]
+
+[tool.ruff.per-file-ignores]
+  # S101: Use of `assert` detected
+  "scheduler.py" = ["T201"]
+  "tests/**/*.py" = [
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
+    "E501",
+    "S101",
+    "SLF001",
+  ]
+
+[tool.ruff.pydocstyle]
+  convention = "google"
+
+[tool.toml-formatter]
+  indentation = 2
+  section_order_overrides = [
+    "^general$",
+    "general.*",
+    "^tool.poetry$",
+    "^tool.poetry.scripts$",
+    "build-system",
+    "tool.poetry.*",
+  ]
+
+  ##################
+  # pytest configs #
+  ##################
+
+[tool.pytest.ini_options]
+  addopts = "-v --failed-first --cov-report=term-missing --cov-report=term:skip-covered --cov-report=xml:.coverage.xml --cov=./"
+  log_cli_level = "INFO"
+  testpaths = ["tests/smoke", "tests/unit"]
 
   ####################################
   # Leave configs for `poe` separate #
@@ -41,8 +157,8 @@ readme = "README.rst"
 [tool.poe.tasks]
   # Doc-related stuff
   _doc_build.shell = """
-    deode doc config >| docs/markdown_docs/config.md
-    sphinx-apidoc deode -o docs/ --force --no-toc --module-first
+    experiment doc config >| docs/markdown_docs/config.md
+    sphinx-apidoc experiment -o docs/ --force --no-toc --module-first
     sphinx-build docs docs/_build/
     touch docs/_build/.nojekyll
   """
@@ -91,7 +207,8 @@ readme = "README.rst"
 
 [[tool.poe.tasks.lint.switch]]
   case = "True"
-  sequence = ["_isort", "_black", "_ruff --fix", "_flake8", "_toml_formatter --fix"]
+  #sequence = ["_isort", "_black", "_ruff --fix", "_flake8", "_toml_formatter --fix"]
+  sequence = ["_isort", "_black", "_ruff --fix", "_toml_formatter --fix"]
 
 [[tool.poe.tasks.lint.switch]]
   case = "False"
@@ -99,6 +216,5 @@ readme = "README.rst"
     "_isort --check-only",
     "_black --check --diff",
     "_ruff",
-    "_flake8",
     "_toml_formatter",
   ]

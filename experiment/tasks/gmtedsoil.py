@@ -28,6 +28,15 @@ def _import_gdal():
 
 
 def modify_ncfile(ncfile, var_name, fact=1):
+    """Modify netcdf file.
+
+    Args:
+    ----
+        ncfile (str): NetCDF file
+        var_name (str): Variable name
+        fact (int, optional): Scale factor in file. Defaults to 1.
+
+    """
     nc = netCDF4.Dataset(ncfile, mode="a")
     nc.renameDimension("lon", "lons")
     nc.renameDimension("lat", "lats")
@@ -45,7 +54,9 @@ class Gmted(Task):
         """Init Gmted.
 
         Args:
+        ----
             config (Config): Config object
+
         """
         self.domain = self.get_domain_properties(config)
 
@@ -59,10 +70,13 @@ class Gmted(Task):
         """Get domain properties.
 
         Args:
+        ----
             config (Config): Config object
 
         Returns:
+        -------
             dict: Domain properties
+
         """
         domain = {
             "nlon": config["domain.njmax"],
@@ -82,13 +96,16 @@ class Gmted(Task):
         """Get GMTED header coordinates.
 
         Args:
+        ----
             east (float): East
             west (float): West
             south (float): South
             north (float): North
 
         Returns:
+        -------
             tuple: Header coordinates
+
         """
         longitude_bin_size = 30
 
@@ -140,10 +157,13 @@ class Gmted(Task):
         """Define GMTED input files.
 
         Args:
+        ----
             domain_properties (dict): Domain properties
 
         Returns:
+        -------
             tuple: GMTED input files
+
         """
         west = domain_properties["minlon"]
         east = domain_properties["maxlon"]
@@ -178,8 +198,10 @@ class Gmted(Task):
         """Convert tif file to binary file used by surfex.
 
         Args:
+        ----
             gd: gdal dataset
             bin_file (str): Binary file
+
         """
         band = gd.GetRasterBand(1)
 
@@ -197,6 +219,7 @@ class Gmted(Task):
         """Write header file.
 
         Args:
+        ----
             header_file (str): Header file
             hdr_north (float): North
             hdr_south (float): South
@@ -204,6 +227,7 @@ class Gmted(Task):
             hdr_east (float): East
             hdr_rows (int): Number of rows
             hdr_cols (int): Number of columns
+
         """
         with open(header_file, mode="w", encoding="utf8") as f:
             f.write("PROCESSED GMTED2010, orography model, resolution 250m\n")
@@ -244,11 +268,9 @@ class Gmted(Task):
             options=["COMPRESS=LZW", "TILED=YES"],
         )
 
-        fmt = self.config["pgd.gmted_format"]
+        fmt = self.config["pgd.zs_format"]
         if fmt == "netcdf":
-            gdal.Translate(
-                f"{climdir}/gmted2010.nc", "gmted_mea075.tif", format="NetCDF"
-            )
+            gdal.Translate(f"{climdir}/gmted2010.nc", "gmted_mea075.tif", format="NetCDF")
             modify_ncfile(f"{climdir}/gmted2010.nc", "ZS")
         elif fmt == "direct":
             Gmted.tif2bin(gd, "gmted_mea075.bin")
@@ -281,6 +303,7 @@ class Soil(Task):
         """Construct soil data object.
 
         Args:
+        ----
             config (deode.ParsedConfig): Configuration
 
         """
@@ -293,10 +316,13 @@ class Soil(Task):
         """Get domain properties.
 
         Args:
+        ----
             config (deode.ParsedConfig): Configuration
 
         Returns:
+        -------
             dict: Domain properties
+
         """
         domain = {
             "nlon": config["domain.njmax"],
@@ -315,10 +341,13 @@ class Soil(Task):
         """Check if domain is valid.
 
         Args:
+        ----
             domain_properties (dict): Dict with domain properties
 
         Raises:
+        ------
             ValueError: If domain is outside soilgrid data area
+
         """
         # Area available from soilgrid data
         glo_north = 84.0
@@ -347,11 +376,14 @@ class Soil(Task):
         """Get coordinates for cutting dataset.
 
         Args:
+        ----
             domain_properties (dict): Dict with domain properties
             halo (float): Halo. Defaults to 5.0.
 
         Returns:
+        -------
             tuple: Coordinates for cutting dataset
+
         """
         cut_west = domain_properties["minlon"] - halo
         cut_east = domain_properties["maxlon"] + halo
@@ -378,6 +410,7 @@ class Soil(Task):
         """Write header file.
 
         Args:
+        ----
             header_file (str): Header file
             soiltype (str): Soil type
             hdr_north (float): North
@@ -390,6 +423,7 @@ class Soil(Task):
             bits (int): Number of bits. Defaults to 8.
             write_fact (bool): Write factor. Defaults to False.
             fact (int): Factor. Defaults to 10
+
         """
         with open(header_file, mode="w", encoding="utf8") as f:
             f.write(f"{soiltype} cut from global soilgrids of 250m resolution\n")
@@ -411,7 +445,9 @@ class Soil(Task):
         Define run sequence.
 
         Raises:
+        ------
             FileNotFoundError: If no tif files are found.
+
         """
         logger.debug("Running soil task")
 
@@ -474,22 +510,22 @@ class Soil(Task):
         climdir = self.platform.get_system_value("climdir")
         unix_group = self.platform.get_platform_value("unix_group")
         deodemakedirs(climdir, unixgroup=unix_group)
-        fmt = self.config["pgd.soilgrid_format"]
-        fact = 1
-        if fmt == "direct":
-            gfmt = "EHdr"
-            output_type = gdal.GDT_Byte
-            suffix = "dir"
-        elif fmt == "netcdf":
-            gfmt = "NetCDF"
-            output_type = 0
-            suffix = "nc"
 
         for subarea_file in soilgrid_tif_subarea_files:
             fact = 10
             if subarea_file.startswith("SNDPPT"):
+                fact = 100
+                fmt = self.config["pgd.sand_format"]
+                if fmt == "direct":
+                    gfmt = "EHdr"
+                    output = f"{climdir}/SAND_SOILGRID.dir"
+                    output_type = gdal.GDT_Byte
+                elif fmt == "netcdf":
+                    gfmt = "NetCDF"
+                    output = f"{climdir}/SAND_SOILGRID.nc"
+                    output_type = 0
+
                 ds = gdal.Open(subarea_file)
-                output = f"{climdir}/SAND_SOILGRID.{suffix}"
                 ds = gdal.Translate(
                     output,
                     ds,
@@ -498,11 +534,20 @@ class Soil(Task):
                 )
                 ds = None
                 if fmt == "netcdf":
-                    fact = 100
                     modify_ncfile(output, "SAND", fact=fact)
             elif subarea_file.startswith("CLYPPT"):
+                fact = 100
+                fmt = self.config["pgd.clay_format"]
+                if fmt == "direct":
+                    gfmt = "EHdr"
+                    output = f"{climdir}/CLAY_SOILGRID.dir"
+                    output_type = gdal.GDT_Byte
+                elif fmt == "netcdf":
+                    gfmt = "NetCDF"
+                    output = f"{climdir}/CLAY_SOILGRID.nc"
+                    output_type = 0
+
                 ds = gdal.Open(subarea_file)
-                output = f"{climdir}/CLAY_SOILGRID.{suffix}"
                 ds = gdal.Translate(
                     output,
                     ds,
@@ -511,26 +556,28 @@ class Soil(Task):
                 )
                 ds = None
                 if fmt == "netcdf":
-                    fact = 100
                     modify_ncfile(output, "CLAY", fact=fact)
-            elif subarea_file.startswith("SOC_TOP"):
+            elif subarea_file.startswith(("SOC_TOP", "SOC_SUB")):
+                if subarea_file.startswith("SOC_SUB"):
+                    soc_type = "soc_sub"
+                elif subarea_file.startswith("SOC_TOP"):
+                    soc_type = "soc_top"
+                fact = 10
+                fmt = self.config["pgd.soc_format"]
                 if fmt == "direct":
+                    gfmt = "EHdr"
+                    output = f"{climdir}/{soc_type}.dir"
                     output_type = gdal.GDT_Int16
-                output = f"{climdir}/soc_top.{suffix}"
+                elif fmt == "netcdf":
+                    gfmt = "NetCDF"
+                    output = f"{climdir}/{soc_type}.nc"
+                    output_type = 0
+
                 ds = gdal.Open(subarea_file)
                 ds = gdal.Translate(output, ds, format=gfmt, outputType=output_type)
                 ds = None
                 if fmt == "netcdf":
-                    modify_ncfile(output, "SOC_TOP", fact=fact)
-            elif subarea_file.startswith("SOC_SUB"):
-                if fmt == "direct":
-                    output_type = gdal.GDT_Int16
-                output = f"{climdir}/soc_sub.{suffix}"
-                ds = gdal.Open(subarea_file)
-                ds = gdal.Translate(output, ds, format=gfmt, outputType=output_type)
-                ds = None
-                if fmt == "netcdf":
-                    modify_ncfile(output, "SOC_SUB", fact=fact)
+                    modify_ncfile(output, soc_type.upper(), fact=fact)
             else:
                 logger.warning("Unknown soilgrid tif file: {}", subarea_file)
 

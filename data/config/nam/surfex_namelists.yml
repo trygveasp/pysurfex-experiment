@@ -37,13 +37,15 @@ io:
     LRESTART_2M: true
     LSET_FORC_ZS: true
     NHALO: 0
-    #LKDTREE: false
     XTSTEP_OUTPUT: '${SURFEX#IO#XTSTEP_OUTPUT}'
     XTSTEP_SURF: '${SURFEX#IO#XTSTEP}'
   NAM_WRITE_SURF_ATM:
     LSPLIT_PATCH: '${SURFEX#IO#LSPLIT_PATCH}'
 
 # PGD
+pgd_kdtree:
+  NAM_IO_OFFLINE:
+    LKDTREE: false
 
 pgd_meb:
   NAM_MEB_ISBA:
@@ -78,6 +80,14 @@ pgd_cover:
   NAM_COVER:
     YCOVER: '${SURFEX#COVER#YCOVER}'
     YCOVERFILETYPE: 'DIRECT'
+
+pgd_cover_direct:
+  NAM_COVER:
+    YCOVERFILETYPE: DIRECT
+
+pgd_cover_netcdf:
+  NAM_COVER:
+    YCOVERFILETYPE: NETCDF
 
 pgd_cv:
   NAM_DATA_ISBA:
@@ -126,7 +136,7 @@ pgd_cv_sg:
     - 1.0e-05
     - 2.0e-05
 
-pgd_ecoclimap_sg_dirtyp:
+pgd_ecoclimap_sg:
   NAM_DATA_ISBA:
     NTIME: 36
     CFNAM_ALBNIR_SOIL:
@@ -316,6 +326,9 @@ pgd_ecoclimap_sg_dirtyp:
     - - lai_1205
     - - lai_1215
     - - lai_1225
+
+pgd_ecoclimap_sg_albnir_soil_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_ALBNIR_SOIL:
     - - DIRTYP
     - - DIRTYP
@@ -353,6 +366,9 @@ pgd_ecoclimap_sg_dirtyp:
     - - DIRTYP
     - - DIRTYP
     - - DIRTYP
+
+pgd_ecoclimap_sg_albnir_veg_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_ALBNIR_VEG:
     - - DIRTYP
     - - DIRTYP
@@ -390,6 +406,9 @@ pgd_ecoclimap_sg_dirtyp:
     - - DIRTYP
     - - DIRTYP
     - - DIRTYP
+
+pgd_ecoclimap_sg_albvis_soil_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_ALBVIS_SOIL:
     - - DIRTYP
     - - DIRTYP
@@ -427,6 +446,9 @@ pgd_ecoclimap_sg_dirtyp:
     - - DIRTYP
     - - DIRTYP
     - - DIRTYP    
+
+pgd_ecoclimap_sg_albvis_veg_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_ALBVIS_VEG:
     - - DIRTYP
     - - DIRTYP
@@ -464,8 +486,14 @@ pgd_ecoclimap_sg_dirtyp:
     - - DIRTYP
     - - DIRTYP
     - - DIRTYP    
+
+pgd_ecoclimap_sg_tree_height_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_H_TREE:
     - DIRTYP
+
+pgd_ecoclimap_sg_lai_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_LAI:
     - - DIRTYP
     - - DIRTYP
@@ -504,7 +532,7 @@ pgd_ecoclimap_sg_dirtyp:
     - - DIRTYP
     - - DIRTYP   
 
-pgd_ecoclimap_sg:
+pgd_ecoclimap_sg_single_decade:
   NAM_DATA_ISBA:
     NTIME: 1
     CFNAM_ALBNIR_SOIL:
@@ -519,237 +547,69 @@ pgd_ecoclimap_sg:
     - h_tree
     CFNAM_LAI:
     - lai
+
+pgd_ecoclimap_sg_single_decade_albnir_soil_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_ALBNIR_SOIL:
     - DIRTYP
+
+pgd_ecoclimap_sg_single_decade_albnir_veg_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_ALBNIR_VEG:
     - DIRTYP
+
+pgd_ecoclimap_sg_single_decade_albvis_soil_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_ALBVIS_SOIL:
     - DIRTYP
+
+pgd_ecoclimap_sg_single_decade_albvis_veg_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_ALBVIS_VEG:
     - DIRTYP
+
+pgd_ecoclimap_sg_single_decade_lai_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_LAI:
     - DIRTYP
+
+pgd_ecoclimap_sg_single_decade_tree_height_dirtyp:
+  NAM_DATA_ISBA:
     CFTYP_H_TREE:
     - DIRTYP
 
-pgd_ecoclimap_sg_single_netcdf:
+pgd_ecoclimap_sg_single_decade_albnir_soil_netcdf:
   NAM_DATA_ISBA:
-    NTIME: 1
-    CFNAM_ALBNIR_SOIL:
-    - albnir_soil
-    CFNAM_ALBNIR_VEG:
-    - albnir_veg
-    CFNAM_ALBVIS_SOIL:
-    - albvis_soil
-    CFNAM_ALBVIS_VEG:
-    - albvis_veg
-    CFNAM_H_TREE:
-    - h_tree
-    CFNAM_LAI:
-    - lai
     CFTYP_ALBNIR_SOIL:
     - NETCDF
+
+pgd_ecoclimap_sg_single_decade_albnir_veg_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_ALBNIR_VEG:
     - NETCDF
+
+pgd_ecoclimap_sg_single_decade_albvis_soil_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_ALBVIS_SOIL:
     - NETCDF
+
+pgd_ecoclimap_sg_single_decade_albvis_veg_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_ALBVIS_VEG:
     - NETCDF
+
+pgd_ecoclimap_sg_single_decade_lai_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_LAI:
     - NETCDF
+
+pgd_ecoclimap_sg_single_decade_tree_height_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_H_TREE:
     - NETCDF
 
-pgd_ecoclimap_sg_netcdf:
+pgd_ecoclimap_sg_albnir_soil_netcdf:
   NAM_DATA_ISBA:
-    NTIME: 36
-    CFNAM_ALBNIR_SOIL:
-    - - albnir_soil_0105
-    - - albnir_soil_0115
-    - - albnir_soil_0125
-    - - albnir_soil_0205
-    - - albnir_soil_0215
-    - - albnir_soil_0225
-    - - albnir_soil_0305
-    - - albnir_soil_0315
-    - - albnir_soil_0325
-    - - albnir_soil_0405
-    - - albnir_soil_0415
-    - - albnir_soil_0425
-    - - albnir_soil_0505
-    - - albnir_soil_0515
-    - - albnir_soil_0525
-    - - albnir_soil_0605
-    - - albnir_soil_0615
-    - - albnir_soil_0625
-    - - albnir_soil_0705
-    - - albnir_soil_0715
-    - - albnir_soil_0725
-    - - albnir_soil_0805
-    - - albnir_soil_0815
-    - - albnir_soil_0825
-    - - albnir_soil_0905
-    - - albnir_soil_0915
-    - - albnir_soil_0925
-    - - albnir_soil_1005
-    - - albnir_soil_1015
-    - - albnir_soil_1025
-    - - albnir_soil_1105
-    - - albnir_soil_1115
-    - - albnir_soil_1125
-    - - albnir_soil_1205
-    - - albnir_soil_1215
-    - - albnir_soil_1225
-    CFNAM_ALBNIR_VEG:
-    - - albir_veg_0105
-    - - albir_veg_0115
-    - - albir_veg_0125
-    - - albir_veg_0205
-    - - albir_veg_0215
-    - - albir_veg_0225
-    - - albir_veg_0305
-    - - albir_veg_0315
-    - - albir_veg_0325
-    - - albir_veg_0405
-    - - albir_veg_0415
-    - - albir_veg_0425
-    - - albir_veg_0505
-    - - albir_veg_0515
-    - - albir_veg_0525
-    - - albir_veg_0605
-    - - albir_veg_0615
-    - - albir_veg_0625
-    - - albir_veg_0705
-    - - albir_veg_0715
-    - - albir_veg_0725
-    - - albir_veg_0805
-    - - albir_veg_0815
-    - - albir_veg_0825
-    - - albir_veg_0905
-    - - albir_veg_0915
-    - - albir_veg_0925
-    - - albir_veg_1005
-    - - albir_veg_1015
-    - - albir_veg_1025
-    - - albir_veg_1105
-    - - albir_veg_1115
-    - - albir_veg_1125
-    - - albir_veg_1205
-    - - albir_veg_1215
-    - - albir_veg_1225
-    CFNAM_ALBVIS_SOIL:
-    - - albvis_soil_0105
-    - - albvis_soil_0115
-    - - albvis_soil_0125
-    - - albvis_soil_0205
-    - - albvis_soil_0215
-    - - albvis_soil_0225
-    - - albvis_soil_0305
-    - - albvis_soil_0315
-    - - albvis_soil_0325
-    - - albvis_soil_0405
-    - - albvis_soil_0415
-    - - albvis_soil_0425
-    - - albvis_soil_0505
-    - - albvis_soil_0515
-    - - albvis_soil_0525
-    - - albvis_soil_0605
-    - - albvis_soil_0615
-    - - albvis_soil_0625
-    - - albvis_soil_0705
-    - - albvis_soil_0715
-    - - albvis_soil_0725
-    - - albvis_soil_0805
-    - - albvis_soil_0815
-    - - albvis_soil_0825
-    - - albvis_soil_0905
-    - - albvis_soil_0915
-    - - albvis_soil_0925
-    - - albvis_soil_1005
-    - - albvis_soil_1015
-    - - albvis_soil_1025
-    - - albvis_soil_1105
-    - - albvis_soil_1115
-    - - albvis_soil_1125
-    - - albvis_soil_1205
-    - - albvis_soil_1215
-    - - albvis_soil_1225
-    CFNAM_ALBVIS_VEG:
-    - - albvis_veg_0105
-    - - albvis_veg_0115
-    - - albvis_veg_0125
-    - - albvis_veg_0205
-    - - albvis_veg_0215
-    - - albvis_veg_0225
-    - - albvis_veg_0305
-    - - albvis_veg_0315
-    - - albvis_veg_0325
-    - - albvis_veg_0405
-    - - albvis_veg_0415
-    - - albvis_veg_0425
-    - - albvis_veg_0505
-    - - albvis_veg_0515
-    - - albvis_veg_0525
-    - - albvis_veg_0605
-    - - albvis_veg_0615
-    - - albvis_veg_0625
-    - - albvis_veg_0705
-    - - albvis_veg_0715
-    - - albvis_veg_0725
-    - - albvis_veg_0805
-    - - albvis_veg_0815
-    - - albvis_veg_0825
-    - - albvis_veg_0905
-    - - albvis_veg_0915
-    - - albvis_veg_0925
-    - - albvis_veg_1005
-    - - albvis_veg_1015
-    - - albvis_veg_1025
-    - - albvis_veg_1105
-    - - albvis_veg_1115
-    - - albvis_veg_1125
-    - - albvis_veg_1205
-    - - albvis_veg_1215
-    - - albvis_veg_1225
-    CFNAM_H_TREE:
-      - h_tree
-    CFNAM_LAI:
-    - - lai_0105
-    - - lai_0115
-    - - lai_0125
-    - - lai_0205
-    - - lai_0215
-    - - lai_0225
-    - - lai_0305
-    - - lai_0315
-    - - lai_0325
-    - - lai_0405
-    - - lai_0415
-    - - lai_0425
-    - - lai_0505
-    - - lai_0515
-    - - lai_0525
-    - - lai_0605
-    - - lai_0615
-    - - lai_0625
-    - - lai_0705
-    - - lai_0715
-    - - lai_0725
-    - - lai_0805
-    - - lai_0815
-    - - lai_0825
-    - - lai_0905
-    - - lai_0915
-    - - lai_0925
-    - - lai_1005
-    - - lai_1015
-    - - lai_1025
-    - - lai_1105
-    - - lai_1115
-    - - lai_1125
-    - - lai_1205
-    - - lai_1215
-    - - lai_1225
     CFTYP_ALBNIR_SOIL:
     - - NETCDF
     - - NETCDF
@@ -787,6 +647,9 @@ pgd_ecoclimap_sg_netcdf:
     - - NETCDF
     - - NETCDF
     - - NETCDF
+
+pgd_ecoclimap_sg_albnir_veg_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_ALBNIR_VEG:
     - - NETCDF
     - - NETCDF
@@ -824,6 +687,9 @@ pgd_ecoclimap_sg_netcdf:
     - - NETCDF
     - - NETCDF
     - - NETCDF
+
+pgd_ecoclimap_sg_albvis_soil_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_ALBVIS_SOIL:
     - - NETCDF
     - - NETCDF
@@ -861,6 +727,9 @@ pgd_ecoclimap_sg_netcdf:
     - - NETCDF
     - - NETCDF
     - - NETCDF
+
+pgd_ecoclimap_sg_albvis_veg_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_ALBVIS_VEG:
     - - NETCDF
     - - NETCDF
@@ -898,8 +767,14 @@ pgd_ecoclimap_sg_netcdf:
     - - NETCDF
     - - NETCDF
     - - NETCDF
+
+pgd_ecoclimap_sg_tree_height_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_H_TREE:
       - NETCDF
+
+pgd_ecoclimap_sg_lai_netcdf:
+  NAM_DATA_ISBA:
     CFTYP_LAI:
     - - NETCDF
     - - NETCDF
@@ -943,7 +818,22 @@ pgd_flake:
     YWATER_DEPTH: GlobalLakeDepth
     YWATER_DEPTHFILETYPE: DIRECT
     YWATER_DEPTH_STATUS: GlobalLakeStatus
-    #YWATER_DEPTH_STATUSFILETYPE: DIRECT
+
+pgd_flake_depth_direct:
+  NAM_DATA_FLAKE:
+    YWATER_DEPTHFILETYPE: DIRECT
+
+pgd_flake_depth_status_direct:
+  NAM_DATA_FLAKE:
+    YWATER_DEPTH_STATUSFILETYPE: DIRECT
+
+pgd_flake_depth_netcdf:
+  NAM_DATA_FLAKE:
+    YWATER_DEPTHFILETYPE: NETCDF
+
+pgd_flake_depth_status_netcdf:
+  NAM_DATA_FLAKE:
+    YWATER_DEPTH_STATUSFILETYPE: NETCDF
 
 pgd_inland_water: {}
 
@@ -959,6 +849,30 @@ pgd_isba:
     YSOCFILETYPE: 'DIRECT'
     YSOC_SUB: '${SURFEX#ISBA#YSOC_SUB}'
     YSOC_TOP: '${SURFEX#ISBA#YSOC_TOP}'
+
+pgd_isba_sand_direct:
+  NAM_ISBA:
+    YSANDFILETYPE: DIRECT
+
+pgd_isba_clay_direct:
+  NAM_ISBA:
+    YCLAYFILETYPE: DIRECT
+
+pgd_isba_soc_direct:
+  NAM_ISBA:
+    YSOCFILETYPE: DIRECT
+
+pgd_isba_sand_netcdf:
+  NAM_ISBA:
+    YSANDFILETYPE: NETCDF
+
+pgd_isba_clay_netcdf:
+  NAM_ISBA:
+    YCLAYFILETYPE: NETCDF
+
+pgd_isba_soc_netcdf:
+  NAM_ISBA:
+    YSOCFILETYPE: NETCDF
 
 pgd_isba_2l:
   NAM_ISBA:
@@ -1034,6 +948,14 @@ pgd_zs:
   NAM_ZS:
     YZS: '${SURFEX#ZS#YZS}'
     YZSFILETYPE: 'DIRECT'
+
+pgd_zs_direct:
+  NAM_ZS:
+    YZSFILETYPE: DIRECT
+
+pgd_zs_netcdf:
+  NAM_ZS:
+    YZSFILETYPE: NETCDF
 
 # PREP
 
@@ -1174,9 +1096,9 @@ offline_sso_none:
 
 offline_sso_orotur:
   NAM_SSON:
+    XSOROT: '${NAM_SSON#XSOROT}'
     XCOROT: 500
     XFRACZ0: 15.0
-    XSOROT: 2500.0
     XVOROT: 8.0
 
 offline_pert_isba_settings:
@@ -1238,14 +1160,6 @@ offline_sice:
     LICE_HAS_SNOW: true
     LICE_MASS_BALANCE: true
     XOCEAN_HEAT_FLUX: 2.0
-
-offline_sso:
-  NAM_SSON:
-    CROUGH: '${SURFEX#SSO#SCHEME}'
-
-offline_sso_orotur:
-  NAM_SSON:
-    XSOROT: '${NAM_SSON#XSOROT}'
 
 offline_teb: {}
 

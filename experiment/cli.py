@@ -54,10 +54,14 @@ def create_exp(args, config):
 
 
 def parse_args(argv=None):
-    """_summary_
+    """Parse command line args.
 
     Args:
         argv (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        args
+
     """
     if argv is None:
         argv = sys.argv[1:]

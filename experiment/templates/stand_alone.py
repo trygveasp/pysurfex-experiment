@@ -17,8 +17,10 @@ def stand_alone_main(task, config_file):
     """Execute default main.
 
     Args:
+    ----
         task (str): Task name
         config_file (str): Config file
+
     """
     config = ParsedConfig.from_file(config_file, json_schema=MAIN_CONFIG_JSON_SCHEMA)
 

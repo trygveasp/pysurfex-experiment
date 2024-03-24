@@ -35,19 +35,17 @@ class Forcing(PySurfexBaseTask):
 
         Raises:
             NotImplementedError: _description_
+
         """
         kwargs = {}
         if self.user_config is not None:
-            user_config = yaml.safe_load(
-                open(self.user_config, mode="r", encoding="utf-8")
-            )
+            with open(self.user_config, mode="r", encoding="utf-8") as fh:
+                user_config = yaml.safe_load(fh)
             kwargs.update({"user_config": user_config})
 
         domain_json = self.geo.json
         domain_json.update({"nam_pgd_grid": {"cgrid": "CONF PROJ"}})
-        with open(
-            self.wdir + "/domain.json", mode="w", encoding="utf-8"
-        ) as file_handler:
+        with open(self.wdir + "/domain.json", mode="w", encoding="utf-8") as file_handler:
             json.dump(domain_json, file_handler, indent=2)
         kwargs.update({"domain": self.wdir + "/domain.json"})
         global_config = self.platform.get_system_value("config_yml")

@@ -20,16 +20,20 @@ class SurfexBinaryTask(PySurfexBaseTask):
     """Main surfex binary task executing all tasks.
 
     Args:
+    ----
         Task (object): Inheritance of base task class
+
     """
 
     def __init__(self, config, name=None, mode=None):
         """Construct a surfex binary task.
 
         Args:
+        ----
             config (ParsedConfig): Parsed config
             name (str): Task name
             mode (str): mode
+
         """
         if name is None:
             name = self.__class__.__name__
@@ -53,13 +57,13 @@ class SurfexBinaryTask(PySurfexBaseTask):
         platform_paths = self.config["platform"].dict()
         exp_file_paths = {}
         for key, val in system_paths.items():
-            key = self.platform.substitute(key)
-            val = self.platform.substitute(val)
-            exp_file_paths.update({key: val})
+            lkey = self.platform.substitute(key)
+            lval = self.platform.substitute(val)
+            exp_file_paths.update({lkey: lval})
         for key, val in platform_paths.items():
-            key = self.platform.substitute(key)
-            val = self.platform.substitute(val)
-            exp_file_paths.update({key: val})
+            lkey = self.platform.substitute(key)
+            lval = self.platform.substitute(val)
+            exp_file_paths.update({lkey: lval})
         obs_dir = self.platform.get_system_value("obs_dir")
         # To sub EEE/RRR
         obs_dir = self.platform.substitute(obs_dir)
@@ -138,12 +142,13 @@ class SurfexBinaryTask(PySurfexBaseTask):
         """Execute the surfex binary.
 
         Args:
+        ----
             binary (str): Full path to binary
             output (str): Full path to output file
             pgd_file_path (str, optional): _description_. Defaults to None.
             prep_file_path (str, optional): _description_. Defaults to None.
-            archive_data (surfex.OutputDataFromSurfexBinaries, optional): A mapping of produced
-                files and where to archive them. Defaults to None.
+            archive_data (surfex.OutputDataFromSurfexBinaries, optional):
+                A mapping of produced files and where to archive them. Defaults to None.
             prep_file (_type_, optional): _description_. Defaults to None.
             prep_pgdfile (_type_, optional): _description_. Defaults to None.
 
@@ -188,6 +193,61 @@ class SurfexBinaryTask(PySurfexBaseTask):
         with open(self.namelist_defs, mode="r", encoding="utf-8") as fhandler:
             definitions = yaml.safe_load(fhandler)
         namelist = NamelistGenerator(self.mode, self.sfx_config, definitions)
+        assemble = namelist.namelist_blocks()
+        consistency = True
+
+        if self.mode == "pgd":
+            assemble.append("pgd_kdtree")
+            eco_sg = self.sfx_config.get_setting("SURFEX#COVER#SG")
+            # Cover
+            fmt = self.config["pgd.ecoclimap_cover_format"]
+            assemble.append(f"pgd_cover_{fmt}")
+            # ZS
+            fmt = self.config["pgd.zs_format"]
+            assemble.append(f"pgd_zs_{fmt}")
+            # SAND
+            fmt = self.config["pgd.sand_format"]
+            assemble.append(f"pgd_isba_sand_{fmt}")
+            # CLAY
+            fmt = self.config["pgd.clay_format"]
+            assemble.append(f"pgd_isba_clay_{fmt}")
+            # SOC
+            if eco_sg:
+                fmt = self.config["pgd.soc_format"]
+                assemble.append(f"pgd_isba_soc_{fmt}")
+            # FLAKE
+            if self.sfx_config.get_setting("SURFEX#TILES#INLAND_WATER") == "FLAKE":
+                fmt = self.config["pgd.global_lake_depth_format"]
+                assemble.append(f"pgd_flake_depth_{fmt}")
+                fmt = self.config["pgd.global_lake_depth_status_format"]
+                assemble.append(f"pgd_flake_depth_status_{fmt}")
+            # ECO-SG
+            if eco_sg:
+                sdec = ""
+                if self.config["pgd.one_decade"]:
+                    sdec = "_single_decade"
+                assemble.append(f"pgd_ecoclimap_sg{sdec}")
+                fmt = self.config["pgd.ecoclimap_sg_albnir_soil_format"]
+                assemble.append(f"pgd_ecoclimap_sg{sdec}_albnir_soil_{fmt}")
+                fmt = self.config["pgd.ecoclimap_sg_albnir_veg_format"]
+                assemble.append(f"pgd_ecoclimap_sg{sdec}_albnir_veg_{fmt}")
+                fmt = self.config["pgd.ecoclimap_sg_albvis_soil_format"]
+                assemble.append(f"pgd_ecoclimap_sg{sdec}_albvis_soil_{fmt}")
+                fmt = self.config["pgd.ecoclimap_sg_albvis_veg_format"]
+                assemble.append(f"pgd_ecoclimap_sg{sdec}_albvis_veg_{fmt}")
+                fmt = self.config["pgd.ecoclimap_sg_lai_format"]
+                assemble.append(f"pgd_ecoclimap_sg{sdec}_lai_{fmt}")
+                fmt = self.config["pgd.ecoclimap_sg_tree_height_format"]
+                assemble.append(f"pgd_ecoclimap_sg{sdec}_tree_height_{fmt}")
+
+        namelist = NamelistGenerator(
+            self.mode,
+            self.sfx_config,
+            definitions,
+            assemble=assemble,
+            consistency=consistency,
+        )
+
         settings = namelist.get_namelist()
 
         if self.mode == "pgd":
@@ -243,9 +303,7 @@ class SurfexBinaryTask(PySurfexBaseTask):
             )
 
         if self.need_prep and self.need_pgd:
-            surffile = SURFFile(
-                filetype, surffile, archive_file=output, lfagmap=lfagmap
-            )
+            surffile = SURFFile(filetype, surffile, archive_file=output, lfagmap=lfagmap)
         else:
             surffile = None
 
@@ -294,9 +352,7 @@ class SurfexBinaryTask(PySurfexBaseTask):
                 print_namelist=self.print_namelist,
             )
         elif self.do_prep:
-            prepfile = PREPFile(
-                filetype, prepfile, archive_file=output, lfagmap=lfagmap
-            )
+            prepfile = PREPFile(filetype, prepfile, archive_file=output, lfagmap=lfagmap)
             SURFEXBinary(
                 binary,
                 batch,
@@ -325,13 +381,16 @@ class OfflinePgd(SurfexBinaryTask):
     """Running PGD task.
 
     Args:
+    ----
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
+
     """
 
     def __init__(self, config):
         """Construct a Pgd task object.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -358,13 +417,16 @@ class OfflinePrep(SurfexBinaryTask):
     """Running PREP task.
 
     Args:
+    ----
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
+
     """
 
     def __init__(self, config):
         """Construct Prep task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -423,13 +485,16 @@ class OfflineForecast(SurfexBinaryTask):
     """Running Forecast task.
 
     Args:
+    ----
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
+
     """
 
     def __init__(self, config):
         """Construct the forecast task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -494,6 +559,7 @@ class PerturbedRun(SurfexBinaryTask):
     """Running a perturbed forecast task.
 
     Args:
+    ----
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
 
     """
@@ -502,6 +568,7 @@ class PerturbedRun(SurfexBinaryTask):
         """Construct a perturbed run task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -530,7 +597,7 @@ class PerturbedRun(SurfexBinaryTask):
         prep_file_path = self.platform.substitute(archive_pattern, basetime=self.fg_dtg)
         prep_file_path = f"{prep_file_path}/{prepfile}"
         surffile = self.sfx_config.get_setting("SURFEX#IO#CSURFFILE")
-        output = f"{self.archive}/{surffile}_PERT{str(self.pert)}{self.suffix}"
+        output = f"{self.archive}/{surffile}_PERT{self.pert!s}{self.suffix}"
 
         # Forcing dir is for previous cycle
         # TODO If pertubed runs moved to pp it should be a diffenent dtg
@@ -554,13 +621,16 @@ class Soda(SurfexBinaryTask):
     """Running SODA (Surfex Offline Data Assimilation) task.
 
     Args:
+    ----
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
+
     """
 
     def __init__(self, config):
         """Construct a Soda task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -586,9 +656,7 @@ class Soda(SurfexBinaryTask):
             archive_dir = self.config["system.archive_dir"]
             pert_run_dir = self.platform.substitute(archive_dir, basetime=self.dtg)
             self.exp_file_paths.add_system_file_path("perturbed_run_dir", pert_run_dir)
-            first_guess_dir = self.platform.substitute(
-                archive_dir, basetime=self.fg_dtg
-            )
+            first_guess_dir = self.platform.substitute(archive_dir, basetime=self.fg_dtg)
             self.exp_file_paths.add_system_file_path("first_guess_dir", first_guess_dir)
 
         if not os.path.exists(output) or self.force:

@@ -13,6 +13,7 @@ class SyncSourceCode(PySurfexBaseTask):
 
     Args:
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
@@ -73,6 +74,7 @@ class ConfigureOfflineBinaries(PySurfexBaseTask):
 
     Args:
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
@@ -95,7 +97,8 @@ class ConfigureOfflineBinaries(PySurfexBaseTask):
         BatchJob(rte, wrapper=self.wrapper).run(cmd)
 
         xyz_file = casedir + "/xyz"
-        cmd = f"{exp_home}/offline/Flavour_offline.sh {casedir}/offline {flavour} {xyz_file}"
+        script = f"{exp_home}/offline/Flavour_offline.sh"
+        cmd = f"{script} {casedir}/offline {flavour} {xyz_file}"
         logger.info(cmd)
         BatchJob(rte, wrapper=self.wrapper).run(cmd)
 
@@ -105,6 +108,7 @@ class MakeOfflineBinaries(PySurfexBaseTask):
 
     Args:
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
@@ -126,12 +130,16 @@ class MakeOfflineBinaries(PySurfexBaseTask):
         flavour = self.config["compile.build_config"]
 
         threads = 8
-        cmd = f"{exp_home}/offline/Compile_offline.sh {casedir}/offline {flavour} {threads}"
+        cmd = (
+            f"{exp_home}/offline/Compile_offline.sh {casedir}/offline {flavour} {threads}"
+        )
         logger.debug(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
         os.makedirs(bindir, exist_ok=True)
-        cmd = f"{exp_home}/offline/Install_offline.sh {casedir}/offline {flavour} {threads}"
+        cmd = (
+            f"{exp_home}/offline/Install_offline.sh {casedir}/offline {flavour} {threads}"
+        )
         logger.debug(cmd)
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
@@ -141,6 +149,7 @@ class CMakeBuild(PySurfexBaseTask):
 
     Args:
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
@@ -177,7 +186,7 @@ class CMakeBuild(PySurfexBaseTask):
             current_project_dir = f"{offline_source}/util/auxlibs/{project}"
             fproject = project.replace("/", "-")
             current_build_dir = f"{build_dir}/{fproject}"
-            print("current build dir ", current_build_dir)
+            logger.info("current build dir ", current_build_dir)
             os.makedirs(current_build_dir, exist_ok=True)
             os.chdir(current_build_dir)
             cmake_flags = "-DCMAKE_BUILD_TYPE=Release "
@@ -201,7 +210,8 @@ class CMakeBuild(PySurfexBaseTask):
         cmd = f"cmake {offline_source}/src {cmake_flags}"
         BatchJob(rte, wrapper=wrapper).run(cmd)
         # Build
-        cmd = f"cmake --build . -- -j{nproc} offline-pgd offline-prep offline-offline offline-soda"
+        targets = "offline-pgd offline-prep offline-offline offline-soda"
+        cmd = f"cmake --build . -- -j{nproc} {targets}"
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
         # Manual installation

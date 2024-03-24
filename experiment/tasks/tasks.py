@@ -38,6 +38,7 @@ class PySurfexBaseTask(Task):
         """Construct pysurfex-experiment base class.
 
         Args:
+        ----
             config (ParsedConfig): Configuration.
             name (str): Task name.
 
@@ -94,9 +95,11 @@ class PySurfexBaseTask(Task):
         """Determine binary path from task or system config section.
 
         Args:
+        ----
             binary (str): Name of binary
 
         Returns:
+        -------
             bindir (str): full path to binary
 
         """
@@ -117,13 +120,16 @@ class PrepareCycle(PySurfexBaseTask):
     Clean up existing directories.
 
     Args:
+    ----
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
         """Construct the PrepareCycle task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -143,13 +149,16 @@ class QualityControl(PySurfexBaseTask):
     """Perform quality control of observations.
 
     Args:
+    ----
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
         """Constuct the QualityControl task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -194,12 +203,12 @@ class QualityControl(PySurfexBaseTask):
             synop_obs = self.config["observations.synop_obs_t2m"]
             data_sets = {}
             if synop_obs:
+                filepattern = self.config["observations.filepattern"]
                 bufr_tests = default_tests
                 bufr_tests.update(
                     {"plausibility": {"do_test": True, "maxval": 340, "minval": 200}}
                 )
-                # filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
-                filepattern = "/lustre/storeB/project/metproduction/products/obs_dec/bufr/syno/syno_@YYYY@@MM@@DD@@HH@.bufr"
+
                 data_sets.update(
                     {
                         "bufr": {
@@ -238,12 +247,11 @@ class QualityControl(PySurfexBaseTask):
             synop_obs = self.config["observations.synop_obs_rh2m"]
             data_sets = {}
             if synop_obs:
+                filepattern = self.config["observations.filepattern"]
                 bufr_tests = default_tests
                 bufr_tests.update(
                     {"plausibility": {"do_test": True, "maxval": 100, "minval": 0}}
                 )
-                # filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
-                filepattern = "/lustre/storeB/project/metproduction/products/obs_dec/bufr/syno/syno_@YYYY@@MM@@DD@@HH@.bufr"
                 data_sets.update(
                     {
                         "bufr": {
@@ -284,6 +292,7 @@ class QualityControl(PySurfexBaseTask):
             cryo_obs = self.config["observations.cryo_obs_sd"]
             data_sets = {}
             if synop_obs:
+                filepattern = self.config["observations.filepattern"]
                 bufr_tests = default_tests
                 bufr_tests.update(
                     {
@@ -291,8 +300,6 @@ class QualityControl(PySurfexBaseTask):
                         "firstguess": {"do_test": True, "negdiff": 0.5, "posdiff": 0.5},
                     }
                 )
-                # filepattern = self.obsdir + "/ob@YYYY@@MM@@DD@@HH@"
-                filepattern = "/lustre/storeB/project/metproduction/products/obs_dec/bufr/syno/syno_@YYYY@@MM@@DD@@HH@.bufr"
                 data_sets.update(
                     {
                         "bufr": {
@@ -341,7 +348,8 @@ class QualityControl(PySurfexBaseTask):
 
         indent = 2
         blacklist = {}
-        json.dump(settings, open("settings.json", mode="w", encoding="utf-8"), indent=2)
+        with open("settings.json", mode="w", encoding="utf-8") as fh:
+            json.dump(settings, fh, indent=2)
         tests = define_quality_control(
             tests, settings, an_time, domain_geo=self.geo, blacklist=blacklist
         )
@@ -358,13 +366,16 @@ class OptimalInterpolation(PySurfexBaseTask):
     """Creates a horizontal OI analysis of selected variables.
 
     Args:
+    ----
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
         """Construct the OptimalInterpolation task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -466,6 +477,7 @@ class FirstGuess(PySurfexBaseTask):
     """Find first guess.
 
     Args:
+    ----
         Task (Task): Base class
 
     """
@@ -474,6 +486,7 @@ class FirstGuess(PySurfexBaseTask):
         """Construct a FistGuess task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
             name (str, optional): Task name. Defaults to None
 
@@ -519,6 +532,7 @@ class CryoClim2json(PySurfexBaseTask):
     """Find first guess.
 
     Args:
+    ----
         Task (Task): Base class
 
     """
@@ -527,6 +541,7 @@ class CryoClim2json(PySurfexBaseTask):
         """Construct a FistGuess task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
             name (str, optional): Task name. Defaults to None
 
@@ -585,22 +600,23 @@ class CryoClim2json(PySurfexBaseTask):
             laf_threshold=laf_threshold,
             cryo_varname=cryo_varname,
         )
-        obs_set.write_json_file(
-            f"{self.platform.get_system_value('obs_dir')}/cryo.json"
-        )
+        obs_set.write_json_file(f"{self.platform.get_system_value('obs_dir')}/cryo.json")
 
 
 class CycleFirstGuess(FirstGuess):
     """Cycle the first guess.
 
     Args:
+    ----
         FirstGuess (FirstGuess): Base class
+
     """
 
     def __init__(self, config):
         """Construct the cycled first guess object.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -624,14 +640,18 @@ class Oi2soda(PySurfexBaseTask):
     """Convert OI analysis to an ASCII file for SODA.
 
     Args:
+    ----
         Task (AbstractClass): Base class
+
     """
 
     def __init__(self, config):
         """Construct the Oi2soda task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
+
         """
         PySurfexBaseTask.__init__(self, config, "Oi2soda")
         try:
@@ -657,7 +677,7 @@ class Oi2soda(PySurfexBaseTask):
         obs_types = self.obs_types
         logger.debug("NNCO: {}", self.nnco)
         for ivar, __ in enumerate(obs_types):
-            logger.debug(
+            logger.info(
                 "ivar={} NNCO[ivar]={} obtype={}",
                 ivar,
                 self.nnco[ivar],
@@ -671,27 +691,28 @@ class Oi2soda(PySurfexBaseTask):
                 elif obs_types[ivar] == "SWE":
                     an_variables.update({"sd": True})
 
-        for var, var_name in an_variables.items():
-            if an_variables[var]:
-                var_name = self.translation[var]
+        logger.info(an_variables)
+        for var, status in an_variables.items():
+            if status:
+                lvar_name = self.translation[var]
                 if var == "t2m":
                     t2m = {
-                        "file": archive + "/an_" + var_name + ".nc",
-                        "var": var_name,
+                        "file": archive + "/an_" + lvar_name + ".nc",
+                        "var": lvar_name,
                     }
                 elif var == "rh2m":
                     rh2m = {
-                        "file": archive + "/an_" + var_name + ".nc",
-                        "var": var_name,
+                        "file": archive + "/an_" + lvar_name + ".nc",
+                        "var": lvar_name,
                     }
                 elif var == "sd":
                     s_d = {
-                        "file": archive + "/an_" + var_name + ".nc",
-                        "var": var_name,
+                        "file": archive + "/an_" + lvar_name + ".nc",
+                        "var": lvar_name,
                     }
-        logger.debug("t2m  {} ", t2m)
-        logger.debug("rh2m {}", rh2m)
-        logger.debug("sd   {}", s_d)
+        logger.info("t2m  {} ", t2m)
+        logger.info("rh2m {}", rh2m)
+        logger.info("sd   {}", s_d)
         logger.debug("Write to {}", output)
         oi2soda(self.dtg, t2m=t2m, rh2m=rh2m, s_d=s_d, output=output)
 
@@ -700,13 +721,16 @@ class Qc2obsmon(PySurfexBaseTask):
     """Convert QC data to obsmon SQLite data.
 
     Args:
+    ----
         Task (AbstractClass): Base class
+
     """
 
     def __init__(self, config):
         """Construct the QC2obsmon data.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -730,44 +754,46 @@ class Qc2obsmon(PySurfexBaseTask):
             os.unlink(output)
         obs_types = self.obs_types
         for ivar, val in enumerate(self.nnco):
-            if val == 1:
-                if len(obs_types) > ivar:
-                    if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
-                        var_in = "t2m"
-                    elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
-                        var_in = "rh2m"
-                    elif obs_types[ivar] == "SWE":
-                        var_in = "sd"
-                    else:
-                        raise NotImplementedError(obs_types[ivar])
+            if val == 1 and len(obs_types) > ivar:
+                if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
+                    var_in = "t2m"
+                elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
+                    var_in = "rh2m"
+                elif obs_types[ivar] == "SWE":
+                    var_in = "sd"
+                else:
+                    raise NotImplementedError(obs_types[ivar])
 
-                    if var_in != "sd":
-                        var_name = self.translation[var_in]
-                        q_c = obsdir + "/qc_" + var_name + ".json"
-                        fg_file = archive + "/raw_" + var_name + ".nc"
-                        an_file = archive + "/an_" + var_name + ".nc"
-                        write_obsmon_sqlite_file(
-                            dtg=self.dtg,
-                            output=output,
-                            qc=q_c,
-                            fg_file=fg_file,
-                            an_file=an_file,
-                            varname=var_in,
-                            file_var=var_name,
-                        )
+                if var_in != "sd":
+                    var_name = self.translation[var_in]
+                    q_c = obsdir + "/qc_" + var_name + ".json"
+                    fg_file = archive + "/raw_" + var_name + ".nc"
+                    an_file = archive + "/an_" + var_name + ".nc"
+                    write_obsmon_sqlite_file(
+                        dtg=self.dtg,
+                        output=output,
+                        qc=q_c,
+                        fg_file=fg_file,
+                        an_file=an_file,
+                        varname=var_in,
+                        file_var=var_name,
+                    )
 
 
 class FirstGuess4OI(PySurfexBaseTask):
     """Create a first guess to be used for OI.
 
     Args:
+    ----
         Task (AbstractClass): Base class
+
     """
 
     def __init__(self, config):
         """Construct the FirstGuess4OI task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -793,29 +819,26 @@ class FirstGuess4OI(PySurfexBaseTask):
             var_in = []
             obs_types = self.obs_types
             for ivar, val in enumerate(self.nnco):
-                if val == 1:
-                    if len(obs_types) > ivar:
-                        if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
-                            var_in.append("t2m")
-                        elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
-                            var_in.append("rh2m")
-                        elif obs_types[ivar] == "SWE":
-                            var_in.append("sd")
-                        else:
-                            raise NotImplementedError(obs_types[ivar])
+                if val == 1 and len(obs_types) > ivar:
+                    if obs_types[ivar] == "T2M" or obs_types[ivar] == "T2M_P":
+                        var_in.append("t2m")
+                    elif obs_types[ivar] == "HU2M" or obs_types[ivar] == "HU2M_P":
+                        var_in.append("rh2m")
+                    elif obs_types[ivar] == "SWE":
+                        var_in.append("sd")
+                    else:
+                        raise NotImplementedError(obs_types[ivar])
 
             variables = []
             try:
                 for var in var_in:
                     var_name = self.translation[var]
                     variables.append(var_name)
-                    symlink_files.update(
-                        {archive + "/raw_" + var_name + ".nc": "raw.nc"}
-                    )
+                    symlink_files.update({archive + "/raw_" + var_name + ".nc": "raw.nc"})
             except KeyError as exc:
                 raise KeyError("Variables could not be translated") from exc
 
-        variables = variables + ["altitude", "land_area_fraction"]
+        variables = [*variables, "altitude", "land_area_fraction"]
 
         output = archive + "/raw" + extra + ".nc"
         cache_time = 3600
@@ -836,6 +859,7 @@ class FirstGuess4OI(PySurfexBaseTask):
         """Write the first guess file.
 
         Args:
+        ----
             output (str): Output file
             variables (list): Variables
             geo (Geo): Geometry
@@ -843,6 +867,7 @@ class FirstGuess4OI(PySurfexBaseTask):
             cache (Cache, optional): Cache. Defaults to None.
 
         Raises:
+        ------
             KeyError: Converter not found
             RuntimeError: No valid data read
 
@@ -895,9 +920,9 @@ class FirstGuess4OI(PySurfexBaseTask):
             defs = config[fileformat]
             geo_input = None
             if input_geo_file != "":
-                geo_input = get_geo_object(
-                    json.load(open(input_geo_file, mode="r", encoding="utf-8"))
-                )
+                with open(input_geo_file, mode="r", encoding="utf-8") as fh:
+                    geo_dict = json.load(fh)
+                geo_input = get_geo_object(geo_dict)
             defs.update({"filepattern": inputfile, "geo_input": geo_input})
 
             converter_conf = config[var][fileformat]["converter"]
@@ -940,8 +965,8 @@ class FirstGuess4OI(PySurfexBaseTask):
                 f_g.variables["time"][:] = float(validtime.strftime("%s"))
                 f_g.variables["longitude"][:] = np.transpose(geo.lons)
                 f_g.variables["latitude"][:] = np.transpose(geo.lats)
-                f_g.variables["x"][:] = [range(0, n_x)]
-                f_g.variables["y"][:] = [range(0, n_y)]
+                f_g.variables["x"][:] = [range(n_x)]
+                f_g.variables["y"][:] = [range(n_y)]
 
             if var == "altitude":
                 field[field < 0] = 0
@@ -956,13 +981,16 @@ class LogProgress(PySurfexBaseTask):
     """Log progress for restart.
 
     Args:
+    ----
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
         """Construct the LogProgress task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -976,13 +1004,16 @@ class LogProgressPP(PySurfexBaseTask):
     """Log progress for PP restart.
 
     Args:
+    ----
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
         """Construct the LogProgressPP task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
@@ -996,13 +1027,16 @@ class FetchMarsObs(PySurfexBaseTask):
     """Fetch observations from Mars.
 
     Args:
+    ----
         Task (_type_): _description_
+
     """
 
     def __init__(self, config):
         """Construct the FetchMarsObs task.
 
         Args:
+        ----
             config (ParsedObject): Parsed configuration
 
         """
