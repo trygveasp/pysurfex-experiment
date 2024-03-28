@@ -2,13 +2,12 @@
   accept_static_namelists = false
   case = "@CYCLE@_@CSC@"
   cnmexp = "DEOD"
-  csc = "HARMONIE_AROME"
-  cycle = "CY46h1"
+  csc = "AROME"
+  cycle = "CY48t3"
   initfile = "@SCRATCH@/@PREV_CASE@/archive/@YYYY@/@MM@/@DD@/@HH@/@HISTORY_TEMPLATE@"
   initfile_sfx = "@SCRATCH@/@PREV_CASE@/archive/@YYYY@/@MM@/@DD@/@HH@/@SURFEX_TEMPLATE@"
   keep_workdirs = true
   surfex = true
-  windfarm = false
 
 [general.output_settings]
   fullpos = "PT15M"
@@ -31,10 +30,8 @@
   bdshift = "PT0H"
   bdtasks_per_batch = 24
   humi_gp = true
-
-[boundaries.ifs]
-  bdmember = ""
-  selection = "HRES"
+  ifs.selection = "HRES"
+  ifs.bdmember = ""
 
 [fullpos]
   config_path = "@DEODE_HOME@/deode/namelist_generation_input/@CYCLE@/fullpos"
@@ -42,10 +39,14 @@
 
 [include]
   archiving = "include/archiving.toml"
+  domain = "include/domains/DEMO_60x80_2500m.toml"
   extractsqlite = "include/sqlite.toml"
   file_templates = "include/file_templates.toml"
   macros = "include/macros.toml"
   mars = "include/mars_settings.toml"
+  platform = "include/platform_paths/atos_bologna.toml"
+  scheduler = "include/scheduler/ecflow_atos_bologna.toml"
+  submission = "include/submission/atos_bologna_CY48t3.toml"
   vertical_levels = "include/vertical_levels/MF_90.toml"
 
 [pgd]
@@ -59,7 +60,6 @@
   do_extractsqlite = true
   do_marsprep = true
   do_pgd = true
-  do_prep = true
   do_soil = true
   interpolate_boundaries = true
   mode = "cold_start"

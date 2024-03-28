@@ -196,49 +196,19 @@ class SurfexBinaryTask(PySurfexBaseTask):
         assemble = namelist.namelist_blocks()
         consistency = True
 
+        # add extra namelist blocks
         if self.mode == "pgd":
-            assemble.append("pgd_kdtree")
-            eco_sg = self.sfx_config.get_setting("SURFEX#COVER#SG")
-            # Cover
-            fmt = self.config["pgd.ecoclimap_cover_format"]
-            assemble.append(f"pgd_cover_{fmt}")
-            # ZS
-            fmt = self.config["pgd.zs_format"]
-            assemble.append(f"pgd_zs_{fmt}")
-            # SAND
-            fmt = self.config["pgd.sand_format"]
-            assemble.append(f"pgd_isba_sand_{fmt}")
-            # CLAY
-            fmt = self.config["pgd.clay_format"]
-            assemble.append(f"pgd_isba_clay_{fmt}")
-            # SOC
-            if eco_sg:
-                fmt = self.config["pgd.soc_format"]
-                assemble.append(f"pgd_isba_soc_{fmt}")
-            # FLAKE
-            if self.sfx_config.get_setting("SURFEX#TILES#INLAND_WATER") == "FLAKE":
-                fmt = self.config["pgd.global_lake_depth_format"]
-                assemble.append(f"pgd_flake_depth_{fmt}")
-                fmt = self.config["pgd.global_lake_depth_status_format"]
-                assemble.append(f"pgd_flake_depth_status_{fmt}")
-            # ECO-SG
-            if eco_sg:
-                sdec = ""
-                if self.config["pgd.one_decade"]:
-                    sdec = "_single_decade"
-                assemble.append(f"pgd_ecoclimap_sg{sdec}")
-                fmt = self.config["pgd.ecoclimap_sg_albnir_soil_format"]
-                assemble.append(f"pgd_ecoclimap_sg{sdec}_albnir_soil_{fmt}")
-                fmt = self.config["pgd.ecoclimap_sg_albnir_veg_format"]
-                assemble.append(f"pgd_ecoclimap_sg{sdec}_albnir_veg_{fmt}")
-                fmt = self.config["pgd.ecoclimap_sg_albvis_soil_format"]
-                assemble.append(f"pgd_ecoclimap_sg{sdec}_albvis_soil_{fmt}")
-                fmt = self.config["pgd.ecoclimap_sg_albvis_veg_format"]
-                assemble.append(f"pgd_ecoclimap_sg{sdec}_albvis_veg_{fmt}")
-                fmt = self.config["pgd.ecoclimap_sg_lai_format"]
-                assemble.append(f"pgd_ecoclimap_sg{sdec}_lai_{fmt}")
-                fmt = self.config["pgd.ecoclimap_sg_tree_height_format"]
-                assemble.append(f"pgd_ecoclimap_sg{sdec}_tree_height_{fmt}")
+            extra = self.config["pgd.extra_namelist_blocks"]
+            assemble += extra
+        elif self.mode == "prep":
+            extra = self.config["prep.extra_namelist_blocks"]
+            assemble += extra
+        elif self.mode == "soda":
+            extra = self.config["soda.extra_namelist_blocks"]
+            assemble += extra
+        elif self.mode in ["offline", "perturbed"]:
+            extra = self.config["offline.extra_namelist_blocks"]
+            assemble += extra
 
         namelist = NamelistGenerator(
             self.mode,

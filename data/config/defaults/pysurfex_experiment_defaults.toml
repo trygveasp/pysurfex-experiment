@@ -23,22 +23,22 @@
 [pgd]
   clay_format = "netcdf"
   clay_input = "soilgrid"
-  ecoclimap_cover_format = "netcdf"
-  ecoclimap_sg_albnir_soil_format = "netcdf"
-  ecoclimap_sg_albnir_veg_format = "netcdf"
-  ecoclimap_sg_albvis_soil_format = "netcdf"
-  ecoclimap_sg_albvis_veg_format = "netcdf"
-  ecoclimap_sg_cover_format = "netcdf"
-  ecoclimap_sg_lai_format = "netcdf"
-  ecoclimap_sg_tree_height_format = "netcdf"
-  global_lake_depth_format = "netcdf"
-  global_lake_depth_status_format = "netcdf"
   sand_format = "netcdf"
   sand_input = "soilgrid"
   soc_format = "netcdf"
   soc_input = "soilgrid"
   zs_format = "netcdf"
   zs_input = "gmted2010"
+  extra_namelist_blocks = []
+
+[prep]
+  extra_namelist_blocks = []
+
+[soda]
+  extra_namelist_blocks = []
+
+[offline]
+  extra_namelist_blocks = []
 
 [pysurfex]
   config_file = "@pysurfex_cfg@/config_exp_surfex.toml"
@@ -47,9 +47,22 @@
 
 [suite_control]
   suite_definition = "SurfexSuiteDefinition"
+  do_prep = true
 
 [troika]
   config_file = "@default_config_dir@/troika_config.yml"
+
+[system]
+  climdir = "@casedir@/climate/"
+  archive_dir = "@casedir@/archive/@YYYY@/@MM@/@DD@/@HH@/"
+  extrarch_dir = "@casedir@/archive/extract/"
+  forcing_dir = "@casedir@/forcing/@YYYY@@MM@@DD@@HH@/@RRR@/"
+  obs_dir = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/"
+  #namelist_defs = f"{namelist_defs}"
+  #binary_input_files = f"{binary_input_files}"
+  #first_guess_yml = f"{merged_config['pysurfex']['first_guess_yml_file']}"
+  #config_yml = config_yml
+  #bindir = bindir
 
 #####################################################################################################
 # Geometry

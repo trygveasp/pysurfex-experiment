@@ -9,22 +9,16 @@ from deode.geo_utils import Projection, Projstring
 from deode.logs import logger
 from deode.os_utils import Search, deodemakedirs
 from deode.tasks.base import Task
-
-
-def _import_gdal():
-    """Return imported gdal from osgeo. Utility func useful for debugging and testing."""
-    try:
-        from osgeo import gdal
-
-        return gdal
-    except ImportError as error:
-        msg = "Cannot use the installed gdal library, "
-        msg += "or there is no gdal library installed. "
-        msg += "If you have not installed it, you may want to try running"
-        msg += " 'pip install pygdal==\"`gdal-config --version`.*\"' "
-        msg += "or, if you use conda,"
-        msg += " 'conda install -c conda-forge gdal'."
-        raise ImportError(msg) from error
+try:
+    from osgeo import gdal
+except ImportError as error:
+    MSG = "Cannot use the installed gdal library, "
+    MSG += "or there is no gdal library installed. "
+    MSG += "If you have not installed it, you may want to try running"
+    MSG += " 'pip install pygdal==\"`gdal-config --version`.*\"' "
+    MSG += "or, if you use conda,"
+    MSG += " 'conda install -c conda-forge gdal'."
+    raise ImportError(MSG) from error
 
 
 def modify_ncfile(ncfile, var_name, fact=1):
@@ -37,7 +31,7 @@ def modify_ncfile(ncfile, var_name, fact=1):
         fact (int, optional): Scale factor in file. Defaults to 1.
 
     """
-    nc = netCDF4.Dataset(ncfile, mode="a")
+    nc = netCDF4.Dataset(ncfile, mode="a")  # pylint: disable=no-member
     nc.renameDimension("lon", "lons")
     nc.renameDimension("lat", "lats")
     nc.renameVariable("lon", "lons")
@@ -115,7 +109,7 @@ class Gmted(Task):
         for lat in range(70, -90, -20):
             if north > lat:
                 gmtedlat = (
-                    "{:02d}N".format(lat) if lat >= 0 else "{:02d}S".format(-1 * lat)
+                    f"{lat:02d}N" if lat >= 0 else f"{(-1 * lat):02d}S"
                 )
                 gmted2010_input_lats.append(gmtedlat)
                 i += 1
@@ -132,9 +126,9 @@ class Gmted(Task):
             if west < lon:
                 rel_lon = lon - longitude_bin_size
                 gmtedlon = (
-                    "{:03d}E".format(rel_lon)
+                    f"{rel_lon:03d}E"
                     if rel_lon >= 0
-                    else "{:03d}W".format(-1 * rel_lon)
+                    else f"{(-1 * rel_lon):03d}W"
                 )
                 gmted2010_input_lons.append(gmtedlon)
                 i += 1
@@ -260,7 +254,6 @@ class Gmted(Task):
         )
 
         # Output merged GMTED file to working directory as file gmted_mea075.tif
-        gdal = _import_gdal()
         gd = gdal.Warp(
             "gmted_mea075.tif",
             tif_files,
@@ -483,7 +476,6 @@ class Soil(Task):
         # Cut soilgrid tifs
         soilgrid_tif_subarea_files = []
         find_size_and_corners = True
-        gdal = _import_gdal()
         for soilgrid_tif in soilgrid_tifs:
             soilgrid_tif_basename = os.path.basename(soilgrid_tif)
             soilgrid_tif_subarea = soilgrid_tif_basename.replace(".tif", "_subarea.tif")
