@@ -9,6 +9,7 @@ from deode.geo_utils import Projection, Projstring
 from deode.logs import logger
 from deode.os_utils import Search, deodemakedirs
 from deode.tasks.base import Task
+
 try:
     from osgeo import gdal
 except ImportError as error:
@@ -108,9 +109,7 @@ class Gmted(Task):
         i = 0
         for lat in range(70, -90, -20):
             if north > lat:
-                gmtedlat = (
-                    f"{lat:02d}N" if lat >= 0 else f"{(-1 * lat):02d}S"
-                )
+                gmtedlat = f"{lat:02d}N" if lat >= 0 else f"{(-1 * lat):02d}S"
                 gmted2010_input_lats.append(gmtedlat)
                 i += 1
             if south >= lat:
@@ -125,11 +124,7 @@ class Gmted(Task):
         for lon in range(-180, 150, longitude_bin_size):
             if west < lon:
                 rel_lon = lon - longitude_bin_size
-                gmtedlon = (
-                    f"{rel_lon:03d}E"
-                    if rel_lon >= 0
-                    else f"{(-1 * rel_lon):03d}W"
-                )
+                gmtedlon = f"{rel_lon:03d}E" if rel_lon >= 0 else f"{(-1 * rel_lon):03d}W"
                 gmted2010_input_lons.append(gmtedlon)
                 i += 1
             if east <= lon:

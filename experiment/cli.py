@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
 """Implement the package's commands."""
 import argparse
+import os
 import sys
 
+from deode import GeneralConstants
 from deode.commands_functions import set_deode_home
 from deode.config_parser import ConfigParserDefaults, ParsedConfig
+from deode.host_actions import DeodeHost
+from deode.logs import logger
 
 from .experiment import case_setup
-from .host_actions import DeodeHost
 
 
 def case_cli():
     """Entry point."""
+    logger.enable(GeneralConstants.PACKAGE_NAME)
     args = parse_args()
     config = ParsedConfig.from_file(
         args.config_file, json_schema=ConfigParserDefaults.MAIN_CONFIG_JSON_SCHEMA
@@ -32,8 +36,15 @@ def create_exp(args, config):
     config_dir = args.config_dir
     host = args.host
     if host is None:
-        known_hosts = "data/config/known_hosts.yml"
-        host = DeodeHost(known_hosts=known_hosts)
+        if config_dir is None:
+            known_hosts = "data/config/known_hosts.yml"
+        else:
+            known_hosts = f"{config_dir}/known_hosts.yml"
+    else:
+        known_hosts = host
+    host = DeodeHost(known_hosts=known_hosts)
+    host_name = host.detect_deode_host()
+    logger.info("Setting up for host {}", host_name)
     output_file = args.output_file
     case = args.case
     domain = args.domain
@@ -63,6 +74,8 @@ def parse_args(argv=None):
     """
     if argv is None:
         argv = sys.argv[1:]
+
+    cwd = os.getcwd()
     ##########################################
     # Configure parser for the "case" command #
     ##########################################
@@ -75,7 +88,9 @@ def parse_args(argv=None):
 
     parser.add_argument("--config-file", help="Config", required=True)
     parser.add_argument("--host", help="Host", required=False, default=None)
-    parser.add_argument("--config-dir", help="Config dir", required=False, default=None)
+    parser.add_argument(
+        "--config-dir", help="Config dir", required=False, default=f"{cwd}/data/config"
+    )
     parser.add_argument(
         "--output",
         "-o",

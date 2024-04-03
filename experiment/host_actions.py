@@ -6,7 +6,6 @@ import re
 import socket
 
 import yaml
-
 from deode import GeneralConstants
 from deode.logs import logger
 
@@ -33,7 +32,10 @@ class DeodeHost:
         known_hosts_file = known_hosts
         if known_hosts_file is None:
             known_hosts_file = os.path.join(
-                GeneralConstants.PACKAGE_DIRECTORY, "data", "config_files", "known_hosts.yml"
+                GeneralConstants.PACKAGE_DIRECTORY,
+                "data",
+                "config_files",
+                "known_hosts.yml",
             )
         with open(known_hosts_file, "rb") as infile:
             known_hosts = yaml.safe_load(infile)

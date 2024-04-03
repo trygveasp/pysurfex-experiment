@@ -1,13 +1,12 @@
 """Experiment tools."""
-import collections
 import os
 import shutil
 
 import pysurfex
-import tomlkit
 from deode.datetime_utils import as_datetime, as_timedelta
+from deode.experiment import ExpFromFiles
+from deode.host_actions import DeodeHost
 from deode.logs import logger
-from deode.config_parser import ParsedConfig, ConfigParserDefaults
 
 import experiment
 
@@ -162,6 +161,7 @@ def get_fgint(config, realization=None):
     )
 
 
+'''
 class Exp:
     """Experiment class. Copy of deode class, to be replaced."""
 
@@ -362,6 +362,7 @@ class ExpFromFiles(Exp):
             }
         )
         return exp_dependencies
+'''
 
 
 class PyExpFromFiles(ExpFromFiles):
@@ -397,8 +398,7 @@ class PyExpFromFiles(ExpFromFiles):
 
         if "general" not in config_settings:
             config_settings.update({"general": {}})
-        config_settings["general"].update({
-            "plugin_registry": plugin_registry})
+        config_settings["general"].update({"plugin_registry": plugin_registry})
         pysurfex_exp_defaults = self.toml_load(
             exp_dependencies.get("pysurfex_experiment_default_config")
         )
@@ -512,5 +512,6 @@ def case_setup(
             "pysurfex_experiment_default_config": py_exp_def_conf_file,
         }
     )
+
     sfx_exp = PyExpFromFiles(config, exp_dependencies, mod_files, host=host)
     sfx_exp.config.save_as(output_file)
