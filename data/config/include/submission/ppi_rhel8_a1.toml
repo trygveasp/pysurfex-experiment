@@ -1,0 +1,92 @@
+bindir = "/lustre/storeA/users/trygveasp/deode/test_ib_a1/lib/offline/exe/"
+default_submit_type = "background"
+lfftw = true
+module_initpath = "/usr/share/Modules/init/"
+nproma = -32
+
+submit_types = ["serial", "parallel", "background"]
+
+[parallel]
+  NPROC = 1
+  SCHOST = "ppi-rhel8"
+  tasks = [
+    "OfflineForecast",
+    "e927",
+    "OfflinePgd",
+    "OfflinePrep",
+    "c903",
+    "Soda",
+    "PerturbedRun",
+    "CMakeBuild",
+    "MakeOfflineBinaries",
+  ]
+  WRAPPER = "mpiexec -np 1"
+
+[parallel.BATCH]
+  NAME = "#$ -N @TASK_NAME@"
+  QUEUE = "#$ -q ib-dev-a-r8.q"
+  VMEM = "#$ -l h_rss=12G,mem_free=12G"
+  WALLTIME = "#$ -l h_rt=00:30:00"
+
+[parallel.ENV]
+  DR_HOOK = 1
+  DR_HOOK_IGNORE_SIGNALS = -1
+  OMP_NUM_THREADS = 1
+  #OMPI_MCA_btl = "^vader"
+  ECF_SSL = 1
+  UDUNITS2_XML_PATH = "/usr/share/udunits/udunits2.xml"
+
+[parallel.MODULES]
+  0_ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  0_ECFLOW_1 = ["load", "ecflow/5.8.1"]
+  1_INTEL_RUNTIME_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  1_INTEL_RUNTIME_1 = ["load", "compiler/Intel2022"]
+  2_OPENMPI = ["load", "IB-R8-A/openmpi/3.1.4-IB-i22-2023"]
+
+  #3_NETCDF = ["load", "IB-R8-A/eccodes/2.32.1-IB-i22-2023"]
+  #4_ECCODES = ["load", "IB-R8-A/netcdf/4.6.1-IB-i22-2023"]
+
+[background]
+  SCHOST = "localhost"
+  WRAPPER = ""
+
+[background.MODULES]
+  0_ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  0_ECFLOW_1 = ["load", "ecflow/5.8.1"]
+
+[serial]
+  NPROC = 1
+  NPROCX = 1
+  NPROCY = 1
+  SCHOST = "ppi-rhel8"
+  tasks = ["CreateGrib", "Gmted", "Soil", "Marsprep"]
+  WRAPPER = ""
+
+[serial.BATCH]
+  NAME = "#$ -N @TASK_NAME@"
+  QUEUE = "#$ -q ib-dev-a-r8.q"
+  VMEM = "#$ -l h_rss=5G,mem_free=5G"
+  WALLTIME = "#$ -l h_rt=00:30:00"
+
+[serial.ENV]
+  DR_HOOK_IGNORE_SIGNALS = -1
+  ECF_SSL = 1
+  OMP_NUM_THREADS = 1
+  OMPI_MCA_btl = "^vader"
+  UDUNITS2_XML_PATH = "/usr/share/udunits/udunits2.xml"
+
+[serial.MODULES]
+  ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  ECFLOW_1 = ["load", "ecflow/5.8.1"]
+
+[task]
+  wrapper = ""
+
+[task.exceptions.MakeOfflineBinaries.MODULES]
+  ECCODES = ["load", "IB-R8-A/eccodes/2.32.1-IB-i22-2023"]
+
+[task_exceptions.Pgd]
+  WRAPPER = "mpiexec -np 1"
+
+[task_exceptions.Prep]
+  WRAPPER = "mpiexec -np 1"

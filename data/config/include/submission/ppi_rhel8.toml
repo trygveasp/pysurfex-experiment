@@ -1,0 +1,79 @@
+bindir = "/lustre/storeB/users/trygveasp/sfx_data/ldas_run/lib/offline/exe/"
+default_submit_type = "serial"
+lfftw = true
+module_initpath = "/usr/share/Modules/init/"
+nproma = -32
+
+submit_types = ["serial", "parallel"]
+
+[parallel]
+  NPROC = 1
+  SCHOST = "ppi-rhel8"
+  tasks = [
+    "OfflineForecast",
+    "e927",
+    "OfflinePgd",
+    "OfflinePrep",
+    "c903",
+    "Soda",
+    "PerturbedRun",
+    "CMakeBuild",
+  ]
+  WRAPPER = "mpiexec -np 1"
+
+[parallel.BATCH]
+  NAME = "#$ -N @TASK_NAME@"
+  QUEUE = "#$ -q opath-devel-r8.q"
+  VMEM = "#$ -l h_rss=12G,mem_free=12G"
+  WALLTIME = "#$ -l h_rt=00:30:00"
+
+[parallel.ENV]
+  DR_HOOK = 1
+  DR_HOOK_IGNORE_SIGNALS = -1
+  ECF_SSL = 1
+  OMP_NUM_THREADS = 1
+  OMPI_MCA_btl = "^vader"
+  UDUNITS2_XML_PATH = "/usr/share/udunits/udunits2.xml"
+
+[parallel.MODULES]
+  0_ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  0_ECFLOW_1 = ["load", "ecflow/5.8.1"]
+  1_INTEL_RUNTIME_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  1_INTEL_RUNTIME_1 = ["load", "compiler/Intel2022"]
+  2_OPENMPI = ["load", "OPA-R8/openmpi/3.1.4-i22-2023"]
+  3_NETCDF = ["load", "OPA-R8/netcdf/4.6.0intel22-opa"]
+  4_ECCODES = ["load", "OPA-R8/eccodes/2.30"]
+
+[serial]
+  NPROC = 1
+  NPROCX = 1
+  NPROCY = 1
+  SCHOST = "ppi-rhel8"
+  tasks = ["CreateGrib", "Gmted", "Soil", "Marsprep"]
+  WRAPPER = "mpiexec -np 1"
+
+[serial.BATCH]
+  NAME = "#$ -N @TASK_NAME@"
+  QUEUE = "#$ -q opath-devel-r8.q"
+  VMEM = "#$ -l h_rss=5G,mem_free=5G"
+  WALLTIME = "#$ -l h_rt=00:30:00"
+
+[serial.ENV]
+  DR_HOOK_IGNORE_SIGNALS = -1
+  ECF_SSL = 1
+  OMP_NUM_THREADS = 1
+  OMPI_MCA_btl = "^vader"
+  UDUNITS2_XML_PATH = "/usr/share/udunits/udunits2.xml"
+
+[serial.MODULES]
+  ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  ECFLOW_1 = ["load", "ecflow/5.8.1"]
+
+[task]
+  wrapper = ""
+
+[task_exceptions.Pgd]
+  WRAPPER = "mpiexec -np 1"
+
+[task_exceptions.Prep]
+  WRAPPER = "mpiexec -np 1"

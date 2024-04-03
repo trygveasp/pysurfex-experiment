@@ -1,0 +1,7 @@
+
+atos_bologna : 
+  hostname : "ac\\d-\\d\\d\\d"
+lumi : 
+  hostname : "uan\\d\\d"
+ppi_rhel8_a1:
+  hostname: "ppi-r8login-.*.int.met.no"
