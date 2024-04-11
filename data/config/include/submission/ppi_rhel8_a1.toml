@@ -1,3 +1,4 @@
+[submission]
 bindir = "/lustre/storeA/users/trygveasp/deode/test_ib_a1/lib/offline/exe/"
 default_submit_type = "background"
 lfftw = true
@@ -6,7 +7,7 @@ nproma = -32
 
 submit_types = ["serial", "parallel", "background"]
 
-[parallel]
+[submission.parallel]
   NPROC = 1
   SCHOST = "ppi-rhel8"
   tasks = [
@@ -22,13 +23,13 @@ submit_types = ["serial", "parallel", "background"]
   ]
   WRAPPER = "mpiexec -np 1"
 
-[parallel.BATCH]
+[submission.parallel.BATCH]
   NAME = "#$ -N @TASK_NAME@"
   QUEUE = "#$ -q ib-dev-a-r8.q"
   VMEM = "#$ -l h_rss=12G,mem_free=12G"
   WALLTIME = "#$ -l h_rt=00:30:00"
 
-[parallel.ENV]
+[submission.parallel.ENV]
   DR_HOOK = 1
   DR_HOOK_IGNORE_SIGNALS = -1
   OMP_NUM_THREADS = 1
@@ -36,7 +37,7 @@ submit_types = ["serial", "parallel", "background"]
   ECF_SSL = 1
   UDUNITS2_XML_PATH = "/usr/share/udunits/udunits2.xml"
 
-[parallel.MODULES]
+[submission.parallel.MODULES]
   0_ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
   0_ECFLOW_1 = ["load", "ecflow/5.8.1"]
   1_INTEL_RUNTIME_0 = ["use", "/modules/MET/rhel8/user-modules/"]
@@ -46,15 +47,15 @@ submit_types = ["serial", "parallel", "background"]
   #3_NETCDF = ["load", "IB-R8-A/eccodes/2.32.1-IB-i22-2023"]
   #4_ECCODES = ["load", "IB-R8-A/netcdf/4.6.1-IB-i22-2023"]
 
-[background]
+[submission.background]
   SCHOST = "localhost"
   WRAPPER = ""
 
-[background.MODULES]
+[submission.background.MODULES]
   0_ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
   0_ECFLOW_1 = ["load", "ecflow/5.8.1"]
 
-[serial]
+[submission.serial]
   NPROC = 1
   NPROCX = 1
   NPROCY = 1
@@ -62,31 +63,31 @@ submit_types = ["serial", "parallel", "background"]
   tasks = ["CreateGrib", "Gmted", "Soil", "Marsprep"]
   WRAPPER = ""
 
-[serial.BATCH]
+[submission.serial.BATCH]
   NAME = "#$ -N @TASK_NAME@"
   QUEUE = "#$ -q ib-dev-a-r8.q"
   VMEM = "#$ -l h_rss=5G,mem_free=5G"
   WALLTIME = "#$ -l h_rt=00:30:00"
 
-[serial.ENV]
+[submission.serial.ENV]
   DR_HOOK_IGNORE_SIGNALS = -1
   ECF_SSL = 1
   OMP_NUM_THREADS = 1
   OMPI_MCA_btl = "^vader"
   UDUNITS2_XML_PATH = "/usr/share/udunits/udunits2.xml"
 
-[serial.MODULES]
+[submission.serial.MODULES]
   ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
   ECFLOW_1 = ["load", "ecflow/5.8.1"]
 
-[task]
+[submission.task]
   wrapper = ""
 
-[task.exceptions.MakeOfflineBinaries.MODULES]
+[submission.task.exceptions.MakeOfflineBinaries.MODULES]
   ECCODES = ["load", "IB-R8-A/eccodes/2.32.1-IB-i22-2023"]
 
-[task_exceptions.Pgd]
+[submission.task_exceptions.Pgd]
   WRAPPER = "mpiexec -np 1"
 
-[task_exceptions.Prep]
+[submission.task_exceptions.Prep]
   WRAPPER = "mpiexec -np 1"

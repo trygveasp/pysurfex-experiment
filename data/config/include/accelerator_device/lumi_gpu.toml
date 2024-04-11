@@ -1,3 +1,4 @@
+[accelerator_device]
 parallel_method = [
     "@DEODE_HOME@/deode/data/config_files/accelerator_device/lumi/lparallelmethod.txt.acraneb2_gpu",
     "lparallelmethod.txt",

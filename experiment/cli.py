@@ -47,7 +47,6 @@ def create_exp(args, config):
     logger.info("Setting up for host {}", host_name)
     output_file = args.output_file
     case = args.case
-    domain = args.domain
     mod_files = args.config_mods
     if mod_files is None:
         mod_files = []
@@ -56,7 +55,6 @@ def create_exp(args, config):
         output_file,
         mod_files,
         case=case,
-        domain=domain,
         host=host,
         config_dir=config_dir,
     )
@@ -101,7 +99,6 @@ def parse_args(argv=None):
     parser.add_argument(
         "--case-name", dest="case", help="Case name", required=False, default=None
     )
-    parser.add_argument("--domain", "-d", help="domain", required=False, default=None)
     parser.add_argument(
         "config_mods",
         help="Path to configuration modifications",

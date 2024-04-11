@@ -1,3 +1,4 @@
+[domain]
 gridtype = "linear"
 name = "large"
 nimax = 989

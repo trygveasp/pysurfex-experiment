@@ -1,3 +1,4 @@
+[domain]
 gridtype = "linear"
 name = "paris_osm"
 nimax = 189

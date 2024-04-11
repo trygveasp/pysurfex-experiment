@@ -1,4 +1,5 @@
-[ecfvars]
+[scheduler]
+[scheduler.ecfvars]
   ecf_files = "/users/@USER@/deode_ecflow/ecf_files"
   ecf_files_remotely = "/home/ecflow-user/deode_ecflow/ecf_files"
   ecf_home = "/home/ecflow/deode_ecflow/ecf_files"
@@ -9,4 +10,4 @@
   ecf_remoteuser = "ecflow-user"
   ecf_ssl = "1"
   ecf_user = "de_330"
-  hpc = "lumi"
+  case_prefix = "@USER@_"

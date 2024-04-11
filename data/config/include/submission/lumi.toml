@@ -1,43 +1,40 @@
+[submission]
+account = "#SBATCH -A project_465000527"
 bindir = "/scratch/project_465000527/jasinskas/CY48T3-ftn16-O0_23-install/bin"
 default_submit_type = "serial"
 lfftw = true
 max_ecf_tasks = 2
 module_initpath = "/usr/share/lmod/8.3.1/init"
-nproma = -64
-submit_types = ["background_vm", "background_hpc", "serial", "parallel"]
+nproma = -32
+submit_types = ["background_vm", "background_hpc", "serial", "parallel", "sqlite"]
 
-[background_hpc]
+[submission.background_hpc]
   SCHOST = "localhost"
-  tasks = ["creategrib", "Background_hpc", "UnitTest"]
+  tasks = ["Background_hpc", "UnitTest"]
   wrapper = "time"
 
-[background_vm]
+[submission.background_vm]
   INTERPRETER = "#!/usr/bin/python3"
   SCHOST = "localhost"
   tasks = ["Background_vm"]
 
-[parallel]
+[submission.parallel]
   NPROC = 16
   SCHOST = "lumi-batch"
   tasks = ["Forecast", "e927", "Pgd", "Prep", "c903", "E923Monthly", "E923Constant"]
   WRAPPER = "srun"
 
-[parallel.BATCH]
-  ACCOUNT = "#SBATCH -A project_465000527"
+[submission.parallel.BATCH]
   NAME = "#SBATCH --job-name=@TASK_NAME@"
+  NODES = "#SBATCH --nodes=1"
+  NTASKS = "#SBATCH --ntasks=1"
   PARTITION = "#SBATCH -p debug"
   WALLTIME = "#SBATCH --time=00:10:00"
 
-  #NODES = "#SBATCH --nodes=1"
-  #NTASKS = "#SBATCH --ntasks=16"
-  # EXPORT_NONE = "#SBATCH --export=NONE"
-
-[parallel.ENV]
+[submission.parallel.ENV]
   ECF_SSL = 1
   # Nodes, MPI tasks etc
   MPI_TASKS = 32 # $SLURM_NTASKS
-  MPITASKS_PER_NODE = 32 # MPI_TASKS/NNODES
-  NNODES = 4 # $SLURM_JOB_NUM_NODES
   OMP_NUM_THREADS = 4 # CPUS_PER_TASK
 
   # Open-MP business :
@@ -61,43 +58,39 @@ submit_types = ["background_vm", "background_hpc", "serial", "parallel"]
 
   FI_CXI_RX_MATCH_MODE = 'hybrid'
 
-[parallel.MODULES]
+[submission.parallel.MODULES]
   00_PURGE = ["purge", "--force"]
   01_LUMI = ["load", "LUMI/23.03"]
   02_PARTITION_G = ["load", "partition/C"]
-  03_PRG_ENV = ["load", "PrgEnv-cray"]
-  04_CPE = ["load", "cpe/23.03"]
+  03_CPE = ["load", "cpe/23.03"]
+  04_PRG_ENV = ["load", "PrgEnv-cray"]
   05_TRENTO = ["load", "craype-x86-trento"]
   06_MPICH = ["load", "cray-mpich"]
   07_LIBSCI = ["load", "cray-libsci"]
   08_FFTW = ["load", "cray-fftw"]
-  09_PYTHON = ["load", "cray-python"]
+  09_PYTHON = ["load", "cray-python/3.10.10"]
   #10_HDF5 = ["load", " cray-hdf5-parallel"]
   #11_NETCDF = ["load", "cray-netcdf-hdf5parallel"]
   12_BUILDTOOLS = ["load", "buildtools"]
   13_NCURSES = ["load", "ncurses/6.4-cpeCray-23.03"]
-  14_ECFLOW_A_USE = ["use", "/scratch/project_465000527/SW/modules/"]
-  14_ECFLOW_B_LOAD = ["load", "ecflow/5.9.2-gcc-3ztnr"]
-  15_RIMVYDAS_A_USE = ["use", "/scratch/project_465000527/jasinskas/scl/modules/"]
-  15_RIMVYDAS_B_USE = ["load", "scl-ftn16_23"]
+  14_RIMVYDAS_USE = ["use", "/scratch/project_465000527/jasinskas/scl/modules/"]
+  15_RIMVYDAS_FTN16 = ["load", "scl-ftn16_23"]
+  16_RIMVYDAS_ECFLOW = ["load", "scl-ecflow_23"]
 
-[serial]
+[submission.serial]
   NPROC = 1
   SCHOST = "lumi-batch"
   tasks = ["Gmted", "Soil", "PgdUpdate"]
   WRAPPER = "srun"
 
-[serial.BATCH]
-  ACCOUNT = "#SBATCH -A project_465000527"
+[submission.serial.BATCH]
   NAME = "#SBATCH --job-name=@TASK_NAME@"
-  #NODES = "#SBATCH --nodes=1"
-  #NTASKS = "#SBATCH --ntasks=1"
+  NODES = "#SBATCH --nodes=1"
+  NTASKS = "#SBATCH --ntasks=1"
   PARTITION = "#SBATCH --partition=debug"
-  WALLTIME = "#SBATCH --time=00:15:00"
+  WALLTIME = "#SBATCH --time=00:20:00"
 
-  #EXPORT_NONE = "#SBATCH --export=NONE"
-
-[serial.ENV]
+[submission.serial.ENV]
   DR_HOOK_IGNORE_SIGNALS = 8
   ECF_SSL = 1
   MPI_TASKS = 32
@@ -106,103 +99,107 @@ submit_types = ["background_vm", "background_hpc", "serial", "parallel"]
   OMP_NUM_THREADS = 4
   OMPI_MCA_btl = '^vader'
 
-[serial.MODULES]
-  01_RIMVYDAS_A_USE = ["use", "/scratch/project_465000527/jasinskas/scl/modules/"]
-  01_RIMVYDAS_B_USE = ["load", "scl-ftn16_23"]
-  AAMODULE_USE = ["use", "/scratch/project_465000527/SW/modules/"]
-  ECFLOW = ["load", "ecflow/5.9.2-gcc-3ztnr"]
+[submission.serial.MODULES]
+  00_PYTHON = ["load", "cray-python/3.10.10"]
+  01_USE = ["use", "/scratch/project_465000527/jasinskas/scl/modules/"]
+  02_FTN16 = ["load", "scl-ftn16_23"]
+  03_ECFLOW = ["load", "scl-ecflow_23"]
 
-[task]
+[submission.sqlite]
+  NPROC = 1
+  SCHOST = "lumi-batch"
+  tasks = ["ExtractSQLite"]
+  WRAPPER = "time"
+
+[submission.sqlite.BATCH]
+  EXPORT = "#SBATCH --export=NONE"
+  MEM = "#SBATCH --mem=0"
+  NAME = "#SBATCH --job-name=@TASK_NAME@"
+  NODES = "#SBATCH --nodes=1"
+  NTASKS = "#SBATCH --ntasks=1"
+  PARTITION = "#SBATCH --partition=debug"
+  WALLTIME = "#SBATCH --time=00:20:00"
+
+[submission.sqlite.ENV]
+  ECF_SSL = 1
+
+[submission.sqlite.MODULES]
+  00_PYTHON = ["load", "cray-python/3.10.10"]
+  01_USE = ["use", "/scratch/project_465000527/jasinskas/scl/modules/"]
+  02_ECCODES = ["load", "scl-pyeccodes_23"]
+  03_ECFLOW = ["load", "scl-ecflow_23"]
+
+[submission.task]
   wrapper = "time"
 
-[task_exceptions.c903]
+[submission.task_exceptions.c903]
   NPROC = 12
 
-[task_exceptions.c903.BATCH]
+[submission.task_exceptions.c903.BATCH]
   MEM = "#SBATCH --mem=0"
   NODE = "#SBATCH --nodes=4"
   NTASKS = "#SBATCH --ntasks=12"
-  PARTITION = "#SBATCH -p debug"
   TASKS_PER_NODE = "#SBATCH --ntasks-per-node=3"
   WALLTIME = "#SBATCH --time=00:30:00"
 
-[task_exceptions.c903.ENV]
+[submission.task_exceptions.c903.ENV]
   DR_HOOK_TRAPFPE_DIVBYZERO = 1
   DR_HOOK_TRAPFPE_OVERFLOW = 1
-  ECCODES_DEFINITION_PATH = "/scratch/project_465000527/jasinskas/scl/ftn16_23/share/eccodes/definitions/:/users/ospaniel/opt/eccodes-2.27.0/share/eccodes/definitions"
   OMP_NUM_THREADS = 1
 
-[task_exceptions.creategrib]
-  binary = "gl"
-
-[task_exceptions.CreateGrib.BATCH]
-  WALLTIME = "#SBATCH --time=01:00:00"
-
-[task_exceptions.E923Constant]
+[submission.task_exceptions.E923Constant]
   NPROC = 1
 
-[task_exceptions.E923Monthly]
+[submission.task_exceptions.E923Monthly]
   NPROC = 1
 
-[task_exceptions.e927]
+[submission.task_exceptions.e927]
   NPROC = 16
 
-[task_exceptions.e927.BATCH]
+[submission.task_exceptions.e927.BATCH]
   NODES = "#SBATCH --nodes=1"
   NTASKS = "#SBATCH --ntasks=16"
 
-[task_exceptions.Forecast]
+[submission.task_exceptions.Forecast]
   WRAPPER = "ulimit -s unlimited; srun"
 
-[task_exceptions.Forecast.BATCH]
-  ACCOUNT = "#SBATCH --account=project_465000527"
-  CPU = "#SBATCH --cpus-per-task=6"
+[submission.task_exceptions.Forecast.BATCH]
+  CPU = "#SBATCH --cpus-per-task=4"
   JOBNAME = "#SBATCH --job-name=Forecast"
   NODES = "#SBATCH --nodes=2"
+  NTASKS = "#SBATCH --ntasks=16"
   PARTITION = "#SBATCH --partition=debug"
   TASKS_PER_NODE = "#SBATCH --ntasks-per-node=8"
   WALLTIME = "#SBATCH --time=00:30:00"
 
-  #EXCLUSIVE= "#SBATCH --exclusive"
-
-[task_exceptions.Forecast.ENV]
+[submission.task_exceptions.Forecast.ENV]
   DR_HOOK = 1
   RTTOV_COEFDIR = "/scratch/project_465000527/de_33050_common_data/DEODE/satellite/rtcoef_rttov12/harm_coef/"
 
-  #Environment variables for ALARO PARALLEL
-  #APL_ALARO = 1
-  #INPART = 1
-  #PARALLEL = 1
-
-[task_exceptions.Gmted.MODULES]
-  AAAMODULE_USE = ["use", "/scratch/project_465000527/jasinskas/scl/modules/"]
+[submission.task_exceptions.Gmted.MODULES]
   GDAL = ["load", "scl-gdal_23"]
 
-[task_exceptions.Marsprep]
+[submission.task_exceptions.Marsprep]
   WRAPPER = ""
 
-[task_exceptions.Marsprep.BATCH]
+[submission.task_exceptions.Marsprep.BATCH]
   MEM = "#SBATCH --mem=0GB"
   NODES = "#SBATCH --nodes=1"
   NTASKS = "#SBATCH --ntasks=1"
-  WALLTIME = "#SBATCH --time=01:00:00"
+  WALLTIME = "#SBATCH --time=00:10:00"
 
-[task_exceptions.Marsprep.ENV]
+[submission.task_exceptions.Marsprep.ENV]
   MARS_READANY_BUFFER_SIZE = 17893020000
 
-[task_exceptions.Pgd]
+[submission.task_exceptions.Pgd]
   WRAPPER = "srun -n 16"
 
-[task_exceptions.Pgd.BATCH]
+[submission.task_exceptions.Pgd.BATCH]
   NODES = "#SBATCH --nodes=1"
   NTASKS = "#SBATCH --ntasks=16"
 
-[task_exceptions.Pgd.ENV]
+[submission.task_exceptions.Pgd.ENV]
   OMP_NUM_THREADS = 1
 
-[task_exceptions.PgdUpdate]
-  binary = "gl"
-
-[task_exceptions.Soil.MODULES]
-  AAAMODULE_USE = ["use", "/scratch/project_465000527/jasinskas/scl/modules/"]
+[submission.task_exceptions.Soil.MODULES]
   GDAL = ["load", "scl-gdal_23"]

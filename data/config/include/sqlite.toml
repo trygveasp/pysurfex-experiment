@@ -1,3 +1,4 @@
+[extractsqlite]
 parameter_list = "@DEODE_HOME@/deode/data/sqlite/param_list_@CSC@.json"
 selection = "PT1H"
 sqlite_model_name = "@CASE@_det"

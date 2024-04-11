@@ -1,3 +1,4 @@
+[domain]
 gridtype = "linear"
 name = "DRAMMEN"
 nimax = 50
@@ -9,3 +10,5 @@ xlat0 = 60.0
 xlatcen = 60.0
 xlon0 = 10.0
 xloncen = 10.0
+ilate = 0
+ilone = 0

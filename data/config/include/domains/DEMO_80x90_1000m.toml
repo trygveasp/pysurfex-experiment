@@ -1,3 +1,4 @@
+[domain]
 gridtype = "cubic"
 name = "DEMO_80x90_1000m"
 nimax = 69

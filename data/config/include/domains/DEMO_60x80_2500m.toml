@@ -1,3 +1,4 @@
+[domain]
 gridtype = "linear"
 name = "DEMO_60x80_2500m"
 nimax = 49
