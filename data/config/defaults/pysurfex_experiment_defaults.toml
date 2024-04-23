@@ -21,15 +21,16 @@
   cmake = true # Build with CMake
 
 [pgd]
-  clay_format = "netcdf"
+  clay_format = "direct"
   clay_input = "soilgrid"
-  sand_format = "netcdf"
+  sand_format = "direct"
   sand_input = "soilgrid"
-  soc_format = "netcdf"
+  soc_format = "direct"
   soc_input = "soilgrid"
-  zs_format = "netcdf"
+  zs_format = "direct"
   zs_input = "gmted2010"
-  extra_namelist_blocks = []
+  #extra_namelist_blocks = ["pgd_ecoclimap_sg_albnir_soil_dirtyp", "pgd_ecoclimap_sg_albnir_veg_dirtyp", "pgd_ecoclimap_sg_albvis_soil_dirtyp", "pgd_ecoclimap_sg_albvis_veg_dirtyp", "pgd_ecoclimap_sg_tree_height_dirtyp", "pgd_ecoclimap_sg_lai_dirtyp"]
+  extra_namelist_blocks = ["pgd_ecoclimap_sg_single_decade", "pgd_ecoclimap_sg_single_decade_albnir_soil_dirtyp", "pgd_ecoclimap_sg_single_decade_albnir_veg_dirtyp", "pgd_ecoclimap_sg_single_decade_albvis_soil_dirtyp", "pgd_ecoclimap_sg_single_decade_albvis_veg_dirtyp", "pgd_ecoclimap_sg_single_decade_tree_height_dirtyp", "pgd_ecoclimap_sg_single_decade_lai_dirtyp"]
 
 [prep]
   extra_namelist_blocks = []
