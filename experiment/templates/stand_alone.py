@@ -1,28 +1,34 @@
-"""Default ecflow container."""
-# @ENV_SUB1@
+"""NoSchedulerTemplate."""
+
+import os
+
+from deode.config_parser import ConfigParserDefaults, ParsedConfig
+from deode.derived_variables import derived_variables, set_times
+from deode.logs import logger  # Use deode's own configs for logger
+from deode.submission import ProcessorLayout, TaskSettings
+from deode.tasks.discover_task import get_task
+
+logger.enable("deode")
 
 
-from experiment import PACKAGE_NAME
-from experiment.config_parser import MAIN_CONFIG_JSON_SCHEMA, ParsedConfig
-from experiment.logs import logger
-from experiment.tasks.discover_tasks import get_task
-
-# @ENV_SUB2@
-
-
-logger.enable(PACKAGE_NAME)
-
-
-def stand_alone_main(task, config_file):
+def default_main(task, config, deode_home):
     """Execute default main.
 
     Args:
-    ----
         task (str): Task name
-        config_file (str): Config file
-
+        config (str): Config file
+        deode_home(str): Deode home path
     """
-    config = ParsedConfig.from_file(config_file, json_schema=MAIN_CONFIG_JSON_SCHEMA)
+    config = ParsedConfig.from_file(
+        config, json_schema=ConfigParserDefaults.MAIN_CONFIG_JSON_SCHEMA
+    )
+    config = config.copy(update=set_times(config))
+    config = config.copy(update={"platform": {"deode_home": deode_home}})
+
+    task_settings = TaskSettings(config).get_task_settings(task)
+    processor_layout = ProcessorLayout(task_settings)
+    update = derived_variables(config, processor_layout=processor_layout)
+    config = config.copy(update=update)
 
     logger.info("Running task {}", task)
     get_task(task, config).run()
@@ -30,7 +36,7 @@ def stand_alone_main(task, config_file):
 
 
 if __name__ == "__main__":
-    TASK_NAME = "@STAND_ALONE_TASK_NAME@"
-    CONFIG = "@STAND_ALONE_TASK_CONFIG@"
-
-    stand_alone_main(TASK_NAME, CONFIG)
+    TASK_NAME = os.environ["STAND_ALONE_TASK_NAME"]
+    CONFIG = os.environ["STAND_ALONE_TASK_CONFIG"]
+    DEODE_HOME = os.environ["STAND_ALONE_DEODE_HOME"]
+    default_main(TASK_NAME, CONFIG, DEODE_HOME)
