@@ -1139,6 +1139,8 @@ offline_isba_dif:
     CPEDO_FUNCTION: CO84
     CPHOTO: NON
     XUNIF_RUNOFFB: 0.2
+
+offline_isba_dif_snow_flux:
   NAM_SURF_SNOW_CSTS:
     LESSOILSNOWFLUX: true
 
