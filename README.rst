@@ -69,14 +69,14 @@ In addition you will get some other config files used in the tasks. An example o
 
  
  # The -offline argument is optional if you want to run with existing binaries
- PySurfexExpSetup --config-file data/config/my_config.toml
+ PySurfexExpSetup --config-file data/config/deode.toml -o data/config/my_config.toml
  # This will create a file exp_dependencies.json
 
  # Alternative way of setting up a pre-defined SEKF configuration
- PySfxExp $PWD/data/config data/config/configurations/sekf.toml --config-file data/config/my_config.toml
+ PySfxExp --config-file data/config/deode.toml $PWD/data/config data/config/configurations/sekf.toml -o data/config/my_config.toml
  
  # Use AROME Arctic branch on PPI together with MET-Norway LDAS
- PySfxExp data/config/configurations/metno_ldas.toml data/config/mods/arome_arctic_offline_ppi.toml --config-file data/config/my_config.toml
+ PySfxExp --config-file data/config/deode.toml data/config/configurations/metno_ldas.toml data/config/mods/arome_arctic_offline_ppi.toml -o data/config/my_config.toml
 
  # To start you experiment
  deode start suite --config-file data/config/my_config.toml
@@ -101,15 +101,32 @@ Extra environment on PPI-RHEL8 needed to start experiments
 
 .. code-block:: bash
 
+ # ib-dev queue is only in A: ib-dev-a-r8.q
+ ssh ppi-r8login-a1.int.met.no
+ 
+ # Get pysurfex-experiment
+ git clone github.com:trygveasp/pysurfex-experiment.git  --branch feature/deode_offline_surfex pyexp
+
+ # conda setup
+ source /modules/rhel8/user-apps/suv-modules/miniconda3/24.7.1/etc/profile.d/conda.sh
+ conda create -n pyexp python==3.10 -y
+ conda install -c conda-forge -n pyexp poetry gdal -y
+ conda activate pyexp
+ 
+ # Install
+ poetry install
+ 
+ # MET-Norway LDAS experiment
+ PySfxExp --config-file data/config/deode.toml --output data/config/LDAS_AA.toml --config-dir $PWD/data/config data/config/configurations/metno_ldas.toml data/config/include/domains/MET_NORDIC_2_5.toml data/config/mods/arome_arctic_offline_ppi.toml --case-name LDAS_AA
+
+ # PPI ECFLOW (in A)
+ # If your server is not running you should start it!
  module use /modules/MET/rhel8/user-modules/
  module load ecflow/5.8.1
  export ECF_SSL=1
 
- source /modules/rhel8/user-apps/suv-modules/miniconda3/24.7.1/etc/profile.d/conda.sh
- conda activate pysurfex_experiment
-
- # MET-Norway LDAS
- PySfxExp --config-file data/config/deode.toml --output data/config/LDAS_AA.toml --case-name LDAS --config-dir $PWD/data/config data/config/configurations/metno_ldas.toml data/config/include/domains/MET_NORDIC_2_5.toml data/config/mods/arome_arctic_offline_ppi.toml --case-name LDAS_AA
+ # Start suite (modify dates)
+ deode start suite  --config-file data/config/LDAS_AA.toml
 
 Trainings
 -----------------------

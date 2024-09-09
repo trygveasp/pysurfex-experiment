@@ -149,11 +149,11 @@
 
 [initial_conditions.fg4oi.altitude]
   converter = "none"
-  inputfile = "@casedir@/climate/PGD_@DECADE@.nc"
+  inputfile = "@casedir@/climate/PGD_@ONE_DECADE@.nc"
 
 [initial_conditions.fg4oi.land_area_fraction]
   converter = "nature_town"
-  inputfile = "@casedir@/climate/PGD_@DECADE@.nc"
+  inputfile = "@casedir@/climate/PGD_@ONE_DECADE@.nc"
 
 [initial_conditions.fg4oi.relative_humidity_2m]
 
