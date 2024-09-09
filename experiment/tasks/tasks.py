@@ -92,6 +92,17 @@ class PySurfexBaseTask(Task):
         self.config = self.config.copy(update=update)
         logger.debug("NNCO: {}", self.nnco)
 
+    def substitute(self, pattern, basetime=None, validtime=None):
+        fpattern = self.platform.substitute(pattern, basetime=basetime, validtime=validtime)
+        if isinstance(fpattern, str):
+            # @YYYY_FG@/@MM_FG@/@DD_FG@/@HH_FG@/
+            if basetime is not None:
+                fpattern = fpattern.replace("@YYYY_FG@", basetime.strftime('%Y'))
+                fpattern = fpattern.replace("@MM_FG@", basetime.strftime('%m'))
+                fpattern = fpattern.replace("@DD_FG@", basetime.strftime('%d'))
+                fpattern = fpattern.replace("@HH_FG@", basetime.strftime('%H'))
+        return fpattern
+
     def get_binary(self, binary):
         """Determine binary path from task or system config section.
 
@@ -883,9 +894,11 @@ class FirstGuess4OI(PySurfexBaseTask):
                 identifier = "initial_conditions.fg4oi."
                 inputfile = self.config[identifier + "inputfile"]
 
-            inputfile = self.platform.substitute(
+            logger.info("inputfile0={}", inputfile)
+            inputfile = self.substitute(
                 inputfile, basetime=self.fg_dtg, validtime=self.dtg
             )
+            logger.info("inputfile1={}", inputfile)
 
             try:
                 identifier = "initial_conditions.fg4oi." + lvar + "."

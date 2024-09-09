@@ -26,7 +26,9 @@ submit_types = ["serial", "parallel", "background"]
 [submission.parallel.BATCH]
   NAME = "#$ -N @TASK_NAME@"
   QUEUE = "#$ -q ib-dev-a-r8.q"
-  VMEM = "#$ -l h_rss=12G,mem_free=12G"
+  PE = "#$ -pe ib-fn 32"
+  #PE = "#$ -pe mpi 1"
+  VMEM = "#$ -l h_rss=3.5G,mem_free=3.5G"
   WALLTIME = "#$ -l h_rt=00:30:00"
 
 [submission.parallel.ENV]
@@ -66,6 +68,7 @@ submit_types = ["serial", "parallel", "background"]
 [submission.serial.BATCH]
   NAME = "#$ -N @TASK_NAME@"
   QUEUE = "#$ -q ib-dev-a-r8.q"
+  PE = "#$ -pe shmem-1 1"
   VMEM = "#$ -l h_rss=5G,mem_free=5G"
   WALLTIME = "#$ -l h_rt=00:30:00"
 
@@ -83,11 +86,33 @@ submit_types = ["serial", "parallel", "background"]
 [submission.task]
   wrapper = ""
 
-[submission.task.exceptions.MakeOfflineBinaries.MODULES]
+[submission.task_exceptions.MakeOfflineBinaries.BATCH]
+  PE = "#$ -pe shmem-1 1"
+  VMEM = "#$ -l h_rss=30G,mem_free=30G"
+  WALLTIME = "#$ -l h_rt=01:00:00"
+
+[submission.task_exceptions.CMakeBuild.MODULES]
+  0_ECFLOW_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  0_ECFLOW_1 = ["load", "ecflow/5.8.1"]
+  1_INTEL_RUNTIME_0 = ["use", "/modules/MET/rhel8/user-modules/"]
+  1_INTEL_RUNTIME_1 = ["load", "compiler/Intel2022"]
+  2_OPENMPI = ["load", "IB-R8-A/openmpi/3.1.4-IB-i22-2023"]
+  #2_ECCODES = ["load", "IB-R8-A/eccodes/2.32.1-IB-i22-2023"]
+
+[submission.task_exceptions.CMakeBuild.BATCH]
+  PE = "#$ -pe shmem-1 1"
+  VMEM = "#$ -l h_rss=30G,mem_free=30G"
+  WALLTIME = "#$ -l h_rt=01:00:00"
+
+[submission.task_exceptions.MakeOfflineBinaries.MODULES]
   ECCODES = ["load", "IB-R8-A/eccodes/2.32.1-IB-i22-2023"]
 
-[submission.task_exceptions.Pgd]
+[submission.task_exceptions.OfflinePgd]
+  WRAPPER = "mpiexec -np 1"
+  WALLTIME = "#$ -l h_rt=06:00:00"
+
+[submission.task_exceptions.OfflinePrep]
   WRAPPER = "mpiexec -np 1"
 
-[submission.task_exceptions.Prep]
-  WRAPPER = "mpiexec -np 1"
+[submission.task_exceptions.OfflineForecast]
+  WRAPPER = "mpiexec -np 32"

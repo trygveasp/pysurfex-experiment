@@ -1,5 +1,4 @@
 [general]
-  create_static_data = true
   loglevel = "INFO"
   os_macros = ["HOME"]
   realization = -1
@@ -21,15 +20,28 @@
   cmake = true # Build with CMake
 
 [pgd]
-  clay_format = "netcdf"
+  clay_format = "direct"
   clay_input = "soilgrid"
-  sand_format = "netcdf"
+  sand_format = "direct"
   sand_input = "soilgrid"
-  soc_format = "netcdf"
+  soc_format = "direct"
   soc_input = "soilgrid"
-  zs_format = "netcdf"
+  zs_format = "direct"
   zs_input = "gmted2010"
-  extra_namelist_blocks = []
+  extra_namelist_blocks = [
+    "pgd_ecoclimap_sg_single_decade", "pgd_ecoclimap_sg_single_decade_albnir_soil_dirtyp", "pgd_ecoclimap_sg_single_decade_albnir_veg_dirtyp", "pgd_ecoclimap_sg_single_decade_albvis_soil_dirtyp", "pgd_ecoclimap_sg_single_decade_albvis_veg_dirtyp", "pgd_ecoclimap_sg_single_decade_lai_dirtyp", "pgd_ecoclimap_sg_single_decade_tree_height_dirtyp",
+    "pgd_cover_direct",
+    "pgd_cover_lrm_river_true",
+    "pgd_isba_sand_direct", "pgd_isba_clay_direct", "pgd_isba_soc_direct", "pgd_zs_direct"
+  ]
+  # single: decade: pgd_ecoclimap_sg_single_decade
+  # single decade dirtyp:  "pgd_ecoclimap_sg_single_decade_albnir_soil_dirtyp", "pgd_ecoclimap_sg_single_decade_albnir_veg_dirtyp", "pgd_ecoclimap_sg_single_decade_albvis_soil_dirtyp", "pgd_ecoclimap_sg_single_decade_albvis_veg_dirtyp", "pgd_ecoclimap_sg_single_decade_lai_dirtyp", "pgd_ecoclimap_sg_single_decade_tree_height_dirtyp",
+  # single decade netcdf:  "pgd_ecoclimap_sg_single_decade_albnir_soil_netcdf", "pgd_ecoclimap_sg_single_decade_albnir_veg_netcdf", "pgd_ecoclimap_sg_single_decade_albvis_soil_netcdf", "pgd_ecoclimap_sg_single_decade_albvis_veg_netcdf", "pgd_ecoclimap_sg_single_decade_lai_netcdf", "pgd_ecoclimap_sg_single_decade_tree_height_netcdf",
+  # dirtyp ECO-SG: "pgd_ecoclimap_sg_albnir_soil_dirtyp", "pgd_ecoclimap_sg_albnir_veg_dirtyp", "pgd_ecoclimap_sg_albvis_soil_dirtyp", "pgd_ecoclimap_sg_albvis_veg_dirtyp", "pgd_ecoclimap_sg_tree_height_dirtyp", "pgd_ecoclimap_sg_lai_dirtyp"
+  # direct: "pgd_cover_direct", "pgd_flake_depth_direct", "pgd_flake_depth_status_direct", "pgd_isba_sand_direct", "pgd_isba_clay_direct", "pgd_isba_soc_direct", "pgd_zs_direct"
+  # netcdf ECOS SG: "pgd_ecoclimap_sg_albnir_soil_netcdf", "pgd_ecoclimap_sg_albnir_veg_netcdf", "pgd_ecoclimap_sg_albvis_soil_netcdf", "pgd_ecoclimap_sg_albvis_veg_netcdf", "pgd_ecoclimap_sg_tree_height_netcdf", "pgd_ecoclimap_sg_lai_netcdf"
+  # netcdf other: "pgd_cover_netcdf", "pgd_flake_depth_netcdf", "pgd_flake_depth_status_netcdf", "pgd_isba_sand_netcdf", "pgd_isba_clay_netcdf", "pgd_isba_soc_netcdf", "pgd_zs_netcdf"
+  # Optional flake: "pgd_flake_depth_status_netcdf" "pgd_cover_lrm_river_true"
 
 [prep]
   extra_namelist_blocks = []
@@ -46,6 +58,7 @@
   forcing_variable_config_yml_file = "@pysurfex_cfg@/config.yml"
 
 [suite_control]
+  create_static_data = true
   suite_definition = "SurfexSuiteDefinition"
   do_prep = true
 
@@ -53,10 +66,10 @@
   config_file = "@default_config_dir@/troika_config.yml"
 
 [system]
-  climdir = "@casedir@/climate/"
+  climdir = "@casedir@/climate/@DOMAIN@/"
   archive_dir = "@casedir@/archive/@YYYY@/@MM@/@DD@/@HH@/"
   extrarch_dir = "@casedir@/archive/extract/"
-  forcing_dir = "@casedir@/forcing/@YYYY@@MM@@DD@@HH@/@RRR@/"
+  forcing_dir = "@casedir@/forcing/@YYYY@@MM@@DD@@HH@/"
   obs_dir = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/"
   #namelist_defs = f"{namelist_defs}"
   #binary_input_files = f"{binary_input_files}"
@@ -73,9 +86,9 @@
 
 [forcing]
   # After 2023013123
-  pattern = "https://thredds.met.no/thredds/dodsC/metpparchive/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
+  #pattern = "https://thredds.met.no/thredds/dodsC/metpparchive/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
   # Before 2023020100
-  #pattern = "https://thredds.met.no/thredds/dodsC/metpparchivev3/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
+  pattern = "https://thredds.met.no/thredds/dodsC/metpparchivev3/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
   # Local file system paths at MET-Norway
   # pattern = "/lustre/storeB/project/metproduction/products/yr_short/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
   # pattern = "/lustre/storeB/immutable/archive/projects/metproduction/yr_short//@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc
@@ -117,14 +130,14 @@
 [initial_conditions]
   anasurf = "gridpp"
   # "/nobackup/prod2/cooper/BD_archive/2020/09/16/00/fc20200916_00+003
-  prep_input_file = "@pysurfex_experiment@/data/nam/prep_from_namelist_values.json"
-  prep_input_filetype = "json"
+  prep_input_file = ""
+  prep_input_filetype = ""
   prep_pgdfile = ""
   prep_pgdfiletype = ""
 
 [initial_conditions.fg4oi]
-  inputfile = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
-  # inputfile = "@sfx_exp_data@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.@YYYY@@MM@@DD@_@HH_LL@h00.nc"
+  # inputfile = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"
+  inputfile = "@sfx_exp_data@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.@YYYY@@MM@@DD@_@HH_LL@h00.nc"
   # inputfile = "/tmp/host1/testdata/fc@YYYY@@MM@@DD@@HH@+@LLLL@grib2"
   fileformat = "netcdf"
   # fileformat = "grib2"
@@ -135,12 +148,17 @@
 [initial_conditions.fg4oi.air_temperature_2m]
 
 [initial_conditions.fg4oi.altitude]
-  converter = "phi2m"
+  converter = "none"
+  inputfile = "@casedir@/climate/PGD_@DECADE@.nc"
+
+[initial_conditions.fg4oi.land_area_fraction]
+  converter = "nature_town"
+  inputfile = "@casedir@/climate/PGD_@DECADE@.nc"
 
 [initial_conditions.fg4oi.relative_humidity_2m]
 
 [initial_conditions.fg4oi.surface_snow_thickness]
-  converter = "sweclim"
+  converter = "none"
 
 ##################################################################################################################
 [observations]
@@ -150,7 +168,7 @@
   #  TITAN observation settings
   #---------------------------------------------------
   cryo_obs_sd = false # Use cryoclim snow pseudo-observations
-  netatmo_filepattern = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@RRR@"
+  netatmo_filepattern = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/"
   netatmo_obs_rh2m = true # 2m relative humidity observations from Netatmo stations
   netatmo_obs_t2m = true # 2m air temperature observations from Netatmo stations
   synop_obs_rh2m = true # SYNOP 2m relative humidity from bufr files
@@ -159,12 +177,12 @@
   # netatmo_filepattern = "/lustre/storeB/project/metproduction/products/netatmo/@YYYY@/@MM@/@DD@/@YYYY@@MM@@DD@T@HH@@mm@01Z.json"
   # netatmo_filepattern = "/tmp/host1/testdata/@YYYY@@MM@@DD@T@HH@@mm@*Z_all.json"
   cryo_fg_threshold = 0.4
-  cryo_filepattern = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@RRR@/daily-avhrr-sce-nhl_ease-50_@YYYY@@MM@@DD@@HH@"
+  cryo_filepattern = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/daily-avhrr-sce-nhl_ease-50_@YYYY@@MM@@DD@@HH@"
   cryo_laf_threshold = 0.1
   cryo_new_snow = 0.1
   cryo_step = 2
   cryo_var_name = "classed_value_c"
-  filepattern = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/@RRR@/ob@YYYY@@MM@@DD@@HH@"
+  filepattern = "@casedir@/archive/observations/@YYYY@/@MM@/@DD@/@HH@/ob@YYYY@@MM@@DD@@HH@"
 
 [Observations.oi.rh2m]
   hlength = 30000

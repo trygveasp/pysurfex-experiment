@@ -259,7 +259,8 @@ class SurfexSuiteDefinition(SuiteDefinition):
                 and time_trigger_times[c_index] in cycle_input_nodes
             ):
                 time_trigger = cycle_input_nodes[time_trigger_times[c_index]]
-            triggers = EcflowSuiteTriggers([static_complete, time_trigger])
+
+            triggers = EcflowSuiteTriggers([comp_complete, static_complete, time_trigger])
 
             time_family = EcflowSuiteFamily(
                 cycle["time"],
@@ -281,7 +282,7 @@ class SurfexSuiteDefinition(SuiteDefinition):
             )
             prepare_cycle_complete = EcflowSuiteTrigger(prepare_cycle)
 
-            triggers.add_triggers([EcflowSuiteTrigger(prepare_cycle)])
+            triggers.add_triggers([prepare_cycle_complete])
 
             cycle_input = EcflowSuiteFamily(
                 "CycleInput", time_family, self.ecf_files, trigger=triggers

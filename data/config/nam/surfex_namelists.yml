@@ -89,6 +89,10 @@ pgd_cover_netcdf:
   NAM_COVER:
     YCOVERFILETYPE: NETCDF
 
+pgd_cover_lrm_river_true:
+  NAM_COVER:
+     LRM_RIVER: true
+
 pgd_cv:
   NAM_DATA_ISBA:
     XUNIF_CV:

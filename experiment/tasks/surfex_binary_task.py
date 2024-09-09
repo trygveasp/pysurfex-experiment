@@ -410,6 +410,8 @@ class OfflinePrep(SurfexBinaryTask):
         pgdfile = (
             f"{self.sfx_config.get_setting('SURFEX#IO#CPGDFILE')}{decade}{self.suffix}"
         )
+        print(f"{self.platform.get_system_value('climdir')}")
+        print(f"{pgdfile}")
         pgd_file_path = f"{self.platform.get_system_value('climdir')}/{pgdfile}"
         try:
             prep_file = self.config["initial_conditions.prep_input_file"]

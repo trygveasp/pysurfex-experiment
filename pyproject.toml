@@ -14,7 +14,7 @@
 
 [tool.poetry.dependencies]
   deode = {git = "git@github.com:trygveasp/Deode-Prototype.git", develop = true, branch = "feature/deode_plug_ppi"}
-  #deode = {path = "/home/trygveasp//tmp/feature/deode_plugin/deode_plug_ppi/", develop=false}
+  #deode = {path = "/modules/rhel8/user-apps/suv-modules/deode/trygveasp/feature/plug_ppi", develop=true}
   pysurfex = {git = "https://github.com/trygveasp/pysurfex.git", develop = true, branch = "feature/pysurfex_experiment"}
   python = ">=3.9,<3.13"
 

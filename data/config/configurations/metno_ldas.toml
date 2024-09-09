@@ -1,6 +1,4 @@
 [general]
-  create_static_data = false
-  hh_list = "00-23:1"
 
 [general.times]
   cycle_length = "PT1H"
@@ -10,9 +8,8 @@
   ial_source = "/home/trygveasp/projects/CARRA2-offline/"
 
 [forcing]
-  # pattern = "https://thredds.met.no/thredds/dodsC/metpparchive/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
+  pattern = "https://thredds.met.no/thredds/dodsC/metpparchive/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
   input_format = "netcdf"
-  pattern = "/lustre/storeB/project/metproduction/products/yr_short/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
 
 [initial_conditions]
   prep_input_file = ""
@@ -21,18 +18,24 @@
 [initial_conditions.fg4oi]
   converter = "none"
   fileformat = "surfex"
-  inputfile = "@casedir@/archive/@YYYY_FG@/@MM_FG@/@DD_FG@/@HH_FG@/SURFOUT.@YYYY@@MM@@DD@_@HH@h00.nc"
+  inputfile = "@casedir@/archive/@YYYY_FG@/@MM_FG@/@DD_FG@/@HH_FG@/SURFOUT.@YYYY@@MM@@DD@_@HH_LL@h00.nc"
 
 [initial_conditions.fg4oi.altitude]
   converter = "none"
-  inputfile = "@climdir@/PGD.nc"
+  inputfile = "@casedir@/climate/PGD_@DECADE@.nc"
 
 [initial_conditions.fg4oi.land_area_fraction]
   converter = "nature_town"
-  inputfile = "@climdir@/climate/PGD.nc"
+  inputfile = "@casedir@/climate/PGD_@DECADE@.nc"
 
 [observations]
   filepattern = "/lustre/storeA/project/metproduction/products/obs_dec/bufr/syno/syno_@YYYY@@MM@@DD@@HH@.bufr"
+
+[pgd]
+  one_decade = true
+
+[prep]
+  extra_namelist_blocks = ["prep_from_namelist"]
 
 [SURFEX.ASSIM.ISBA]
   UPDATE_SNOW_CYCLES = ["06"] # Cycles to update snow depths/SWE in assimilation.
