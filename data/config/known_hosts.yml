@@ -5,3 +5,7 @@ lumi :
   hostname : "uan\\d\\d"
 ppi_rhel8_a1:
   hostname: "ppi-r8login-.*.int.met.no"
+pc5709:
+  hostname: "pc5709"
+nebula:
+  hostname: "nebula\\d.nsc.liu.se"
