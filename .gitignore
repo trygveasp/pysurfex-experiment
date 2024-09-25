@@ -1,4 +1,6 @@
 # My stuff
+*.def
+exps
 FORCING.nc
 .idea
 testdata

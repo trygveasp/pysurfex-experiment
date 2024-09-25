@@ -10,6 +10,7 @@ import yaml
 from deode.datetime_utils import as_datetime, as_timedelta
 from deode.logs import InterceptHandler, logger, logging
 from deode.tasks.base import Task
+import pysurfex
 from pysurfex.cache import Cache
 from pysurfex.configuration import Configuration
 from pysurfex.file import SurfFileTypeExtension
@@ -927,7 +928,12 @@ class FirstGuess4OI(PySurfexBaseTask):
             logger.info("inputfile={}, fileformat={}", inputfile, fileformat)
             logger.info("converter={}, input_geo_file={}", converter, input_geo_file)
 
-            config_file = self.platform.get_system_value("first_guess_yml")
+            try:
+                config_file = self.config["pysurfex.first_guess_yml_file"]
+            except KeyError:
+                config_file = None
+            if config_file is None or config_file == "":
+                config_file = f"{os.path.dirname(pysurfex.__path__[0])}/pysurfex/cfg/first_guess.yml"
             with open(config_file, mode="r", encoding="utf-8") as file_handler:
                 config = yaml.safe_load(file_handler)
             logger.info("config_file={}", config_file)

@@ -105,19 +105,20 @@ Extra environment on PPI-RHEL8 needed to start experiments
  ssh ppi-r8login-a1.int.met.no
  
  # Get pysurfex-experiment
- git clone github.com:trygveasp/pysurfex-experiment.git  --branch feature/deode_offline_surfex pyexp
+ git clone github.com:trygveasp/pysurfex-experiment.git  --branch feature/deode_offline_surfex pysurfex_experiment
 
  # conda setup
  source /modules/rhel8/user-apps/suv-modules/miniconda3/24.7.1/etc/profile.d/conda.sh
- conda create -n pyexp python==3.10 -y
- conda install -c conda-forge -n pyexp poetry gdal -y
- conda activate pyexp
+ conda create -n pysurfex_experiment python==3.10 -y
+ conda install -c conda-forge -n pysurfex_experiment poetry gdal -y
+ conda activate pysurfex_experiment
  
  # Install
  poetry install
  
  # MET-Norway LDAS experiment
- PySfxExp --config-file data/config/deode.toml --output data/config/LDAS_AA.toml --config-dir $PWD/data/config data/config/configurations/metno_ldas.toml data/config/include/domains/MET_NORDIC_2_5.toml data/config/mods/arome_arctic_offline_ppi.toml --case-name LDAS_AA
+ mkdir -f exps
+ ./bin/PySfxExp exps/LDAS_AA.toml LDAS_AA $PWD/data/config/configurations/metno_ldas.toml $PWD/data/config/domains/MET_NORDIC_2_5.toml $PWD/data/config/mods/arome_arctic_offline_ppi.toml $PWD/data/config/scheduler/ecflow_ppi_rhel8-$USER.toml
 
  # PPI ECFLOW (in A)
  # If your server is not running you should start it!
@@ -126,7 +127,7 @@ Extra environment on PPI-RHEL8 needed to start experiments
  export ECF_SSL=1
 
  # Start suite (modify dates)
- deode start suite  --config-file data/config/LDAS_AA.toml
+ deode start suite  --config-file exps/LDAS_AA.toml
 
 Trainings
 -----------------------

@@ -3,19 +3,17 @@
   description = "pysurfex-experiment"
   name = "experiment"
   readme = "README.rst"
-  version = "0.2.0"
+  version = "0.3.0"
 
-[tool.poetry.scripts]
-  PySfxExp = "experiment.cli:case_cli"
 
 [build-system]
   build-backend = "poetry.core.masonry.api"
   requires = ["poetry-core >= 1.0.0"]
 
 [tool.poetry.dependencies]
-  deode = {git = "git@github.com:trygveasp/Deode-Prototype.git", develop = true, branch = "feature/deode_plug_ppi"}
-  #deode = {path = "/modules/rhel8/user-apps/suv-modules/deode/trygveasp/feature/plug_ppi", develop=true}
-  pysurfex = {git = "https://github.com/trygveasp/pysurfex.git", develop = true, branch = "feature/pysurfex_experiment"}
+  deode = {git = "git@github.com:trygveasp/Deode-Prototype.git", develop = true, branch = "develop_ppi"}
+  #deode = {path = "/modules/rhel8/user-apps/suv-modules/deode/trygveasp/feature/develop_ppi", develop=true}
+  pysurfex = {git = "https://github.com/metno/pysurfex.git", develop = true, branch = "master"}
   python = ">=3.9,<3.13"
 
 [tool.poetry.group.linting.dependencies]
