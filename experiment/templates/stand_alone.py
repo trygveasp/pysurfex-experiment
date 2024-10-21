@@ -11,7 +11,7 @@ from deode.tasks.discover_task import get_task
 logger.enable("deode")
 
 
-def default_main(task, config, deode_home):
+def stand_alone_main(task, config, deode_home):
     """Execute default main.
 
     Args:
@@ -39,4 +39,4 @@ if __name__ == "__main__":
     TASK_NAME = os.environ["STAND_ALONE_TASK_NAME"]
     CONFIG = os.environ["STAND_ALONE_TASK_CONFIG"]
     DEODE_HOME = os.environ["STAND_ALONE_DEODE_HOME"]
-    default_main(TASK_NAME, CONFIG, DEODE_HOME)
+    stand_alone_main(TASK_NAME, CONFIG, DEODE_HOME)

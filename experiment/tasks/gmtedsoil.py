@@ -258,8 +258,12 @@ class Gmted(Task):
 
         fmt = self.config["pgd.zs_format"]
         if fmt == "netcdf":
-            gdal.Translate(f"{climdir}/gmted2010.nc", "gmted_mea075.tif", format="NetCDF")
-            modify_ncfile(f"{climdir}/gmted2010.nc", "ZS")
+            output = f"{climdir}/gmted2010.nc"
+            if os.path.exists(output):
+                logger.info("Output {} already exists", output)
+            else:
+                gdal.Translate(output, "gmted_mea075.tif", format="NetCDF")
+                modify_ncfile(output, "ZS")
         elif fmt == "direct":
             Gmted.tif2bin(gd, "gmted_mea075.bin")
             shutil.move("gmted_mea075.bin", f"{climdir}/gmted2010.dir")
@@ -512,16 +516,19 @@ class Soil(Task):
                     output = f"{climdir}/SAND_SOILGRID.nc"
                     output_type = 0
 
-                ds = gdal.Open(subarea_file)
-                ds = gdal.Translate(
-                    output,
-                    ds,
-                    format=gfmt,
-                    outputType=output_type,
-                )
-                ds = None
-                if fmt == "netcdf":
-                    modify_ncfile(output, "SAND", fact=fact)
+                if os.path.exists(output):
+                    logger.info("Output {} already exists", output)
+                else:
+                    ds = gdal.Open(subarea_file)
+                    ds = gdal.Translate(
+                        output,
+                        ds,
+                        format=gfmt,
+                        outputType=output_type,
+                    )
+                    ds = None
+                    if fmt == "netcdf":
+                        modify_ncfile(output, "SAND", fact=fact)
             elif subarea_file.startswith("CLYPPT"):
                 fact = 100
                 fmt = self.config["pgd.clay_format"]
@@ -534,16 +541,19 @@ class Soil(Task):
                     output = f"{climdir}/CLAY_SOILGRID.nc"
                     output_type = 0
 
-                ds = gdal.Open(subarea_file)
-                ds = gdal.Translate(
-                    output,
-                    ds,
-                    format=gfmt,
-                    outputType=output_type,
-                )
-                ds = None
-                if fmt == "netcdf":
-                    modify_ncfile(output, "CLAY", fact=fact)
+                if os.path.exists(output):
+                    logger.info("Output {} already exists", output)
+                else:
+                    ds = gdal.Open(subarea_file)
+                    ds = gdal.Translate(
+                        output,
+                        ds,
+                        format=gfmt,
+                        outputType=output_type,
+                    )
+                    ds = None
+                    if fmt == "netcdf":
+                        modify_ncfile(output, "CLAY", fact=fact)
             elif subarea_file.startswith(("SOC_TOP", "SOC_SUB")):
                 if subarea_file.startswith("SOC_SUB"):
                     soc_type = "soc_sub"
@@ -560,11 +570,14 @@ class Soil(Task):
                     output = f"{climdir}/{soc_type}.nc"
                     output_type = 0
 
-                ds = gdal.Open(subarea_file)
-                ds = gdal.Translate(output, ds, format=gfmt, outputType=output_type)
-                ds = None
-                if fmt == "netcdf":
-                    modify_ncfile(output, soc_type.upper(), fact=fact)
+                if os.path.exists(output):
+                    logger.info("Output {} already exists", output)
+                else:
+                    ds = gdal.Open(subarea_file)
+                    ds = gdal.Translate(output, ds, format=gfmt, outputType=output_type)
+                    ds = None
+                    if fmt == "netcdf":
+                        modify_ncfile(output, soc_type.upper(), fact=fact)
             else:
                 logger.warning("Unknown soilgrid tif file: {}", subarea_file)
 

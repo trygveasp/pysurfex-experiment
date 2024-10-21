@@ -5,14 +5,16 @@
   readme = "README.rst"
   version = "0.3.0"
 
+[tool.poetry.scripts]
+  execute_task = "experiment.templates.cli:execute_task"
 
 [build-system]
   build-backend = "poetry.core.masonry.api"
   requires = ["poetry-core >= 1.0.0"]
 
 [tool.poetry.dependencies]
-  deode = {git = "git@github.com:trygveasp/Deode-Prototype.git", develop = true, branch = "develop_ppi"}
-  #deode = {path = "/modules/rhel8/user-apps/suv-modules/deode/trygveasp/feature/develop_ppi", develop=true}
+  #deode = {git = "git@github.com:trygveasp/Deode-Prototype.git", develop = true, branch = "develop_ppi"}
+  deode = {path = "/modules/rhel8/user-apps/suv-modules/deode/trygveasp/feature/develop_ppi", develop=true}
   pysurfex = {git = "https://github.com/metno/pysurfex.git", develop = true, branch = "master"}
   python = ">=3.9,<3.13"
 

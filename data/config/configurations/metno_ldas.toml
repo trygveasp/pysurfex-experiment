@@ -22,17 +22,17 @@
 
 [initial_conditions.fg4oi.altitude]
   converter = "none"
-  inputfile = "@casedir@/climate/PGD_@ONE_DECADE@.nc"
+  inputfile = "@casedir@/climate/PGD.nc"
 
 [initial_conditions.fg4oi.land_area_fraction]
   converter = "nature_town"
-  inputfile = "@casedir@/climate/PGD_@ONE_DECADE@.nc"
+  inputfile = "@casedir@/climate/PGD.nc"
 
 [observations]
   filepattern = "/lustre/storeA/project/metproduction/products/obs_dec/bufr/syno/syno_@YYYY@@MM@@DD@@HH@.bufr"
 
 [pgd]
-  one_decade = true
+  one_decade = false
 
 [prep]
   extra_namelist_blocks = ["prep_from_namelist"]

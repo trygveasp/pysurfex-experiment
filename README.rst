@@ -118,7 +118,7 @@ Extra environment on PPI-RHEL8 needed to start experiments
  
  # MET-Norway LDAS experiment
  mkdir -f exps
- ./bin/PySfxExp exps/LDAS_AA.toml LDAS_AA $PWD/data/config/configurations/metno_ldas.toml $PWD/data/config/domains/MET_NORDIC_2_5.toml $PWD/data/config/mods/arome_arctic_offline_ppi.toml $PWD/data/config/scheduler/ecflow_ppi_rhel8-$USER.toml
+ ./bin/PySfxExp exps/LDAS.toml LDAS $PWD/data/config/configurations/metno_ldas.toml $PWD/data/config/domains/MET_NORDIC_1_0.toml $PWD/data/config/mods/arome_arctic_offline_ppi.toml $PWD/data/config/mods/netcdf_input_pgd.toml $PWD/data/config/scheduler/ecflow_ppi_rhel8-$USER.toml
 
  # PPI ECFLOW (in A)
  # If your server is not running you should start it!
@@ -127,7 +127,12 @@ Extra environment on PPI-RHEL8 needed to start experiments
  export ECF_SSL=1
 
  # Start suite (modify dates)
- deode start suite  --config-file exps/LDAS_AA.toml
+ deode start suite  --config-file exps/LDAS.toml
+
+
+ # MET-Norway LDAS single decade
+ ./bin/PySfxExp exps/LDAS_decade.toml LDAS_decade $PWD/data/config/configurations/metno_ldas.toml $PWD/data/config/domains/MET_NORDIC_1_0.toml $PWD/data/config/mods/arome_arctic_offline_ppi.toml $PWD/data/config/mods/netcdf_input_pgd.toml $PWD/data/config/mods/netcdf_input_single_decade.toml $PWD/data/config/mods/metno_ldas_single_decade.toml $PWD/data/config/scheduler/ecflow_ppi_rhel8-$USER.toml
+ deode start suite  --config-file exps/LDAS_decade.toml
 
 Trainings
 -----------------------
