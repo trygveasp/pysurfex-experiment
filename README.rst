@@ -9,19 +9,10 @@ This repository is a setup to create and run offline SURFEX experiments.
 =========================================================================
 
 See online documentation in https://metno.github.io/surfExp/
-The setup is dependent of pysurfex (https://metno.github.io/pysurfex)
+The setup is dependent of pysurfex (https://metno.github.io/pysurfex) and deode workflow (https://github.com/destination-earth-digital-twins/Deode-Workflow / https://github.com/trygveasp/Deode-Workflow)
 
 You need a python3 parser and the following dependencies are needed. Install the non-standard ones e.g. with pip or your system installation system. Requirements can be found in https://github.com/metno/surfExp/blob/master/requirements.txt
 
-
-General dependencies (from pypi)
----------------------------------
-
-.. code-block:: bash
-
- pysurfex
-
-pysurfex bring extra dependencies like gridpp, titanlib. If you install from pypi with pip these should be handled automatically.
 
 Installation
 -------------
