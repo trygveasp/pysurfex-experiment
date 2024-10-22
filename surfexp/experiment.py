@@ -8,8 +8,6 @@ from deode.experiment import ExpFromFiles
 from deode.host_actions import DeodeHost
 from deode.logs import logger
 
-import experiment
-
 
 def get_nnco(config, basetime=None, realization=None):
     """Get the active observations.

@@ -12,8 +12,8 @@ from pysurfex.namelist import NamelistGenerator
 from pysurfex.platform_deps import SystemFilePaths
 from pysurfex.run import BatchJob, PerturbedOffline, SURFEXBinary
 
-from experiment.experiment import setting_is
-from experiment.tasks.tasks import PySurfexBaseTask
+from surfexp.experiment import setting_is
+from surfexp.tasks.tasks import PySurfexBaseTask
 
 
 class SurfexBinaryTask(PySurfexBaseTask):

@@ -3,6 +3,9 @@
   prep_input_file = ""
   prep_pgdfile = ""
 
+[prep]
+  extra_namelist_blocks = ["prep_from_namelist"]
+
 [initial_conditions.fg4oi]
   fileformat = "surfex"
   inputfile = "@casedir@/archive/@YYYY@/@MM@/@DD@/@HH@/SURFOUT.nc"

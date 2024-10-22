@@ -29,7 +29,7 @@ from pysurfex.read import ConvertedInput, Converter
 from pysurfex.run import BatchJob
 from pysurfex.titan import TitanDataSet, dataset_from_file, define_quality_control
 
-from experiment.experiment import get_nnco
+from surfexp.experiment import get_nnco
 
 
 class PySurfexBaseTask(Task):

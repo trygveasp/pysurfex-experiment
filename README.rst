@@ -1,17 +1,17 @@
 .. _README:
 
-.. image:: https://coveralls.io/repos/github/metno/pysurfex-experiment/badge.svg?branch=master
+.. image:: https://coveralls.io/repos/github/metno/surfExp/badge.svg?branch=master
 
-https://coveralls.io/github/metno/pysurfex-experiment
+https://coveralls.io/github/metno/surfExp
 
 
 This repository is a setup to create and run offline SURFEX experiments.
 =========================================================================
 
-See online documentation in https://metno.github.io/pysurfex-experiment/
+See online documentation in https://metno.github.io/surfExp/
 The setup is dependent of pysurfex (https://metno.github.io/pysurfex)
 
-You need a python3 parser and the following dependencies are needed. Install the non-standard ones e.g. with pip or your system installation system. Requirements can be found in https://github.com/metno/pysurfex-experiment/blob/master/requirements.txt
+You need a python3 parser and the following dependencies are needed. Install the non-standard ones e.g. with pip or your system installation system. Requirements can be found in https://github.com/metno/surfExp/blob/master/requirements.txt
 
 
 General dependencies (from pypi)
@@ -34,7 +34,7 @@ The recommended installation method is using poetry. First install poetry. This 
 
 
 When you have poetry installed make sure you have it in path. It might be installed in ~/.local/bin.
-To install the script system first clone https://github.com/metno/pysurfex-experiment and install it.
+To install the script system first clone https://github.com/metno/surfExp and install it.
 To run commands interactively in the poetry environment you need to run either "poetry shell" or "poetry run [cmd]"
 
 
@@ -45,10 +45,10 @@ To run commands interactively in the poetry environment you need to run either "
  cd projects
 
  # Clone the source code
- clone https://github.com/metno/pysurfex-experiment
+ clone https://github.com/metno/surfExp
 
  # Install the script system
- cd pysurfex-experiment
+ cd surfExp
  poetry install
 
  # Enter the environment
@@ -64,14 +64,14 @@ In addition you will get some other config files used in the tasks. An example o
 .. code-block:: bash
 
  # First make sure you are in a poetry environment after executing "poetry shell"
- cd ~/projects/pysurfex-experiment
+ cd ~/projects/surfExp
  poetry shell
 
  # Alternative way of setting up a pre-defined SEKF configuration
- surfExp my_config.toml SEKF experiment/data/config data/config/configurations/sekf.toml
+ surfExp my_config.toml SEKF surfexp/data/config data/config/configurations/sekf.toml
  
  # Use AROME Arctic branch on PPI together with MET-Norway LDAS
- surfExp my_config.toml LDAS experiment/data/config/configurations/metno_ldas.toml experiment/data/config/mods/arome_arctic_offline_ppi.toml
+ surfExp my_config.toml LDAS surfexp/data/config/configurations/metno_ldas.toml surfexp/data/config/mods/arome_arctic_offline_ppi.toml
 
  # To start you experiment
  deode start suite --config-file my_config.toml
@@ -81,10 +81,10 @@ In addition you will get some other config files used in the tasks. An example o
 Here is an example with CARRA2 using poetry run.
 
 .. code-block:: bash
- cd ~/projects/pysurfex-experiment
+ cd ~/projects/surfExp
 
  # Create experiment in file data/config/CARRA2_MINI.toml
- poetry run surfExp CARRA2_MINI.toml CARRA2-MINI experiment/data/config/configurations/carra2.toml
+ poetry run surfExp CARRA2_MINI.toml CARRA2-MINI surfexp/data/config/configurations/carra2.toml
 
  # Modify times in data/config/CARRA2_MINI.toml
  # Run experiment from config file data/config/CARRA2_MINI.toml
@@ -99,14 +99,14 @@ Extra environment on PPI-RHEL8 needed to start experiments
  # ib-dev queue is only in A: ib-dev-a-r8.q
  ssh ppi-r8login-a1.int.met.no
  
- # Get pysurfex-experiment
- git clone github.com:trygveasp/pysurfex-experiment.git  --branch feature/deode_offline_surfex pysurfex_experiment
+ # Get surfExp
+ git clone github.com:trygveasp/surfExp.git  --branch feature/deode_offline_surfex surfExp
 
  # conda setup
  source /modules/rhel8/user-apps/suv-modules/miniconda3/24.7.1/etc/profile.d/conda.sh
- conda create -n pysurfex_experiment python==3.10 -y
- conda install -c conda-forge -n pysurfex_experiment poetry gdal -y
- conda activate pysurfex_experiment
+ conda create -n surfExp python==3.10 -y
+ conda install -c conda-forge -n surfExp poetry gdal -y
+ conda activate surfExp
  
  # Install
  poetry install
@@ -132,4 +132,4 @@ Extra environment on PPI-RHEL8 needed to start experiments
 Trainings
 -----------------------
 
-`Budapest May 2022 <https://github.com/metno/pysurfex-experiment/blob/master/trainings/budapest_may_2022.rst/>`_ (Old version)
+`Budapest May 2022 <https://github.com/metno/surfExp/blob/master/trainings/budapest_may_2022.rst/>`_ (Old version)

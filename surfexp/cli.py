@@ -4,7 +4,7 @@ import sys
 import deode
 from deode.__main__ import main
 import pysurfex
-import experiment
+import surfexp
 import subprocess
 import argparse
 import shutil
@@ -27,7 +27,7 @@ def pysfxexp(argv=None):
 
     deode_path = deode.__path__[0]
     pysurfex_path = pysurfex.__path__[0]
-    experiment_path = experiment.__path__[0]
+    surfexp_path = surfexp.__path__[0]
     tmp_output = f"{output}.tmp.{os.getpid()}.toml"
     argv = [
         "case", 
@@ -35,7 +35,7 @@ def pysfxexp(argv=None):
         "--config-file", f"{deode_path}/data/config_files/config.toml",
         "--output", tmp_output,
         f"{pysurfex_path}/cfg/config_exp_surfex.toml",
-        f"{experiment_path}/data/pysurfex-experiment.toml"
+        f"{surfexp_path}/data/surfexp.toml"
     ]
     argv += args
     main(argv=argv)

@@ -7,7 +7,7 @@ from deode.logs import logger
 import pysurfex
 from pysurfex.forcing import modify_forcing, run_time_loop, set_forcing_config
 
-from experiment.tasks.tasks import PySurfexBaseTask
+from surfexp.tasks.tasks import PySurfexBaseTask
 
 
 class Forcing(PySurfexBaseTask):

@@ -11,7 +11,7 @@ from deode.suites.base import (
     SuiteDefinition,
 )
 
-from experiment.experiment import get_nnco, get_total_unique_cycle_list, setting_is
+from surfexp.experiment import get_nnco, get_total_unique_cycle_list, setting_is
 
 
 class SurfexSuiteDefinition(SuiteDefinition):

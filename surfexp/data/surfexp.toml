@@ -1,5 +1,5 @@
 [general.plugin_registry.plugins]
-  experiment = "@PLUGIN_HOME@"
+  surfexp = "@PLUGIN_HOME@"
 
 [general]
   loglevel = "INFO"
@@ -65,9 +65,6 @@
   suite_definition = "SurfexSuiteDefinition"
   do_prep = true
 
-[troika]
-  troika = "/home/trygveasp/.conda/envs/pysurfex_experiment/bin/troika"
-
 [system]
   climdir = "@casedir@/climate/@DOMAIN@/"
   archive_dir = "@casedir@/archive/@YYYY@/@MM@/@DD@/@HH@/"
@@ -132,9 +129,7 @@
   anasurf = "gridpp"
   # "/nobackup/prod2/cooper/BD_archive/2020/09/16/00/fc20200916_00+003
   prep_input_file = ""
-  prep_input_filetype = ""
   prep_pgdfile = ""
-  prep_pgdfiletype = ""
 
 [initial_conditions.fg4oi]
   # inputfile = "https://thredds.met.no/thredds/dodsC/meps25epsarchive/@YYYY@/@MM@/@DD@/meps_det_2_5km_@YYYY@@MM@@DD@T@HH@Z.nc"

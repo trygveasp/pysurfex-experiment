@@ -11,10 +11,6 @@
   pattern = "https://thredds.met.no/thredds/dodsC/metpparchive/@YYYY@/@MM@/@DD@/met_analysis_1_0km_nordic_@YYYY@@MM@@DD@T@HH@Z.nc"
   input_format = "netcdf"
 
-[initial_conditions]
-  prep_input_file = ""
-  prep_input_filetype = ""
-
 [initial_conditions.fg4oi]
   converter = "none"
   fileformat = "surfex"

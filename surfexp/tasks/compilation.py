@@ -5,7 +5,7 @@ import shutil
 from deode.logs import logger
 from pysurfex.run import BatchJob
 
-from experiment.tasks.tasks import PySurfexBaseTask
+from surfexp.tasks.tasks import PySurfexBaseTask
 
 
 class SyncSourceCode(PySurfexBaseTask):
@@ -45,7 +45,7 @@ class SyncSourceCode(PySurfexBaseTask):
         BatchJob(rte, wrapper=wrapper).run(cmd)
 
         # Add system files if not existing
-        scripts = self.platform.get_system_value("pysurfex_experiment")
+        scripts = self.platform.get_system_value("surfexp")
         host = self.config["compile.build_config"]
 
         system_file_scripts = f"{scripts}/config/offline/conf/system.{host}"
