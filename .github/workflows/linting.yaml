@@ -19,7 +19,7 @@ jobs:
     if: github.repository_owner == 'metno'
     name: Run Linters
     runs-on: ubuntu-latest
-    secrets: inherit
+    environment: staging
     steps:
       #----------------------------------------------
       #       check-out repo and set-up python
