@@ -54,7 +54,7 @@ jobs:
       - name: Setup ssh
         uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{secrets.ssh_deploy_key}}
+          ssh-private-key: ${{secrets.SSH_DEPLOY_KEY}}
 
       - name: Install dependencies (if venv cache is not found)
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
