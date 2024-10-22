@@ -4,9 +4,11 @@
   name = "experiment"
   readme = "README.rst"
   version = "0.3.0"
+  include = [ {path="experiment/data", format = ["sdist", "wheel"]} ]
 
 [tool.poetry.scripts]
   execute_task = "experiment.templates.cli:execute_task"
+  surfExp = "experiment.cli:pysfxexp"
 
 [build-system]
   build-backend = "poetry.core.masonry.api"

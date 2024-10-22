@@ -67,19 +67,14 @@ In addition you will get some other config files used in the tasks. An example o
  cd ~/projects/pysurfex-experiment
  poetry shell
 
- 
- # The -offline argument is optional if you want to run with existing binaries
- PySurfexExpSetup --config-file data/config/deode.toml -o data/config/my_config.toml
- # This will create a file exp_dependencies.json
-
  # Alternative way of setting up a pre-defined SEKF configuration
- PySfxExp --config-file data/config/deode.toml $PWD/data/config data/config/configurations/sekf.toml -o data/config/my_config.toml
+ surfExp my_config.toml SEKF experiment/data/config data/config/configurations/sekf.toml
  
  # Use AROME Arctic branch on PPI together with MET-Norway LDAS
- PySfxExp --config-file data/config/deode.toml data/config/configurations/metno_ldas.toml data/config/mods/arome_arctic_offline_ppi.toml -o data/config/my_config.toml
+ surfExp my_config.toml LDAS experiment/data/config/configurations/metno_ldas.toml experiment/data/config/mods/arome_arctic_offline_ppi.toml
 
  # To start you experiment
- deode start suite --config-file data/config/my_config.toml
+ deode start suite --config-file my_config.toml
 
 
 
@@ -89,7 +84,7 @@ Here is an example with CARRA2 using poetry run.
  cd ~/projects/pysurfex-experiment
 
  # Create experiment in file data/config/CARRA2_MINI.toml
- PySfxExp --config-file data/config/deode.toml --output data/config/CARRA2_MINI.toml --case-name CARRA2-MINI $PWD/data/config data/config/configurations/carra2.toml --case-name CARRA2-MINI
+ poetry run surfExp CARRA2_MINI.toml CARRA2-MINI experiment/data/config/configurations/carra2.toml
 
  # Modify times in data/config/CARRA2_MINI.toml
  # Run experiment from config file data/config/CARRA2_MINI.toml
@@ -118,7 +113,7 @@ Extra environment on PPI-RHEL8 needed to start experiments
  
  # MET-Norway LDAS experiment
  mkdir -f exps
- ./bin/PySfxExp exps/LDAS.toml LDAS $PWD/data/config/configurations/metno_ldas.toml $PWD/data/config/domains/MET_NORDIC_1_0.toml $PWD/data/config/mods/arome_arctic_offline_ppi.toml $PWD/data/config/mods/netcdf_input_pgd.toml $PWD/data/config/scheduler/ecflow_ppi_rhel8-$USER.toml
+ surfExp exps/LDAS.toml LDAS $PWD/data/config/configurations/metno_ldas.toml $PWD/data/config/domains/MET_NORDIC_1_0.toml $PWD/data/config/mods/arome_arctic_offline_ppi.toml $PWD/data/config/mods/netcdf_input_pgd.toml $PWD/data/config/scheduler/ecflow_ppi_rhel8-$USER.toml
 
  # PPI ECFLOW (in A)
  # If your server is not running you should start it!
@@ -127,11 +122,11 @@ Extra environment on PPI-RHEL8 needed to start experiments
  export ECF_SSL=1
 
  # Start suite (modify dates)
- deode start suite  --config-file exps/LDAS.toml
+ deode start suite --config-file exps/LDAS.toml
 
 
  # MET-Norway LDAS single decade
- ./bin/PySfxExp exps/LDAS_decade.toml LDAS_decade $PWD/data/config/configurations/metno_ldas.toml $PWD/data/config/domains/MET_NORDIC_1_0.toml $PWD/data/config/mods/arome_arctic_offline_ppi.toml $PWD/data/config/mods/netcdf_input_pgd.toml $PWD/data/config/mods/netcdf_input_single_decade.toml $PWD/data/config/mods/metno_ldas_single_decade.toml $PWD/data/config/scheduler/ecflow_ppi_rhel8-$USER.toml
+ surfExp exps/LDAS_decade.toml LDAS_decade $PWD/data/config/configurations/metno_ldas.toml $PWD/data/config/domains/MET_NORDIC_1_0.toml $PWD/data/config/mods/arome_arctic_offline_ppi.toml $PWD/data/config/mods/netcdf_input_pgd.toml $PWD/data/config/mods/netcdf_input_single_decade.toml $PWD/data/config/mods/metno_ldas_single_decade.toml $PWD/data/config/scheduler/ecflow_ppi_rhel8-$USER.toml
  deode start suite  --config-file exps/LDAS_decade.toml
 
 Trainings
