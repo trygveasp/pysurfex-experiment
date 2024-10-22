@@ -81,6 +81,7 @@ In addition you will get some other config files used in the tasks. An example o
 Here is an example with CARRA2 using poetry run.
 
 .. code-block:: bash
+
  cd ~/projects/surfExp
 
  # Create experiment in file data/config/CARRA2_MINI.toml

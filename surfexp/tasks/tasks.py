@@ -39,7 +39,7 @@ class PySurfexBaseTask(Task):
         """Construct pysurfex-experiment base class.
 
         Args:
-        ----
+        -------------------------------------------
             config (ParsedConfig): Configuration.
             name (str): Task name.
 
@@ -108,11 +108,11 @@ class PySurfexBaseTask(Task):
         """Determine binary path from task or system config section.
 
         Args:
-        ----
+        -----------------------------------
             binary (str): Name of binary
 
         Returns:
-        -------
+        ---------------------------------------
             bindir (str): full path to binary
 
         """
@@ -133,7 +133,7 @@ class PrepareCycle(PySurfexBaseTask):
     Clean up existing directories.
 
     Args:
-    ----
+    -----------------------------------
         Task (_type_): _description_
 
     """
@@ -142,7 +142,7 @@ class PrepareCycle(PySurfexBaseTask):
         """Construct the PrepareCycle task.
 
         Args:
-        ----
+        --------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -162,7 +162,7 @@ class QualityControl(PySurfexBaseTask):
     """Perform quality control of observations.
 
     Args:
-    ----
+    -------------------------------------
         Task (_type_): _description_
 
     """
@@ -171,7 +171,7 @@ class QualityControl(PySurfexBaseTask):
         """Constuct the QualityControl task.
 
         Args:
-        ----
+        --------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -379,7 +379,7 @@ class OptimalInterpolation(PySurfexBaseTask):
     """Creates a horizontal OI analysis of selected variables.
 
     Args:
-    ----
+    -----------------------------------------
         Task (_type_): _description_
 
     """
@@ -388,7 +388,7 @@ class OptimalInterpolation(PySurfexBaseTask):
         """Construct the OptimalInterpolation task.
 
         Args:
-        ----
+        --------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -490,7 +490,7 @@ class FirstGuess(PySurfexBaseTask):
     """Find first guess.
 
     Args:
-    ----
+    -------------------------------
         Task (Task): Base class
 
     """
@@ -499,7 +499,7 @@ class FirstGuess(PySurfexBaseTask):
         """Construct a FistGuess task.
 
         Args:
-        ----
+        -------------------------------------------------------
             config (ParsedObject): Parsed configuration
             name (str, optional): Task name. Defaults to None
 
@@ -545,7 +545,7 @@ class CryoClim2json(PySurfexBaseTask):
     """Find first guess.
 
     Args:
-    ----
+    -----------------------------------
         Task (Task): Base class
 
     """
@@ -554,7 +554,7 @@ class CryoClim2json(PySurfexBaseTask):
         """Construct a FistGuess task.
 
         Args:
-        ----
+        ---------------------------------------------------------
             config (ParsedObject): Parsed configuration
             name (str, optional): Task name. Defaults to None
 
@@ -620,7 +620,7 @@ class CycleFirstGuess(FirstGuess):
     """Cycle the first guess.
 
     Args:
-    ----
+    ------------------------------------------
         FirstGuess (FirstGuess): Base class
 
     """
@@ -629,7 +629,7 @@ class CycleFirstGuess(FirstGuess):
         """Construct the cycled first guess object.
 
         Args:
-        ----
+        --------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -653,7 +653,7 @@ class Oi2soda(PySurfexBaseTask):
     """Convert OI analysis to an ASCII file for SODA.
 
     Args:
-    ----
+    --------------------------------------
         Task (AbstractClass): Base class
 
     """
@@ -662,7 +662,7 @@ class Oi2soda(PySurfexBaseTask):
         """Construct the Oi2soda task.
 
         Args:
-        ----
+        --------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -734,7 +734,7 @@ class Qc2obsmon(PySurfexBaseTask):
     """Convert QC data to obsmon SQLite data.
 
     Args:
-    ----
+    ---------------------------------------
         Task (AbstractClass): Base class
 
     """
@@ -743,7 +743,7 @@ class Qc2obsmon(PySurfexBaseTask):
         """Construct the QC2obsmon data.
 
         Args:
-        ----
+        --------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -797,7 +797,7 @@ class FirstGuess4OI(PySurfexBaseTask):
     """Create a first guess to be used for OI.
 
     Args:
-    ----
+    -------------------------------------
         Task (AbstractClass): Base class
 
     """
@@ -806,7 +806,7 @@ class FirstGuess4OI(PySurfexBaseTask):
         """Construct the FirstGuess4OI task.
 
         Args:
-        ----
+        -------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -872,7 +872,7 @@ class FirstGuess4OI(PySurfexBaseTask):
         """Write the first guess file.
 
         Args:
-        ----
+        --------------------------------------------------------
             output (str): Output file
             variables (list): Variables
             geo (Geo): Geometry
@@ -880,7 +880,7 @@ class FirstGuess4OI(PySurfexBaseTask):
             cache (Cache, optional): Cache. Defaults to None.
 
         Raises:
-        ------
+        ---------------------------------------------
             KeyError: Converter not found
             RuntimeError: No valid data read
 
@@ -1001,7 +1001,7 @@ class LogProgress(PySurfexBaseTask):
     """Log progress for restart.
 
     Args:
-    ----
+    ------------------------------------
         Task (_type_): _description_
 
     """
@@ -1010,7 +1010,7 @@ class LogProgress(PySurfexBaseTask):
         """Construct the LogProgress task.
 
         Args:
-        ----
+        --------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -1024,7 +1024,7 @@ class LogProgressPP(PySurfexBaseTask):
     """Log progress for PP restart.
 
     Args:
-    ----
+    -------------------------------------
         Task (_type_): _description_
 
     """
@@ -1033,7 +1033,7 @@ class LogProgressPP(PySurfexBaseTask):
         """Construct the LogProgressPP task.
 
         Args:
-        ----
+        ---------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -1047,7 +1047,7 @@ class FetchMarsObs(PySurfexBaseTask):
     """Fetch observations from Mars.
 
     Args:
-    ----
+    -----------------------------------
         Task (_type_): _description_
 
     """
@@ -1056,7 +1056,7 @@ class FetchMarsObs(PySurfexBaseTask):
         """Construct the FetchMarsObs task.
 
         Args:
-        ----
+        ---------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """

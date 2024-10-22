@@ -20,7 +20,7 @@ class SurfexBinaryTask(PySurfexBaseTask):
     """Main surfex binary task executing all tasks.
 
     Args:
-    ----
+    ------------------------------------------------------
         Task (object): Inheritance of base task class
 
     """
@@ -29,7 +29,7 @@ class SurfexBinaryTask(PySurfexBaseTask):
         """Construct a surfex binary task.
 
         Args:
-        ----
+        ------------------------------------------------
             config (ParsedConfig): Parsed config
             name (str): Task name
             mode (str): mode
@@ -142,7 +142,7 @@ class SurfexBinaryTask(PySurfexBaseTask):
         """Execute the surfex binary.
 
         Args:
-        ----
+        ----------------------------------------------------------------------------------------
             binary (str): Full path to binary
             output (str): Full path to output file
             pgd_file_path (str, optional): _description_. Defaults to None.
@@ -351,7 +351,7 @@ class OfflinePgd(SurfexBinaryTask):
     """Running PGD task.
 
     Args:
-    ----
+    ------------------------------------------------------------------------
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
 
     """
@@ -360,7 +360,7 @@ class OfflinePgd(SurfexBinaryTask):
         """Construct a Pgd task object.
 
         Args:
-        ----
+        -----------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -387,7 +387,7 @@ class OfflinePrep(SurfexBinaryTask):
     """Running PREP task.
 
     Args:
-    ----
+    --------------------------------------------------------------------------
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
 
     """
@@ -396,7 +396,7 @@ class OfflinePrep(SurfexBinaryTask):
         """Construct Prep task.
 
         Args:
-        ----
+        --------------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -457,7 +457,7 @@ class OfflineForecast(SurfexBinaryTask):
     """Running Forecast task.
 
     Args:
-    ----
+    -----------------------------------------------------------------------
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
 
     """
@@ -466,7 +466,7 @@ class OfflineForecast(SurfexBinaryTask):
         """Construct the forecast task.
 
         Args:
-        ----
+        -----------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -531,7 +531,7 @@ class PerturbedRun(SurfexBinaryTask):
     """Running a perturbed forecast task.
 
     Args:
-    ----
+    ------------------------------------------------------------------------
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
 
     """
@@ -540,7 +540,7 @@ class PerturbedRun(SurfexBinaryTask):
         """Construct a perturbed run task.
 
         Args:
-        ----
+        --------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
@@ -593,7 +593,7 @@ class Soda(SurfexBinaryTask):
     """Running SODA (Surfex Offline Data Assimilation) task.
 
     Args:
-    ----
+    ---------------------------------------------------------------------
         SurfexBinaryTask(Task): Inheritance of surfex binary task class
 
     """
@@ -602,7 +602,7 @@ class Soda(SurfexBinaryTask):
         """Construct a Soda task.
 
         Args:
-        ----
+        -------------------------------------------------------
             config (ParsedObject): Parsed configuration
 
         """
