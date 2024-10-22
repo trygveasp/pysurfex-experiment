@@ -36,7 +36,7 @@ jobs:
       #           check-out repo
       #----------------------------------------------
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       #----------------------------------------------
       #           add matrix specifics
@@ -66,13 +66,13 @@ jobs:
 
       - name: Load cached venv (if cache exists)
         id: cached-poetry-dependencies
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('**/pyproject.toml') }}
 
       - name: Setup ssh
-        uses: webfactory/ssh-agent@v0.8.0
+        uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SECRET_REPO_DEPLOY_KEY }}
 
