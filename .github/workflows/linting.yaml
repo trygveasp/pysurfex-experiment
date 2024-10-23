@@ -2,7 +2,7 @@
 name: Linting Checks
 
 on:
-  pull_request_target:
+  pull_request:
     branches:
       - master
       - develop
@@ -16,8 +16,6 @@ on:
 
 jobs:
   linting:
-    env:
-       SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
     if: github.repository_owner == 'metno'
     name: Run Linters
     runs-on: ubuntu-latest
@@ -49,14 +47,6 @@ jobs:
         with:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/pyproject.toml') }}
-
-      - name: Print key
-        run: echo ${{secrets.SSH_DEPLOY_KEY}}
-
-      - name: Setup ssh
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{secrets.SSH_DEPLOY_KEY}}
 
       - name: Install dependencies (if venv cache is not found)
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
