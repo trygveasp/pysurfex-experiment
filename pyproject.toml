@@ -15,7 +15,8 @@
   requires = ["poetry-core >= 1.0.0"]
 
 [tool.poetry.dependencies]
-  deode = {git = "git@github.com:trygveasp/Deode-workflow-copy.git", develop = true, branch = "develop_ppi"}
+  #deode = {git = "git@github.com:trygveasp/Deode-workflow-copy.git", develop = true, branch = "develop_ppi"}
+  deode = {url = "https://modelstatus.met.no/deode-0.5.0.tar.gz"}
   #deode = {path = "/modules/rhel8/user-apps/suv-modules/deode/trygveasp/feature/develop_ppi", develop=true}
   pysurfex = {git = "https://github.com/metno/pysurfex.git", develop = true, branch = "master"}
   python = ">=3.9,<3.13"
