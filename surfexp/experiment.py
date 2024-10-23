@@ -157,4 +157,3 @@ def get_fgint(config, realization=None):
     return as_timedelta(
         get_setting(config, "general.times.cycle_length", realization=realization)
     )
-

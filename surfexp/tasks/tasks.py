@@ -6,11 +6,11 @@ import os
 import shutil
 
 import numpy as np
+import pysurfex
 import yaml
 from deode.datetime_utils import as_datetime, as_timedelta
 from deode.logs import InterceptHandler, logger, logging
 from deode.tasks.base import Task
-import pysurfex
 from pysurfex.cache import Cache
 from pysurfex.configuration import Configuration
 from pysurfex.file import SurfFileTypeExtension
@@ -94,14 +94,16 @@ class PySurfexBaseTask(Task):
         logger.debug("NNCO: {}", self.nnco)
 
     def substitute(self, pattern, basetime=None, validtime=None):
-        fpattern = self.platform.substitute(pattern, basetime=basetime, validtime=validtime)
+        fpattern = self.platform.substitute(
+            pattern, basetime=basetime, validtime=validtime
+        )
         if isinstance(fpattern, str):
             # @YYYY_FG@/@MM_FG@/@DD_FG@/@HH_FG@/
             if basetime is not None:
-                fpattern = fpattern.replace("@YYYY_FG@", basetime.strftime('%Y'))
-                fpattern = fpattern.replace("@MM_FG@", basetime.strftime('%m'))
-                fpattern = fpattern.replace("@DD_FG@", basetime.strftime('%d'))
-                fpattern = fpattern.replace("@HH_FG@", basetime.strftime('%H'))
+                fpattern = fpattern.replace("@YYYY_FG@", basetime.strftime("%Y"))
+                fpattern = fpattern.replace("@MM_FG@", basetime.strftime("%m"))
+                fpattern = fpattern.replace("@DD_FG@", basetime.strftime("%d"))
+                fpattern = fpattern.replace("@HH_FG@", basetime.strftime("%H"))
         return fpattern
 
     def get_binary(self, binary):

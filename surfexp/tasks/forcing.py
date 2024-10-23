@@ -2,9 +2,9 @@
 import json
 import os
 
+import pysurfex
 import yaml
 from deode.logs import logger
-import pysurfex
 from pysurfex.forcing import modify_forcing, run_time_loop, set_forcing_config
 
 from surfexp.tasks.tasks import PySurfexBaseTask
@@ -49,13 +49,15 @@ class Forcing(PySurfexBaseTask):
         with open(self.wdir + "/domain.json", mode="w", encoding="utf-8") as file_handler:
             json.dump(domain_json, file_handler, indent=2)
         kwargs.update({"domain": self.wdir + "/domain.json"})
-        #global_config = self.platform.get_system_value("config_yml")
+        # global_config = self.platform.get_system_value("config_yml")
         try:
             global_config = self.config["pysurfex.forcing_variable_config_yml_file"]
         except KeyError:
             global_config = None
         if global_config is None or global_config == "":
-            global_config = f"{os.path.dirname(pysurfex.__path__[0])}/pysurfex/cfg/config.yml"
+            global_config = (
+                f"{os.path.dirname(pysurfex.__path__[0])}/pysurfex/cfg/config.yml"
+            )
         with open(global_config, mode="r", encoding="utf-8") as file_handler:
             global_config = yaml.safe_load(file_handler)
         kwargs.update({"config": global_config})

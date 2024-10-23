@@ -1,25 +1,26 @@
 """Command line interface"""
-import os
-import sys
-import deode
-from deode.__main__ import main
-import pysurfex
-import surfexp
-import subprocess
 import argparse
+import os
 import shutil
+import subprocess
+import sys
+
+import deode
+import pysurfex
+from deode.__main__ import main
+
+import surfexp
 
 
 def pysfxexp(argv=None):
-
     if argv is None:
         argv = sys.argv[1:]
-    
+
     parser = argparse.ArgumentParser()
     parser.add_argument("output")
     parser.add_argument("case_name")
     parser.add_argument("args", nargs="*")
-    args  = parser.parse_args(argv)
+    args = parser.parse_args(argv)
 
     output = args.output
     case_name = args.case_name
@@ -30,12 +31,15 @@ def pysfxexp(argv=None):
     surfexp_path = surfexp.__path__[0]
     tmp_output = f"{output}.tmp.{os.getpid()}.toml"
     argv = [
-        "case", 
-        "--case-name", case_name,
-        "--config-file", f"{deode_path}/data/config_files/config.toml",
-        "--output", tmp_output,
+        "case",
+        "--case-name",
+        case_name,
+        "--config-file",
+        f"{deode_path}/data/config_files/config.toml",
+        "--output",
+        tmp_output,
         f"{pysurfex_path}/cfg/config_exp_surfex.toml",
-        f"{surfexp_path}/data/surfexp.toml"
+        f"{surfexp_path}/data/surfexp.toml",
     ]
     argv += args
     main(argv=argv)

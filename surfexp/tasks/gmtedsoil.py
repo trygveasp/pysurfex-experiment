@@ -249,12 +249,10 @@ class Gmted(Task):
         )
 
         # Output merged GMTED file to working directory as file gmted_mea075.tif
-        options = gdal.WarpOptions(format="GTiff", creationOptions=["COMPRESS=LZW", "TILED=YES"])
-        gd = gdal.Warp(
-            "gmted_mea075.tif",
-            tif_files,
-            options=options
+        options = gdal.WarpOptions(
+            format="GTiff", creationOptions=["COMPRESS=LZW", "TILED=YES"]
         )
+        gd = gdal.Warp("gmted_mea075.tif", tif_files, options=options)
 
         fmt = self.config["pgd.zs_format"]
         if fmt == "netcdf":
