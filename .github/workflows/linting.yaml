@@ -48,6 +48,9 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/pyproject.toml') }}
 
+      - name: Get dependencies
+        run: wget https://drive.google.com/uc?id=1lICZ3QZ876MYt06z_V9e0hgjPIqe1IIx && mv 1lICZ3QZ876MYt06z_V9e0hgjPIqe1IIx deode.tar.gz
+
       - name: Install dependencies (if venv cache is not found)
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root --only linting
